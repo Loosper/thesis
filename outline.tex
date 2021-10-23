@@ -1,0 +1,494 @@
+\documentclass[a4paper]{article}
+\usepackage{hyperref}
+\begin{document}
+
+
+\chapter{things I know}
+    SCSI - an old standard, that is obsolete by itself. The current hard drive standards (SATA/SAS) rely on it to communicate.
+
+    Fast filesystem - made a bitmap of free blocks
+
+    Soft update - used for small file writes
+
+    overwriting vs COW fs seems to be a major topic
+
+    blocksize: seems to be 4k fragments, 32k actual block size (at least on BSD, what does ext do?); used to be less
+    physical: 4k, but used to be 512B for the longest time
+
+    would be nice to have a checksum for everything (hard on an overwriting fs, since stuff is changing)
+    apparently current FSs do it well!
+
+    freeBSD uses UFS2, which is a contemporary of the original UFS (and this is the default)
+    netflix uses UFS2, apparently stated here: \url{https://www.youtube.com/watch?v=veQwkG0WdN8}
+\section{filesystems}
+    UFS -> FFS
+    \subsection{UFS}
+        1. Lion's book has an incredible explanation of what the directory graph
+        looks like, also about when linking/unlinking does what
+        2. Ritchie/Thompson UNIX paper
+
+        (see the Lion's book for a MUCH better explanation)
+        \paragraph{conceptual details}
+        file - a string of bytes of any format. System does not care/enforce of
+        their format.
+        directory - an ordinary file (and can be read as such) but the system
+        enforces a particular format (when writing)
+
+        A file does NOT exist in a directory; it just exists and directories
+        store a name + a pointer to it. It is usually deleted with the last
+        link to it. It can still exist with no pointers to it (eg. unlinked
+        everwhere, but someone still has it open)
+
+        A dir has at least 2 entries:
+            . - refers to the dir itself
+            .. - referes to the parent in which it appears
+        => except for these two, all dirs have exactly 1 parent and the FS is a
+        rooted tree (this is why you can't hardlink dirs). Files have no such limit
+
+        special files - behave exactly like normal files (can even link them)
+        but writing them results in special behaviour (eg. /dev/sda writes the
+        drive)
+
+        mount - replaces a leaf (ordinary file) with the root of another FS.
+        no links allowed between FSs (even .. refers to itself and not the
+        parent on the root of the mount)
+
+        permissions - 7 bits - 6 are the usual rwx, the 7th is setuid which
+        changes the current user to the owner of the file \_only when executing
+        it\_. In linux it's visible by an s instead of x on the permissions (eg
+        -rwsr-xr-x for sudo).
+
+        \paragraph{implementation details}
+
+        directory - a list of (file, i-number) pairs (14 and 2 bytes
+        respectively, 16 B/entry, 32 entries per block) if i-number is 0, the
+        entry is null. A regular file in all other regards
+
+        i-list - a known location on list, which stores a physical pointer to
+        an i-node. Its linearity allows a fast scan to check if free and used
+        space sets are disjoint
+
+        i-node - a structure that describes the file (owner, protection,
+        physical address of contents, size, time of last modification, number
+        of links to the file, directory bit, special file bit, "large"/"small" file
+        bit). It's a 64 byte struct (Thompson 78)
+
+        The i-number uniquely identifies a file, and open() translates from
+        path to it
+
+        drive is split into 512 byte blocks
+        i-node - has room for 8 pointers to blocks (just a detail of UNIX structs)
+        "large" (non-special) files - each pointer can point to an indirect
+        block containing 256 addresses of actual data blocks (pointers were 2
+        bytes on the PDP-11) (this gives a total size of 8*256*512 bytes (1M)
+        for files)
+        "small" (special) files - only the first pointer (2B) is used - 1B for
+        device type (which driver), 1B for device number
+
+        mount - keeps a dict with key: (i-number, device name of mount (path?),
+        value: device name of the special file. On open(), the dict is searched
+        and if a match is found, the i-number is replaced with 1 (the root
+        directory is always 1) and device name becomes the value of the lookup
+
+        block 0 - never used; It's NULL
+        block 1 - the superblock
+
+        struct filesys - the superblock.
+            s\_ifree - a list of (up to) 100 free inode blocks. It is NOT
+            exhaustive, but is rather a cache. When the list runs out, the
+            whole FS has to be searched to refill it. If the list is
+            overfilled, the new entries are forgotten, since they will go to
+            disk anyway and can be found again when searching later.
+            As far as I can tell, it's not strictly necessary
+
+            s\_free - a linked list of free blocks.  Blocks are grouped in
+            logical groups of 100 (may not be contiguous). Block 0 in each
+            group is a table of the addresses of the next group of 100 blocks.
+            The Head group's block 0 has a single entry of NULL to signify the
+            end of the list. The addresses of the blocks in the tail group are
+            stored in the superblock.
+
+            When a block is needed, it is removed from the list in the
+            superblock. When the last entry is read, the table in the 0th block
+            is copied into the superblock (we advance the linked list). Reading
+            NULL as a block address signifies list is empty (so no more free
+            blocks).
+
+            The struct is held in memory and regulary written to disk. No
+            backups are made.
+
+            NOTE: thompson78 has better explanations. He works with a later
+            UNIX version though (I think it's v6, whereas the original is v5).
+            Linked list is up to 50 entires, inodes are a block again, but have
+            13 block pointers, first 10 are direct pointers, 10th is an
+            indirect block (if necessary). 12 has double indirection, 13 has
+            triple.
+            McKusick says it has 4MB of inodes, 146MB of data for 150MB FS
+
+    \subsection{FFS}
+        McKusick 1984
+
+        old filesystem - the second version above, with 1024B blocks (unsure if
+        both data and metadata were affected)
+
+        says UFS has very poor throughput. Seems to use the 13-entry inode
+        version of UNIX. Same dir inodes aren't (usually) consecutive. File
+        blocks frequently aren't either. Only used about 4\% of throughput,
+        mostly because the free (linked) list became scrambled after use,
+        making the blocks of new files to be random too
+
+        blocks - 4KB (can be set higher at FS creation)
+        fragment - a partition of a block (1 block = 2/4/8 fragments, lower
+        bound is the sector size of the drive, usually 512B, configurable on FS
+        creation)
+
+        rotational positions - 8 counts of available blocks to easy cacluating
+        timeouts for when a block will be availbe (so that block number
+        requested can be as close to the head as possible). Uses rotational
+        layout table
+
+        superblock - replicated (and immutable, so restoring it from a copy is safe)
+
+        free space - described by a bitmap (no longer a linked list). Each bit
+        describes a \_fragment\_. Allocation can be on any fragment, although
+        allocations of a full block must not cross block boundaries (must be
+        aligned in a sense, eg. can't clump together 4 adjacent fragments on
+        different blocks)
+
+        inodes - allocates 1 for each 2048 bytes of space (expecting this to be
+        more than needed)
+
+        cylinder group - a number of consequtive cylinders on disk. Each one
+        contains all the book keeping for it (inode list + free space bitmap +
+        rotational positions) + a copy of the superblock. The superblock is
+        offset by 1 track for each following cylinder group (so that it spirals
+        down on platters and isn't all on the top one), the space in front is
+        used for data blocks. (I presume the metadata is exactly after the
+        superblock, but I can't be sure)
+
+        allocation - each file has 0+ blocks and an optional fragmented block
+        (which can be shared). When writing, the fragmented block is always
+        kept for the end of the file and is copied forward (/expanded) to make
+        sure. Whenever a number of fragments are needed, it first tries to use
+        an already fragmented block. Thus wasted space is as if the FS had a
+        block size of the fragment size, but performance is that of the block
+        size. Drawback - FS can't be full (to maintain performance); a reserve
+        is defined (10\% default) and only root can write after the reserve is
+        reached (fs looks full for everyone else)
+
+        allocation policy (when possible):
+            - inodes of files in a directory are placed in the same cylinder
+            - new dir is placed on a cylinder group with higher than avg free
+              inodes and smallest number of dirs in it (intent: policy above to
+              succeed more frequently)
+            - next free for allocation of inodes within a group. This makes
+              them random within it, but all inodes in a group (and hopefully a
+              directory) can be read in 16 disk transfers at most (since a group
+              can't have more than 2048 inodes)
+            - big files - allocate a different cylinder group after 48KB and
+              after 1MB thereafter. Group is chosen to have above avg free blocks
+            - use a heuristic for finding a new block (escalates from same
+              cylinder, same group, hash of group for new one, and then
+              exhaustive search)
+
+        performance - large blocks (fragments irrelevant) decrease write CPU
+        utilization and increase read speed
+
+        inodes - seems to be same layout (10 direct, 11 single indirect, 12
+        double, 13 triple), but because of the larger block size, less
+        indirection is required => less space used for large files
+        (the bitmaps use extra, so FS has ~same bookkeeping size)
+
+        directories - dirs allocated in chunks of 512B. An entry can't cross
+        chunks. An entry has: i-node num, size of entry, length of filename,
+        var len filename, paddings to 4 byte boundary (max filename is 255B
+        though). Available space in a dir is added to the prev entry's size (so
+        that it has more than expected bytes)
+
+        \paragraph{"new" to UNIX}
+        symbolic links - allowed to cross FS/machine. Is a file that contains
+        the pathname from which to proceed
+        rename syscall
+        quotas
+
+        supposedly this is in 4.3 BSD. Also supposedly it refuses to write over
+        90\% (that's a quote from the paper if I remeber)
+        Does lots of caching (says Beating the IO bottleneck).
+
+    \subsection{LFS}
+        \paragraph{Beating the IO bottleneck}
+        First reference (?) to i-list being itself a file, scattered around
+        disk, with only one superblock to describe it
+
+        All files are stored sequetially on disk. The file data + header
+        (inode) reside sequetially too. There's a "super-map" file which is a
+        list of where we stored all inodes. Finally, the supermap is
+        occasionally written to disk to commit the progress so far. With a bit
+        of caching, read speed should be identical, writes much faster (when
+        clustered together)
+
+        Seems to be inspired by databases. Cites Hagmann as putting loggin in
+        an FS first (but only metadata)
+
+
+    \subsection{WAFL}
+        4KB blocks, no fragments
+        16 block ptrs:
+            very small file - in the pointers
+            up to 64K - direct ptrs
+            up to 64M - single indirect and so on
+
+        root inode - Has a whole block reserved for itself. Block is in a known
+        (special) location. Points to inode file (itself)
+
+        inode file - this is the i-list. Seems to work exactly as in UNIX,
+        except it's a file itself (so gets scattered around as one, obeying the
+        indirecion rules above). Contains:
+            block file
+            inode map file
+            all other files
+
+        block file - a map of 32 bits per block. Bit 0 set if active fs is referencing
+        it, bit 1 for snapshot 1, etc
+
+        inode map file - stores free inodes (format unknown, bitmap?)
+
+        increasing FS size = increasing size of metadata files
+
+        FS is structured as a tree, instead of linearly. This tree describes
+        the FS tree on top of it
+
+    \subsection{XFS}
+        XFS paper
+
+        Linear bitmaps of FFS aren't efficient for serching (esp when we need
+        large contiguous blocks). FFS doesn't even try too hard to allocate
+        contiguously
+
+        Uses Allocation Groups (AG) (kind of like cylinder groups, but only for
+        scalability, not disc locality) to split drive into 0.5/4 GB chunks.
+        Also 2 B+ trees to store free space.
+
+        "Extent based trees are more flexible and as efficient as bitmaps"
+
+        Has sparse files. Stores files as a map of ranges where the files are
+
+        Uses a B+ tree for literally everything
+
+    \subsection{NTFS}
+
+        Uses B-trees
+
+
+    \subsection{ZFS}
+        needs loads of cache for good read perf (stuff is scattered on disk) -
+        60GB was given as a minimum work best when not filled (3/4 is max,
+        recomemnded is no more that 50\% ful). Normal can go up to 90+\% I
+        should probably focus on small systems (i.e. not datacentres)
+
+        checksums - a blockchain. They are stored in the block above, meaning
+        each checksum is itself checksumed from above. Only top one is stored
+        with itself
+
+        vdevs - a tree struct. Each vdev can have an arbitrary number of
+        children, each of which can be either a vdev or a device. EG. 100GB
+        mirror vdev: 2 children: 1 100GB disk vdev (with 100GB device) and 1
+        100GB concat vdev (with 2 50GB device vdevs, each having 50GB devices)
+
+        SPA - it's like an MMU for drives (128 bit addresses)
+
+        Copy on write - editing a file causes a "ripple" of writes that ends in
+        the overwriting of the uberblock. Until then, everything is consisten
+        (the new one is not in the tree yet) and rewriting the uberblock is as
+        atomic as possible
+
+\section{tools}
+    \subsection{LVM}
+        Uses device mapper.
+
+        ZFS paper: LVM can't be as good as the SPA because it loses all contextual
+        info about blocks (it's blind). It still has to do contiguous allocations.
+        Can't do sparse allocations
+
+        me: , you can extend a logical volume (LV) with any amount of space (but
+        prob just append the extra space to the volume). You can also shrink it (I
+        presume you can remove one from the middle, if you tell it to move the
+        contents, idk how the mapping is established)
+
+
+\section{Humanitarian}
+    \subsection{Failure oriented Computing}
+
+        People always make mistakes, and they usually self-correct (i.e.
+        mistake making is part of the human condition)
+
+        margin of safety - to account for design, build, operation errors
+        margin of ignorance - to account for what we don't know
+
+        We need margins in computing
+
+        Conduct error experiments with "Fault Ingection Glibc" (FIG)
+
+\section{Observation}
+    \subsection{evolution}
+
+        It seems that UFS -> FFS -> LFS -> WAFL (maybe XFS?) -> ZFS is a
+        natural evolution. Each one is a step up from the last.
+
+        UFS introduces the idea.
+
+        FFS makes it "fast" and considers inefficiencies, implementes policies
+        and tries to keep things reasonably contiguous
+
+        LFS invents the metadata as a file and starts to enfornce caching for
+        good performance
+
+        WAFL goes further and puts them all in a tree. Caching is a given at this point
+
+        ZFS pins the COW part, as WAFL mostly does it anyway. Caching is
+        integral, otherwise zfs sucks
+
+        Somewhere in there comes in XFS (or maybe the research one its based
+        on) and introduces B-trees for efficient bookkeeping
+
+
+\section{TODO}
+
+    \subsection{Doing list}
+        * QEMU instance
+            - give it several hard drives and play around with LVM to see how
+            it works, what it can/can't do. Specifically, allocate/partition
+            the whole drive for standard install, then add a drive and extend
+            both. NOTE: this can be done without QEMU, with loopback devices
+
+    \subsection{Reading list}
+        * Writing Linux File System for Fun: https://www.youtube.com/watch?v=sLR17lUjTpc
+        * glusterfs?
+        * apfs/ntfs case studies
+        * zfs/btrfs
+        * WAFL? lmao
+        * HFS
+        * original EXT (ext3 is ext2 + journaling)
+        * exFAT - optimised for flash
+        * FAT32 (or any size, the struct is important)
+        * the android FS was fairly recent
+        * soft update
+        * EFS has extents. What are extents?
+        * "zfs borrows from cryptography and databases" - look into this too or declare out of scope?
+        * what's the difference between UFS and FFS (v2 for both)? FreeBSD uses UFS2 by default (chance they are the same!)
+        * raid striping (relevant for zfs)
+        * tanenbaum os book (for reference)
+        * how does the OS see hard drive failure? How do we know to just write the drive off and use the other RAID copy?
+          How do they fail at all? What about SSDs?
+        * Linux Device drivers (by Greg KH) to debug my shit
+        * device mapper in linux (lvm building block)
+        * what's the SSD utilization? (HDD benchmarks are plentiful)
+        * SSD filesystems?
+
+        * papers on FS testing (specifically Linux)
+
+        * partitioning/volume management?
+        * growing/shrinking
+
+        Papers databases: https://library.leeds.ac.uk/subjects/1148/computing
+        also: arxiv, library genesis
+        meta database: https://www.re3data.org/ (has a pretty good pie chart to narrow down topics)
+
+    \subsection{Things for the final report}
+        Library has appointments for drafts, looking at it scoping docs, etc ("Help in person for taught students")
+        \paragraph{Library suggestions}
+        * Library has computing research database list; use that
+
+        Things I want to consider to show **critical thingking**:
+        all of this is in Critical thinking model, Paund and Elder, 2006
+        * What theories/concepts are relevant?
+          (where it came from, some of its definitions; i.e. give background on theories)
+        * Identify assumptions and determine if they are justifiable
+          (is it realistic to build a prototype for testing?, search for opposing
+          theories/solutions; justify why you chose something and not another)
+        * Consider implications/consequences, i.e. what may happend and what does
+        * Consider other points of view
+        * Why examine the issue at all?
+        * What relevant data, xp are needed for assesment? Give evidence
+        * What can be inferred from the evidence?
+        * Consider making a concept map: a tree, root is the question, and then each level subdivides the topic
+          eg: how much pollution are we exposed to when travelling -> air pollution -> CO, Pb, C6H6, NO2
+                                                 -> transport    -> bus, cycle, on foot, train
+        * Use proximity srch - when you expect words to be close; trunaction - for a root of a word
+        These are advanced features of many search engines (google scholar isn't specialist; try specialist ones)
+        and normal things like boolean logic, wildcards, you know the drill
+
+        * look at how papers structure their intro: the last part is an outline of what will follow
+
+        \paragraph{Ethics}
+        email: r.morgan1@leeds.ac.uk for any help. Include project details, and
+        lots of specifics and what you've got so far (look at outlook page for
+        details on what they ask for)
+
+        * I need to show I've considered ethics if I am to claim I have no
+          ethical issues in my project
+
+        * if collecting data: need free and informed consent (so need to know
+          what data will be collected, what will be used for and not pressured
+          into agreeing into it)
+
+          if data identifies a person => personal data
+
+          I am approved to collect some data, as long as follow some rules:
+          * user testing - subject can leave at any time, concent form with full
+            info on project and how data will be used, no sensitive information
+            recorded/any personal info securely stored
+          * public databases - is data legitimate, reliable, anonimized, does
+            it respect privacy, concent from sources (either DB owner or subjects
+            in DB)
+
+
+\chapter{Thesis}
+    \section{NAME}
+    TODO: have this by end of Sem 1
+    i.e. a planning report
+    you need to define the scope, eval methos, where and how I'm doing it (OS, fs features)
+    I have to justify why I'm doing this. If I was to say ext4 is lacking, I have to prove it.
+    clearly define the project scope
+
+    jabref?
+
+    \section{risk (mitigation)}
+        Can I just say I'm making my own? I'm not setting out to make a
+        substantial improvement, I can do my own thing but my work won't be
+        particularly novel
+
+        FUSE instead of a kernel module. Userspace provides a lot of
+        abstractions that will greatly speed up development. I will probably
+        sacrifice performance, but I am not familiar enough with kernel
+        development (and the FS subsystem) to justify the risk.
+
+    \section{Scope}
+        SMP ready
+        links to directories? would be cute, but idk why original UNIX wasn't
+        happy with them (I think the cycle makes cyclic paths dangerous)
+
+        "A raid aware overwriting filesystem" would be a good title. AFAIK,
+        normal FSs struggle with identifying which copy is not broken. Maybe
+        implement an overwriting FS on the ZFS foundation? So use its volume
+        management, block allocation but don't do the COW stuff? The zfs paper
+        goes into lots of detail how annoying/error prone it is to resize,
+        change, create file systems when partitions are set form the start
+
+        I really like the idea of virtual block numbers. Could I add this below
+        ext4? (Low chance but would be amazing)
+
+        target an rtOS?
+
+        what if I implemented the ARM page-tables as a FS? Hilariousity or dumb as fuck?
+
+        I'd like it fsck-less, easy to recover from
+
+    \section{out of scope}
+        network/cluster filesystems
+
+    \section{evaluation methods}
+        by christmas I need metrics to evaluate the project
+
+
+\end{document}

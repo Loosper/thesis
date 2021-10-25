@@ -230,6 +230,69 @@
         Seems to be inspired by databases. Cites Hagmann as putting loggin in
         an FS first (but only metadata)
 
+        \paragraph{The design and implementation of a (Sprite) LFS}
+
+        FFS doesn't lay out metadata + data nearby. It requires 5 seeks to
+        write a (small) file. It also does metadata writes synchronously, even
+        though it does data async. That's slow for many small files
+
+        inode - exact same as FFS. I.e. 10 direct bloks, 1 indirect, 1
+        double-indrect, etc. (WAFL introduces the same lvl of indirectness for
+        all blocks) (Once you have the inode, file access algorithm is the same
+        in FFS and LFS)
+
+        inode map - table containing the address of each inode. The map itself
+        is a file, written to the log as such. There are fixed locations on the
+        disk to store an address to it. Small enough to be cached and rarely
+        read
+
+        superblock - similar to FFS
+
+        segment - a contiguous chunk of disk that is *always* written start to
+        finish. It's size is such that transfer time of the segment is MUCH
+        larger than the seek to it (they use 512K/1M)
+        to limit segmentation it does 2 things:
+          * copying - any data already on a segment has to be copied out of it
+            before it is written
+          * threading - live data is compacted into segments so that "full"
+            segments can be skipped
+
+        segment summary block - a block at the start of each segment that
+        describes what's on it (eg inumber + block number). Can have multiple
+        when a partial write has happened
+
+        live block check - after determining which file the block in the
+        segment belonged to, we can check the inode to see if it still points
+        to it. Slight optimisation - keep a version number in of file, which
+        can be used to compute a UID for every file (and store it in the block
+        map and the segment summary; when they don't match, block is dead (and
+        no need to read the inode)).
+
+        segment cleaning - read n segments, identify the live data (using the
+        stuff above), and write back fewer segments
+
+        free list/bitmap - non existent. The segment/metadata allows us to
+        check each one individually. Simplifies crash recovery
+
+        policies:
+        * when to clean - when fewer than n clean segments (n = arbitrary, 10s)
+        * how much to clean - several tens
+        * how long to clean for - until there are 50-100 clean ones
+        * who to clean - see extensive chapter 3 on exactly that
+
+        checkpoints - a fixed place which describes the last consistent place
+        of the log
+
+        roll-forward - the process of scanning the disk from the last
+        checkpoint to the head of the log to recover as a much "lost" data as
+        possible
+
+
+
+        decribes a way to benchmarks file access patterns
+
+
+
 
     \subsection{WAFL}
         4KB blocks, no fragments
@@ -329,6 +392,15 @@
 
         Conduct error experiments with "Fault Ingection Glibc" (FIG)
 
+        Even though RAID5 (1 failed drive) ought to be enough, lots of
+        sysadmins have lost data regardless. Turns out, MTTF is not independent
+        when drives are from the same batch.
+
+        \subsection{RAID}
+            Assumes independent and exponential failure rates.
+
+            Boral 83 is a metric?
+
 \section{Observation}
     \subsection{evolution}
 
@@ -343,7 +415,9 @@
         LFS invents the metadata as a file and starts to enfornce caching for
         good performance
 
-        WAFL goes further and puts them all in a tree. Caching is a given at this point
+        WAFL goes further and puts them all in a tree. Caching is a given at
+        this point. It also changes the 10-1-1-1 ptrs with increasing lvls of
+        indirectness, to having them all equally indirect
 
         ZFS pins the COW part, as WAFL mostly does it anyway. Caching is
         integral, otherwise zfs sucks
@@ -483,6 +557,8 @@
         what if I implemented the ARM page-tables as a FS? Hilariousity or dumb as fuck?
 
         I'd like it fsck-less, easy to recover from
+
+        raid aware? Esp. if I don't use any form of pooling/ the zfs one
 
     \section{out of scope}
         network/cluster filesystems

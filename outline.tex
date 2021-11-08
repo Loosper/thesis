@@ -405,6 +405,34 @@
 
         They use metadata heavy benchmarks. 4 users copying a whole dir or
         deleting a load of files
+
+    \subsection{Backblaze vault}
+        \paragraph{Redundancy/Drive failure}
+
+        A 17-3 data-paraity split (can be any ratio, this one is arbitrary).
+        Essentially RAID, but FS is below the replication (i.e. it's flipped).
+        Every disk has an ext4 FS and there's a SW stack on to to distribute
+        files onto the 20 pieces (shards) (using Reed-Solomon coding which they
+        open sourced ;)).
+
+        Use ext4 because it handles:
+        * power loss without losing files
+        * lots of files with good access (on 1 drive)
+
+        Comes out to 17.6\% overhead for parity, RAID6 on a 13-2 split is a
+        15.4\% but doesn't have machine redundancy
+
+        \paragraph{Data corruption}
+
+        Every shard is checksumed, so errors are known. When discovered, can be
+        recomputed because of the replication
+
+        \paragraph{Data}
+        They have LOTS of data
+        (https://www.backblaze.com/b2/hard-drive-test-data.html#downloading-the-raw-hard-drive-test-data)
+        for free.
+
+
 \section{tools}
     \subsection{LVM}
         Uses device mapper.
@@ -436,10 +464,30 @@
         sysadmins have lost data regardless. Turns out, MTTF is not independent
         when drives are from the same batch.
 
-        \subsection{RAID}
-            Assumes independent and exponential failure rates.
+    \subsection{RAID}
+        Assumes independent and exponential failure rates.
 
-            Boral 83 is a metric?
+        Boral 83 is a metric?
+
+    \subsection{SSD failures}
+
+        At lest the drives Google use, have ECC in them. They seem to be able
+        to detect all errors (even unrecoverabe ones). They distinguish between
+        recoverable and unrecoverabe ones. Recoverable are plentiful,
+        unrecoverabe less so. They don't seem to correlate, but unrecoverabe
+        ones can cause data loss.
+
+        They consider a chip failed, after it has more than 5\% bad blocks (or
+        a temporal threshold for errors).
+
+        Bad blocks/chips are remapped to spare ones. It's unclear to me how
+        they avoid data loss in the process (they don't)
+
+        SSDs need replacing less frequently than HDDs but encounter loads more
+        (unrecoverabe) errors
+
+        A majority of drives experience an unrecoverable error in the first 4
+        years.
 
 \section{Observation}
     \subsection{evolution}

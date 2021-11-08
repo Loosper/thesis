@@ -1,4 +1,5 @@
-\documentclass[a4paper]{article}
+\documentclass[a4paper]{report}
+\usepackage[a4paper, portrait, left=2.25cm, right=2.25cm, top=2cm, bottom=2cm]{geometry}
 \usepackage{hyperref}
 \begin{document}
 
@@ -291,7 +292,7 @@
 
         decribes a way to benchmarks file access patterns
 
-
+        NOTE: modern FSs use a lite log. They log only the metadata
 
 
     \subsection{WAFL}
@@ -429,7 +430,7 @@
 
         \paragraph{Data}
         They have LOTS of data
-        (https://www.backblaze.com/b2/hard-drive-test-data.html#downloading-the-raw-hard-drive-test-data)
+        \url{https://www.backblaze.com/b2/hard-drive-test-data.html#downloading-the-raw-hard-drive-test-data}
         for free.
 
 
@@ -513,6 +514,12 @@
         Somewhere in there comes in XFS (or maybe the research one its based
         on) and introduces B-trees for efficient bookkeeping
 
+    \subsection{The UFS name}
+
+        UFS stands for Uniix File System, but not which precise implementation
+        of it. It could be the original from 1974, could be FFS or could be
+        UFS2 which can be any one of these.
+
 
 \section{TODO}
 
@@ -522,23 +529,22 @@
             it works, what it can/can't do. Specifically, allocate/partition
             the whole drive for standard install, then add a drive and extend
             both. NOTE: this can be done without QEMU, with loopback devices
+        * try setting up a raid 1, flip a bit and see if FS corrects it
 
     \subsection{Reading list}
         * Writing Linux File System for Fun: https://www.youtube.com/watch?v=sLR17lUjTpc
         * glusterfs?
         * apfs/ntfs case studies
         * zfs/btrfs
-        * WAFL? lmao
         * HFS
         * original EXT (ext3 is ext2 + journaling)
         * exFAT - optimised for flash
         * FAT32 (or any size, the struct is important)
         * the android FS was fairly recent
-        * soft update
+        * drive caches
         * EFS has extents. What are extents?
         * "zfs borrows from cryptography and databases" - look into this too or declare out of scope?
         * what's the difference between UFS and FFS (v2 for both)? FreeBSD uses UFS2 by default (chance they are the same!)
-        * raid striping (relevant for zfs)
         * tanenbaum os book (for reference)
         * how does the OS see hard drive failure? How do we know to just write the drive off and use the other RAID copy?
           How do they fail at all? What about SSDs?

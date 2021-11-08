@@ -365,6 +365,46 @@
         (the new one is not in the tree yet) and rewriting the uberblock is as
         atomic as possible
 
+    \subsection{Soft updates}
+
+        Part of UFS2, which is what freebsd uses. Has a quote (in intro) saying
+        that a corrupt sector will (almost) always have an ECC which can detect
+        partial writes => atomic single sector writes. Also most disks will not
+        write a sector unless there is sufficient power to do so.
+        => can result in loss of structure but not loss of integrity
+
+        Requires no changes to on-disk layout. Main idea: keep a lot of
+        information on every metadata update (most important infromation
+        includes ordering constraints, i.e what need to be complete before this
+        update can be requested so that FS stays consistent on disk). Then
+        these writes are delayed (put in a buffer and left alone) to optimise
+        writes on the same block (eg. creating many files in the same dir will
+        prob have entries written to the same block and can be grouped). A
+        background thread periodically runs (once a second) and flushes out
+        some (any fraction) of the dirty blocks to disk. However, it only
+        flushes updates that have had their constraints satisfied. If a dirty
+        block has an update that still has pending requests, it is rolled back
+        and not flushed (kept in the queue). After the the block is written,
+        they can be reapplied to the dirty block in memory (and must be before
+        it can accessed). For block deallocate/link delete, they are only freed
+        after the pointer to be reset has been commited to disk
+
+        Ordering constraints are put in to follow these rules:
+          1 Never reset the old pointer to a resource before the new pointer has
+            been set (when moving objects)
+          2 Never re-use a resource before nullifying all previous pointers to
+            it
+          3 Never point to a structure before it has been initialized
+        They mostly follow what would noramally be done synchronously, with the
+        added benefit that disk state is left consistent. Still requires fsck
+        to recover. Eg: normally, if the system crashes in the middle of moving
+        a file, it would delete the link first and then create a new one,
+        losing the pointer to the file. With this scheme the deletion will
+        depend on the write and if it crashes in between there will be 2 links
+        available. Still requires fsck but is simpler to recover from.
+
+        They use metadata heavy benchmarks. 4 users copying a whole dir or
+        deleting a load of files
 \section{tools}
     \subsection{LVM}
         Uses device mapper.

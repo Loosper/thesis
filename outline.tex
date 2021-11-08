@@ -607,13 +607,20 @@
 
 \chapter{Thesis}
     \section{NAME}
-    TODO: have this by end of Sem 1
-    i.e. a planning report
-    you need to define the scope, eval methos, where and how I'm doing it (OS, fs features)
-    I have to justify why I'm doing this. If I was to say ext4 is lacking, I have to prove it.
-    clearly define the project scope
+        \paragraph{A filesystem with native drive failure resiliance.}
+        Very narrow topic, I won't consider any other aspects (unles trivial to
+        do so)
 
-    jabref?
+    \section{Current plan}
+        % have this by end of Sem 1 i.e. a planning report
+        Suspend all non-resiliance reseach for now (exact structure can similar
+        to existing and I can see it later). Focus on ZFS, RAID, journaling
+        (not much), SSD reliability.
+
+
+        \paragraph{TODO} next meeting: aim for a concrete plan on how to implement that and
+        test it. What workloads did they use? What metrics. Come up with important ones
+
 
     \section{risk (mitigation)}
         Can I just say I'm making my own? I'm not setting out to make a
@@ -626,33 +633,46 @@
         development (and the FS subsystem) to justify the risk.
 
     \section{Scope}
+        % you need to define the scope, eval methods, where and how I'm doing
+        % it (OS, fs features) I have to justify why I'm doing this. If I was to
+        % say ext4 is lacking, I have to prove it.  clearly define the project
+        % scope
         SMP ready
-        links to directories? would be cute, but idk why original UNIX wasn't
-        happy with them (I think the cycle makes cyclic paths dangerous)
 
+        \paragraph{Maint topic: RAID+FS}
+        v: could be not overwriting, idk, but defo RAID aware to see if feesable. Anyone else done it?
         "A raid aware overwriting filesystem" would be a good title. AFAIK,
         normal FSs struggle with identifying which copy is not broken. Maybe
         implement an overwriting FS on the ZFS foundation? So use its volume
         management, block allocation but don't do the COW stuff? The zfs paper
         goes into lots of detail how annoying/error prone it is to resize,
         change, create file systems when partitions are set form the start
+        ALSO, data corruption too, since bit rot and drives just return false data sometimes
 
         I really like the idea of virtual block numbers. Could I add this below
         ext4? (Low chance but would be amazing)
 
-        target an rtOS?
+        definitely have corruption detection
 
         what if I implemented the ARM page-tables as a FS? Hilariousity or dumb as fuck?
 
         I'd like it fsck-less, easy to recover from
 
-        raid aware? Esp. if I don't use any form of pooling/ the zfs one
+        \subsection{out of scope}
+            % focus on last 5 years of research. It doesn't have to be
+            % exhaustive, just representative.
 
-    \section{out of scope}
-        network/cluster filesystems
+            network/cluster filesystems
+
 
     \section{evaluation methods}
-        by christmas I need metrics to evaluate the project
+        % by christmas I need metrics to evaluate the project
+        % I found a few eval methods, but not sure which I need, will prob decide
+        % later on
 
+        \subsection{Success metrics}
+            success metrics: on par performance, correct silent errors
+
+    jabref?
 
 \end{document}

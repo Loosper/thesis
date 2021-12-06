@@ -1,0 +1,22 @@
+\documentclass[11pt,a4paper,oneside]{article}
+
+% Edit 'config.tex' to set the project title etc. (near the start
+% of the file).
+\input{config.tex}
+
+\begin{document}
+
+% This command is defined in 'config.tex' and gives the front page.
+\frontcover
+
+% The main text is contained in the file 'mainText.tex'.
+% If for some reason you want to split this into multiple files,
+% include each of them here.
+\include{mainText}
+
+% This will display any bibtex references you have cited.
+\addcontentsline{toc}{chapter}{References}
+\bibliography{refs}
+
+\end{document}
+

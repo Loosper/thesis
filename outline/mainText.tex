@@ -2,8 +2,12 @@
 % Motivation / Introduction
 %
 \section{Introduction}
+    % <A brief overview of your project suitable for a non-specialised
+    % audience. You may mention background and motivation, but should avoid
+    % technical terms as far as possible. 1-2 paragraphs should be sufficient.
+    % Here is an example of how to cite a reference \cite{parikh1980adaptive}.>
 
-<A brief overview of your project suitable for a non-specialised audience. You may mention background and motivation, but should avoid technical terms as far as possible. 1-2 paragraphs should be sufficient. Here is an example of how to cite a reference \cite{parikh1980adaptive}.>
+
 
 
 %
@@ -12,38 +16,151 @@
 \section{Aims, Objectives and Delievarables}
 
 \subsection{Project Aims}
+    % <A brief summary of the primary aims of this project. Typically 1-3
+    % sentences.>
 
-<A brief summary of the primary aims of this project. Typically 1-3 sentences.>
+    This project aims to produce a new redundant filesystem for Linux. It is
+    intended to be a more light-weight alternative to the enterprise-ready ZFS
+    and to address some of its shortcomings for home use while having most of
+    its benefits.
 
 \subsection{Objectives}
+    % note this means `learn how to\ldots', `research into\ldots` are {\em not}
+    % objectives, as they are intermediate milestones rather than final goals.
+    % All objectives should be measurable, {\em i.e.} it should be possible to
+    % provide evidence to confirm whether or not they have been achieved. 3-5
+    % objectives is typical.>
 
-<A list of what you want to achieve {\em by the end of the project} -- note this means `learn how to\ldots', `research into\ldots` are {\em not} objectives, as they are intermediate milestones rather than final goals. All objectives should be measurable, {\em i.e.} it should be possible to provide evidence to confirm whether or not they have been achieved. 3-5 objectives is typical.>
+    % TODO: fix citations
+    \begin{description}
+        \item{A modern filesystem design}
+
+            The first and most important objective is creating a modern
+            filesystem.  Modern in the sense that it should be have comparable
+            speed to other widespread filesystems, like ext4 and NTFS, and
+            provide the most important features users have come to expect.
+
+            Currently, this is expected to include standard inodes organised in
+            some B-tree structure of blocks on disk. Blocks will have
+            checksumming and be replicated among many disks, if available.
+
+            A major goal is to not depend on an fsck utility. Crashes should be
+            automatically detected and corrected on mount.
+
+        \item{A filesystem implementation}
+
+            The design will be implemented as a userfs module on Linux. It
+            should be mountable as any other and seemlessly usable.
+
+        \item{Redundancy and silent error correction}
+
+            Integrate the redundancy features of RAID and provide assurances
+            against data corruption due to silent errors. The filesystem will
+            assume flash-based underlying media, which is prone to quite a few
+            silent errors despite all the error correction features
+            \cite{facebook_flash, google_flash} and make according
+            considerations about speed and reliability.
+
+            The end result should resemble ZFS in spirit, but substantially
+            more flexible in terms of required system resources and complexity
+            of use.
+
+        \item[Comparison and evaluation]
+
+            It is expected that the proposed filesystem will offer some
+            benefits without taking steps back on usability and performance. To
+            verify this, extensive testing will have to be conducted and the
+            result compared against current solutions.
+
+            The goal is the evaluation to drive the design to an extent so that
+            the end result does not regress on expected features.
+
+    \end{description}
+
 
 \subsection{Deliverables}
+    % <A list of what you will hand in at the end of the project. This will
+    % include the final report (possibly spread across multiple deliverables,
+    % if that makes sense for your project), code (possibly more than one
+    % version), and so on. Ideally the deliverables should be cross-referenced
+    % to the objectives. 2-3 deliverables is typical, but there can be more
+    % depending on the nature of the project.>
 
-<A list of what you will hand in at the end of the project. This will include the final report (possibly spread across multiple deliverables, if that makes sense for your project), code (possibly more than one version), and so on. Ideally the deliverables should be cross-referenced to the objectives. 2-3 deliverables is typical, but there can be more depending on the nature of the project.>
-
+    There are only 2: the final report and source code. The report will contain
+    all background research, feature considerations and the basis for the major
+    proposals. I expect this to include lots of graphs and drawings to
+    illustrate choices, as they are quite convoluted. The source code will be a
+    working userfs module which can be compiled and loaded into a modern Linux
+    operating system and the filesystem immediately used.
 
 %
 % Plan
 %
 \section{Project Plan}
+    % submission of the final report. This should discuss the key stages of
+    % your project.>
 
-<Provide a plan for the full project, from when you started until the submission of the final report. This should discuss the key stages of your project.>
+    As of writing this report, most preliminary research has been completed.
+    Next, are \ref{l1_num} major stges:
+
+
+    \begin{enumerate}
+
+        \item Look into B-trees and the layout of ext4/NTFS to get a feel for
+            what current filesystems look like. This is not intended to be an
+            in-depth look, but rather a guide on how to proceed.
+
+        \item Immediately after that, research and implement the userfs module.
+            This will include a basic layout on disk with a good ordering
+            arrangement. Any housekeeping should be taken care of at this stage
+            (mounting/unmounting procedures, system calls, etc) and files
+            should be readable and writeable to a disk. A test environment
+            should emerge in the process. The current idea is that this be done
+            with loopback devices on my development machine.
+
+        \item At this stage testing should be considered, especially failure
+            simulation.  Since the major topic of the project deals with
+            handling various failures, which are rather unpredictable
+            \cite{google_flash}, there should be some mechanism available to
+            insert them reliabily. It is likely that this will require the test
+            environment be in a virtual machine (QEMU) which will be done at
+            this stage if necessary.
+
+            At this point a working, but very barebones prototype should be
+            ready. From here until the end of the project the prototype should
+            have a consistently working state which should go on until time
+            runs out.
+
+        \item Next is where the bulk of the work is expected to happen. There
+            are only two mandatory parts to implement: redundancy  -
+            replication at some granularity like RAID - and reliability -
+            checksumming like ZFS'. If time allows, more features will be added
+            to make the comparison to existing filesystems more accurate. At
+            the end of various increments some testing criteria will be devised
+            to assess the viability of the features and make to make changes
+            accordingly.
+
+        \item Finally, although the intention is to write up results for the
+            report throughout the project, the bulk of it will happen at the
+            end so some judgement will be exercise to cease work, even if
+            incomplete, and draw up results for the final report.
+
+    \label{l1_num}
+    \end{enumerate}
+
 
 \subsection{Timeline}
+    % <A graphical description of your plan, often as a Gantt chart.>
 
-<A graphical description of your plan, often as a Gantt chart.>
-
-% To include a figure, uncomment and modify the following. Vary the 'width'
-% field until it looks suitable. This uses the 'graphicx' module that has
-% already been included in 'config.tex'.
-%\begin{figure}[htbp]	
-%	\centerline{
-%		\includegraphics[width=12cm]{<Filename>}
-%	}
-%	\caption{<Caption text>}
-%\end{figure}
+    % To include a figure, uncomment and modify the following. Vary the 'width'
+    % field until it looks suitable. This uses the 'graphicx' module that has
+    % already been included in 'config.tex'.
+    %\begin{figure}[htbp]
+    %	\centerline{
+    %		\includegraphics[width=12cm]{<Filename>}
+    %	}
+    %	\caption{<Caption text>}
+    %\end{figure}
 
 
 
@@ -51,13 +168,52 @@
 % Risk mitigation.
 %
 \section{Risk Mitigation}
+    % <Identify risks to your project, and what you would do if they arose.>
 
-<Identify risks to your project, and what you would do if they arose.>
+    This project has a number of risks. It is quite involved and requires a lot
+    of new skills. Despite that, it is believed that it is achievable with some
+    alterations to the ideal vision for it:
 
+    \begin{description}
+
+        \item[Complexity of implementation] The biggest risk to this project is
+            running out of time due to overwhelming code complexity from
+            writing a filesystem driver. Kernel programming is a very elaborate
+            exercise and due to a lack of sufficient experience in it, the
+            implementation will be done in userspace as a userfs module. This
+            certainly diminishes the efficiency of the implementation and may
+            skew some performance measurements. However, userspace programming
+            experience is plentiful and only has a small fraction of the things
+            that could go (inexplicably) wrong. As the focus on of the project
+            is not meant as an engineering feat so this should free up time for
+            the more important academic aspect of it.
+
+        \item[Incomplete prototype] Despite the reduction in complexity with a
+            userfs, a large chunk of the work on the project is not towards
+            making a better filesystem, but rather making a filesystem at all.
+            To make sure the code is not completely unusable in case some
+            feature fails, the project will use a sort of "rolling release"
+            model. The idea is to implement and test features individually and
+            in whole before starting a new one. If one cannot be implemented
+            for whatever reason, the project can be submitted regardless.
+            Anything after the initial barebones filesystem should be
+            submittable so that even if the project ends up as a glorified
+            literature review it can get as many marks as possible.
+
+        \item[Full originality] This project will not attempt to create a fully
+            original and novel filesystem.
+
+    \end{description}
 
 %
 % Ethics.
 %
 \section{Ethics}
+    % <If your project has ethical issues (e.g. gathering of user consent
+    % forms), then you should state here how you intend to address them. If
+    % there are no ethical issues then explicitly state: "There are no ethical
+    % issues for this project.">
 
-<If your project has ethical issues (e.g. gathering of user consent forms), then you should state here how you intend to address them. If there are no ethical issues then explicitly state: "There are no ethical issues for this project.">
+    This project has no ethical issues. It does not deal with humans in any way
+    and only aims to better a set of tools which are widely accepted and
+    available.

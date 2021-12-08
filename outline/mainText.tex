@@ -33,44 +33,48 @@
 
     % TODO: fix citations
     \begin{description}
-        \item{A modern filesystem design}
+        \item[A modern filesystem design]
 
             The first and most important objective is creating a modern
-            filesystem.  Modern in the sense that it should be have comparable
+            filesystem. Modern in the sense that it should be have comparable
             speed to other widespread filesystems, like ext4 and NTFS, and
             provide the most important features users have come to expect.
 
             Currently, this is expected to include standard inodes organised in
-            some B-tree structure of blocks on disk. Blocks will have
-            checksumming and be replicated among many disks, if available.
+            some B-tree structure of blocks on disk. Blocks will be overwriting
+            (instead of copy on write) and will only consider SSDs.
 
             A major goal is to not depend on an fsck utility. Crashes should be
             automatically detected and corrected on mount.
 
-        \item{A filesystem implementation}
+        \item[A filesystem implementation]
 
-            The design will be implemented as a userfs module on Linux. It
+            The design will be implemented as a userfs module for Linux. It
             should be mountable as any other and seemlessly usable.
 
-        \item{Redundancy and silent error correction}
+        \item[Redundancy and silent error correction]
 
-            Integrate the redundancy features of RAID and provide assurances
-            against data corruption due to silent errors. The filesystem will
-            assume flash-based underlying media, which is prone to quite a few
-            silent errors despite all the error correction features
-            \cite{facebook_flash, google_flash} and make according
-            considerations about speed and reliability.
+            Since the filesystem will assume flash-based underlying media,
+            which is prone to quite a few silent errors despite all the error
+            correction features \cite{facebook_flash, google_flash}, the
+            filesystem design will make according considerations about speed
+            and reliability. It will integrate the redundancy features of RAID
+            and provide assurances against data corruption, like block/file
+            checksumming, which plain RAID does not. Silent error detection and
+            recovery is the main focus for this filesystem.
 
-            The end result should resemble ZFS in spirit, but substantially
-            more flexible in terms of required system resources and complexity
-            of use.
+            The end result should resemble ZFS in spirit, but without all of
+            the enterprise considerations. That means fewer system resource
+            requirements, less rigirous protection against crashes and higher
+            device flexibility, if possible.
 
         \item[Comparison and evaluation]
 
             It is expected that the proposed filesystem will offer some
-            benefits without taking steps back on usability and performance. To
-            verify this, extensive testing will have to be conducted and the
-            result compared against current solutions.
+            benefits (at lest for home use) without taking steps back on
+            usability and performance. To verify this, extensive testing will
+            have to be conducted and the result compared against current
+            solutions.
 
             The goal is the evaluation to drive the design to an extent so that
             the end result does not regress on expected features.
@@ -200,8 +204,19 @@
             submittable so that even if the project ends up as a glorified
             literature review it can get as many marks as possible.
 
-        \item[Full originality] This project will not attempt to create a fully
-            original and novel filesystem.
+        \item[Full originality] This project will not attempt to create an
+            original and filesystem with novel features. Due to the size and
+            complexity of creating a filesystem this is not feasible for a
+            final year project. Instead, since there are no originality marks,
+            the novelty of the project is going to be very limited. None of the
+            features are novel themselves, but the way they are arranged is not
+            particularly widespread. This should drastically reduce the chance
+            for unforseen problems and get the project off the ground faster.
+
+        \item[SSD over HDD] Hard drives will not be considered. The whole
+            filesystem will be implemented with the expectation that it will
+            run on an SSD. This limit the pool of devices that have to be
+            considered for any performance impacts.
 
     \end{description}
 

@@ -7,7 +7,20 @@
     % technical terms as far as possible. 1-2 paragraphs should be sufficient.
     % Here is an example of how to cite a reference \cite{parikh1980adaptive}.>
 
+    Current filesystems broadly group into two types: those aimed for everyday
+    use, like ext4, and large enterprise-ready solutions like zfs. For the most
+    part, the middle segment of small home servers does not exist and is
+    expected to either use RAID or commit to the extra hardware for zfs. RAID,
+    however, is flawed in that it does not protect against silent data
+    corruption. If a data block is read incorrectly, there is no information
+    available to indicate this.
 
+    The solution to this problem is to add further layers of complexity that
+    add some sort of checksumming on top of RAID, like \cite{backblaze}. This
+    is a convoluted exercise and documentation is sparse. The idea for this
+    project is to produce a filesystem that solves this problem out of the box
+    with little configuration. It should, in a sense, be a drop-in replacement
+    for the everyday filesystem but with added file integrity protection.
 
 
 %
@@ -79,6 +92,15 @@
             The goal is the evaluation to drive the design to an extent so that
             the end result does not regress on expected features.
 
+        \item[Illustrative report]
+
+            Although this objective is optional, it is high on the wish list.
+            Most filesystems research papers and documentation articles fail to
+            illustrate the layout of what they are proposing, instead relying
+            on convoluted textual descriptions. The goal is for the final
+            report to include some of these graphical descriptions to aid with
+            arguments.
+
     \end{description}
 
 
@@ -90,12 +112,13 @@
     % to the objectives. 2-3 deliverables is typical, but there can be more
     % depending on the nature of the project.>
 
-    There are only 2: the final report and source code. The report will contain
-    all background research, feature considerations and the basis for the major
-    proposals. I expect this to include lots of graphs and drawings to
-    illustrate choices, as they are quite convoluted. The source code will be a
-    working userfs module which can be compiled and loaded into a modern Linux
-    operating system and the filesystem immediately used.
+    There are only 2 deliverables: the final report and source code. The report
+    will contain all background research, feature considerations and the basis
+    for the major proposals. It will have the complee design and all
+    evaluations and comparisons. I expect this to include lots of graphs and
+    drawings to illustrate tradeoffs. The source code will be a working userfs
+    module which can be compiled and loaded into a modern Linux operating
+    system to immediately use the filesystem.
 
 %
 % Plan
@@ -112,23 +135,24 @@
 
         \item Look into B-trees and the layout of ext4/NTFS to get a feel for
             what current filesystems look like. This is not intended to be an
-            in-depth look, but rather a guide on how to proceed.
+            in-depth look, but rather a guide on how to proceed. Only modern
+            examples will be considered.
 
         \item Immediately after that, research and implement the userfs module.
             This will include a basic layout on disk with a good ordering
             arrangement. Any housekeeping should be taken care of at this stage
             (mounting/unmounting procedures, system calls, etc) and files
-            should be readable and writeable to a disk. A test environment
-            should emerge in the process. The current idea is that this be done
-            with loopback devices on my development machine.
+            should be readable and writeable to a disk. A development
+            environment should emerge in the process. The current idea is that
+            this be done with loopback devices on my development machine.
 
         \item At this stage testing should be considered, especially failure
-            simulation.  Since the major topic of the project deals with
+            simulation. Since the major topic of the project deals with
             handling various failures, which are rather unpredictable
             \cite{google_flash}, there should be some mechanism available to
-            insert them reliabily. It is likely that this will require the test
-            environment be in a virtual machine (QEMU) which will be done at
-            this stage if necessary.
+            insert them reliabily. It is likely that this will require the
+            development environment be in a virtual machine (QEMU) which will
+            be done at this stage if necessary.
 
             At this point a working, but very barebones prototype should be
             ready. From here until the end of the project the prototype should
@@ -136,18 +160,20 @@
             runs out.
 
         \item Next is where the bulk of the work is expected to happen. There
-            are only two mandatory parts to implement: redundancy  -
-            replication at some granularity like RAID - and reliability -
-            checksumming like ZFS'. If time allows, more features will be added
-            to make the comparison to existing filesystems more accurate. At
-            the end of various increments some testing criteria will be devised
-            to assess the viability of the features and make to make changes
-            accordingly.
+            are only two mandatory parts to implement: redundancy - replication
+            at some granularity like RAID - and reliability - checksumming like
+            ZFS'. If time allows, more features will be added to make the
+            comparison to existing filesystems more accurate. At the end of
+            various increments some testing criteria will be devised to assess
+            the viability of the features and make changes accordingly.
 
         \item Finally, although the intention is to write up results for the
             report throughout the project, the bulk of it will happen at the
-            end so some judgement will be exercise to cease work, even if
+            end so some judgement will be exercised to cease work, even if
             incomplete, and draw up results for the final report.
+
+            This is when most graph and figures are expected to be drawn so
+            that the report is easy to follow.
 
     \label{l1_num}
     \end{enumerate}
@@ -159,12 +185,12 @@
     % To include a figure, uncomment and modify the following. Vary the 'width'
     % field until it looks suitable. This uses the 'graphicx' module that has
     % already been included in 'config.tex'.
-    %\begin{figure}[htbp]
-    %	\centerline{
-    %		\includegraphics[width=12cm]{<Filename>}
-    %	}
-    %	\caption{<Caption text>}
-    %\end{figure}
+    \begin{figure}[htbp]
+    	\centerline{
+    		\includegraphics[width=18cm]{gantt}
+    	}
+    	\caption{Gantt chart of the plan}
+    \end{figure}
 
 
 
@@ -180,7 +206,7 @@
 
     \begin{description}
 
-        \item[Complexity of implementation] The biggest risk to this project is
+        \item[Complex implementation] The biggest risk to this project is
             running out of time due to overwhelming code complexity from
             writing a filesystem driver. Kernel programming is a very elaborate
             exercise and due to a lack of sufficient experience in it, the
@@ -213,10 +239,13 @@
             particularly widespread. This should drastically reduce the chance
             for unforseen problems and get the project off the ground faster.
 
-        \item[SSD over HDD] Hard drives will not be considered. The whole
+        \item[Too many devices] Hard drives will not be considered. The whole
             filesystem will be implemented with the expectation that it will
             run on an SSD. This limit the pool of devices that have to be
             considered for any performance impacts.
+
+        % TODO: research: consider only most modern FSs and ignore everything
+            % before. Whatever i've learnt, that's it.
 
     \end{description}
 

@@ -8,20 +8,23 @@
     % Here is an example of how to cite a reference \cite{parikh1980adaptive}.>
 
     Current filesystems broadly group into two types: those aimed for everyday
-    use, like ext4, and large enterprise-ready solutions like zfs. For the most
-    part, the middle segment of small home servers does not exist and is
-    expected to either use RAID or commit to the extra hardware for zfs. RAID,
-    however, is flawed in that it does not protect against silent data
-    corruption. If a data block is read incorrectly, there is no information
-    available to indicate this.
+    use, like ext4, and large enterprise-ready solutions like zfs.
+    Unfortunately, small home server use, for people who do not wish to use
+    cloud or paid storage services, doesn't quite fit either of these two. The
+    usual workaround is to use everyday filesystems on top of RAID. However,
+    RAID relies on disks to not fail silently. Despite all drives' best effort
+    in error correcting, they still occasionally silently corrupt data
+    \cite{google_flash, facebook_flash}.
 
-    The solution to this problem is to add further layers of complexity that
-    add some sort of checksumming on top of RAID, like \cite{backblaze}. This
-    is a convoluted exercise and documentation is sparse. The idea for this
-    project is to produce a filesystem that solves this problem out of the box
-    with little configuration. It should, in a sense, be a drop-in replacement
-    for the everyday filesystem but with added file integrity protection.
+    The usual way to solve this is to add further layers of complexity that
+    add some sort of checksumming on top of RAID, like Backblaze
+    \cite{backblaze} or Google \cite{google_fs} do. The home server tools act
+    in a similar manners (eg Linux's dm-integrity).
 
+    The idea for this project is to produce a filesystem and then integrate
+    these features - redundancy and integrity - to use out of the box with
+    little configuration. It should, in a sense, be a drop-in replacement for
+    the everyday filesystem for simpler administration.
 
 %
 % Aims, Objectives and deliverables.
@@ -34,8 +37,9 @@
 
     This project aims to produce a new redundant filesystem for Linux. It is
     intended to be a more light-weight alternative to the enterprise-ready ZFS
-    and to address some of its shortcomings for home use while having most of
-    its benefits.
+    but to cut down some of its features and only keep those necessary for home
+    server use. It should require a lot less system resources and be as
+    convenient as an everyday filesystem to use.
 
 \subsection{Objectives}
     % note this means `learn how to\ldots', `research into\ldots` are {\em not}
@@ -44,7 +48,6 @@
     % provide evidence to confirm whether or not they have been achieved. 3-5
     % objectives is typical.>
 
-    % TODO: fix citations
     \begin{description}
         \item[A modern filesystem design]
 
@@ -63,7 +66,7 @@
         \item[A filesystem implementation]
 
             The design will be implemented as a userfs module for Linux. It
-            should be mountable as any other and seemlessly usable.
+            should be mountable as any other and seamlessly usable.
 
         \item[Redundancy and silent error correction]
 
@@ -78,7 +81,7 @@
 
             The end result should resemble ZFS in spirit, but without all of
             the enterprise considerations. That means fewer system resource
-            requirements, less rigirous protection against crashes and higher
+            requirements, less rigorous protection against crashes and higher
             device flexibility, if possible.
 
         \item[Comparison and evaluation]
@@ -113,12 +116,13 @@
     % depending on the nature of the project.>
 
     There are only 2 deliverables: the final report and source code. The report
-    will contain all background research, feature considerations and the basis
-    for the major proposals. It will have the complee design and all
-    evaluations and comparisons. I expect this to include lots of graphs and
-    drawings to illustrate tradeoffs. The source code will be a working userfs
-    module which can be compiled and loaded into a modern Linux operating
-    system to immediately use the filesystem.
+    will contain all background research, feature considerations, the basis for
+    the major proposals and performance analyses. It will have the complete
+    design and all evaluations and comparisons. I expect this to include lots
+    of graphs and drawings to illustrate tradeoffs. The source code will be a
+    working userfs module which can be compiled and loaded into a modern Linux
+    operating system to immediately use the filesystem along with the data used
+    to perform the analyses.
 
 %
 % Plan
@@ -128,9 +132,11 @@
     % your project.>
 
     As of writing this report, most preliminary research has been completed.
-    Next, are \ref{l1_num} major stges:
+    Next, are \ref{l1_num} major stages:
 
 
+    % TODO: Don't do everything from scratch, unless you want to look at it, bc
+    % it affects planning
     \begin{enumerate}
 
         \item Look into B-trees and the layout of ext4/NTFS to get a feel for
@@ -140,17 +146,19 @@
 
         \item Immediately after that, research and implement the userfs module.
             This will include a basic layout on disk with a good ordering
-            arrangement. Any housekeeping should be taken care of at this stage
-            (mounting/unmounting procedures, system calls, etc) and files
-            should be readable and writeable to a disk. A development
-            environment should emerge in the process. The current idea is that
-            this be done with loopback devices on my development machine.
+            arrangement. Wherever possible, external libraries will be used
+            (eg. GQDM for a B-tree implementation). Any housekeeping should be
+            taken care of at this stage (mounting/unmounting procedures, system
+            calls, etc) and files should be readable and writeable to a disk. A
+            development environment should emerge in the process. The current
+            idea is that this be done with loopback devices on my development
+            machine.
 
         \item At this stage testing should be considered, especially failure
             simulation. Since the major topic of the project deals with
             handling various failures, which are rather unpredictable
             \cite{google_flash}, there should be some mechanism available to
-            insert them reliabily. It is likely that this will require the
+            insert them reliably. It is likely that this will require the
             development environment be in a virtual machine (QEMU) which will
             be done at this stage if necessary.
 
@@ -165,7 +173,11 @@
             ZFS'. If time allows, more features will be added to make the
             comparison to existing filesystems more accurate. At the end of
             various increments some testing criteria will be devised to assess
-            the viability of the features and make changes accordingly.
+            the viability of the features and make changes accordingly. This is
+            expected to be done with already existing benchmarks (eg. fio -
+            flexible IO tester) for simplicity, although some academic metrics
+            will also be considered, for example the way LFS was benchmarked
+            \cite{LFS}.
 
         \item Finally, although the intention is to write up results for the
             report throughout the project, the bulk of it will happen at the
@@ -185,14 +197,14 @@
     % To include a figure, uncomment and modify the following. Vary the 'width'
     % field until it looks suitable. This uses the 'graphicx' module that has
     % already been included in 'config.tex'.
+
+    % TODO: make the figure more clear. Implm should be longer?
     \begin{figure}[htbp]
     	\centerline{
     		\includegraphics[width=18cm]{gantt}
     	}
     	\caption{Gantt chart of the plan}
     \end{figure}
-
-
 
 %
 % Risk mitigation.

@@ -76,7 +76,7 @@ static void write_root_inode(struct filesystem *fs)
 		.uid = 0,
 		.gid = 0,
 		.type = INODE_DIR,
-		.mode = S_IFDIR | 0755,
+		.mode = S_IFDIR | 0777,
 		.atime = time(NULL),
 		.mtime = time(NULL),
 		.ctime = time(NULL),
@@ -91,6 +91,7 @@ static FILE *file = NULL;
 
 static void log_to_file(enum fuse_log_level level, const char *fmt, va_list ap)
 {
+	// TODO: segfaults if this errors :D
 	if (file == NULL)
 		file = fopen("fs_log.log", "w");
 

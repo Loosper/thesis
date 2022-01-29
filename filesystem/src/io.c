@@ -139,14 +139,16 @@ void fs_lookup(fuse_req_t req, fuse_ino_t parent, const char *name)
 	}
 
 	struct inode *ino = read_inode(req_fd(req), cur_inode);
+	fuse_log(FUSE_LOG_INFO, "lookup: '%s', of: %ld\n", name, parent);
 	struct fuse_entry_param entry = {
 		.ino = cur_inode,
+		// TODO: not critical
+		// .generation = ++generation,
 		.attr_timeout = 1,
 		.entry_timeout = 1,
 	};
 	entry.attr = stat_from_inode(ino, cur_inode);
 
-	fuse_log(FUSE_LOG_INFO, "lookup: '%s', of: %ld\n", name, parent);
 	print_inode(ino, cur_inode);
 	free(ino);
 	fuse_reply_entry(req, &entry);
@@ -195,13 +197,15 @@ void fs_getattr(fuse_req_t req, fuse_ino_t ino, struct fuse_file_info *fi)
 void fs_setattr(fuse_req_t req, fuse_ino_t ino, struct stat *attr, int to_set, struct fuse_file_info *fi)
 {
 	struct inode *inode = read_inode(req_fd(req), cur_inode);
-	inode->mode = attr->st_mode;
-	inode->size = attr->st_size;
+	// inode->mode = attr->st_mode;
+	// inode->size = attr->st_size;
+	inode->atime = attr->st_atime;
 	inode->mtime = attr->st_mtime;
-	inode->ctime = attr->st_ctime;
 	write_block(req_fd(req), inode, cur_inode);
 
 	fuse_log(FUSE_LOG_INFO, "to_set %08x\n", to_set);
+	print_inode(inode, cur_inode);
+
 	struct stat reply = stat_from_inode(inode, ino);
 	free(inode);
 

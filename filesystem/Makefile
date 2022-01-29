@@ -1,5 +1,5 @@
 FUSE_FLAGS := $(shell pkg-config fuse3 --cflags --libs) -DFUSE_USE_VERSION=35
-CFLAGS += $(FUSE_FLAGS) -Wall -Wextra -Iinclude
+CFLAGS += $(FUSE_FLAGS) -Wall -Wextra -Iinclude -g
 CC := gcc
 
 # DEBUG helpers
@@ -27,4 +27,5 @@ clean:
 loop_dev:
 	 dd if=/dev/zero of=./fs_data count=1024
 	 losetup -f --show ./fs_data
+	 chmod 666 /dev/loop0
 

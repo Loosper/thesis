@@ -1,15 +1,30 @@
 FUSE_FLAGS := $(shell pkg-config fuse3 --cflags --libs) -DFUSE_USE_VERSION=35
 CFLAGS += $(FUSE_FLAGS) -Wall -Wextra -Iinclude
+CC := gcc
+
+# DEBUG helpers
+CFLAGS += -Wno-unused-variable -Wno-unused-parameter
 
 COBJS  := $(patsubst %.c, %.o, $(wildcard src/*.c))
 # TODO: make dynamic
 CHDR := $(wildcard incclude/*.h)
 
+
+.PHONY: all
 all: filesystem
 
-
 src/%.o:src/%.c $(CHDR)
-	gcc $(CFLAGS) -c $^ -o $@
+	$(CC) $(CFLAGS) -c $^ -o $@
 
 filesystem: $(COBJS)
-	gcc $(CFLAGS) $(COBJS) -o filesystem
+	$(CC) $(CFLAGS) $(COBJS) -o filesystem
+
+.PHONY: clean
+clean:
+	rm filesystem $(COBJS)
+
+.PHONY: loop_dev
+loop_dev:
+	 dd if=/dev/zero of=./fs_data count=1024
+	 losetup -f --show ./fs_data
+

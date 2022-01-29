@@ -15,7 +15,14 @@ static const struct fuse_lowlevel_ops fs_ops = {
 	// .init = fs_init,
 	// any cleanup on umount should be here
 	// .destroy = fs_destroy,
-	.lookup = fs_lookup
+	.lookup = fs_lookup,
+	.create = fs_create,
+	.flush = fs_flush,
+	.release = fs_release,
+	.getattr = fs_getattr,
+	.setattr = fs_setattr,
+	.opendir = fs_opendir,
+	.readdir = fs_readdir
 };
 
 #define FS_OPT(opt, field) \
@@ -27,6 +34,7 @@ static struct fuse_opt cmdline_opts[] = {
 	// to set a var but keep the arg for anything that needs it later
 	// FS_OPT("-d",		foreground),
 	// FUSE_OPT_KEY("-d",	FUSE_OPT_KEY_KEEP),
+	FS_OPT("--foreground",	foreground),
 	FUSE_OPT_END
 };
 
@@ -59,12 +67,49 @@ static int opt_proc(void *data, const char *arg, int key, struct fuse_args *outa
 	return 1;
 }
 
+
+static void write_root_inode(struct filesystem *fs)
+{
+	struct inode root = {
+		.size = 512,
+		.refs = 2, // TODO: why?
+		.uid = 0,
+		.gid = 0,
+		.type = INODE_DIR,
+		.mode = S_IFDIR | 0755,
+		.atime = time(NULL),
+		.mtime = time(NULL),
+		.ctime = time(NULL),
+	};
+	// fuse_log(FUSE_LOG_INFO, "hi? %x\n", S_IFDIR | 0755);
+	strcpy(root.name, "root");
+
+	write_data(fs->backing_store, &root, sizeof(struct inode), 1);
+}
+
+static FILE *file = NULL;
+
+static void log_to_file(enum fuse_log_level level, const char *fmt, va_list ap)
+{
+	if (file == NULL)
+		file = fopen("fs_log.log", "w");
+
+	if (level == FUSE_LOG_INFO)
+		vfprintf(file, fmt, ap);
+	else
+		vfprintf(stderr, fmt, ap);
+
+	fflush(file);
+
+}
+
 int main(int argc, char *argv[])
 {
 	struct fuse_args args = FUSE_ARGS_INIT(argc, argv);
 	// struct fuse_cmdline_opts opts;
 	struct fuse_session *sess;
 	struct fs_opts opts = {0};
+	struct filesystem *fs = NULL;
 	int ret;
 
 	// it will print its error, we just need to exit
@@ -81,7 +126,18 @@ int main(int argc, char *argv[])
 		return 1;
 	}
 
-	sess = fuse_session_new(&args, &fs_ops, sizeof(fs_ops), NULL);
+	fuse_set_log_func(log_to_file);
+
+	fs = malloc(sizeof(struct filesystem));
+	fs->backing_store = open(opts.backing_store, O_RDWR);
+	if (fs->backing_store == -1) {
+		perror("fs: couldn't open file");
+		return 1;
+	}
+
+	write_root_inode(fs);
+
+	sess = fuse_session_new(&args, &fs_ops, sizeof(fs_ops), fs);
 	if (sess == NULL)
 		return 1;
 	if (fuse_set_signal_handlers(sess) != 0)
@@ -89,16 +145,20 @@ int main(int argc, char *argv[])
 	if (fuse_session_mount(sess, opts.mountpoint) != 0)
 		return 1;
 
-	// TODO: an arg for this
-	fuse_daemonize(1);
+	// NOTE: if any operation doesn't reply, this hangs until it does
+	fuse_daemonize(opts.foreground);
 	ret = fuse_session_loop(sess);
 
-	// // cleanup
+	// cleanup
 	fuse_session_unmount(sess);
 	fuse_session_destroy(sess);
 	free(opts.mountpoint);
 	free(opts.backing_store);
+	free(fs);
 	fuse_opt_free_args(&args);
+
+	fflush(file);
+	fclose(file);
 
 	return (ret < 0) ? 1: 0;
 }

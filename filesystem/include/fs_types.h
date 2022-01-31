@@ -5,6 +5,10 @@
 #include <sys/types.h>
 
 
+#define SECTOR_SIZE 512
+#define BLOCK_SIZE (1 * SECTOR_SIZE)
+
+
 struct fs_opts {
 	char *mountpoint;
 	char *backing_store;

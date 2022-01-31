@@ -21,7 +21,7 @@ filesystem: $(COBJS)
 
 .PHONY: clean
 clean:
-	rm filesystem $(COBJS)
+	rm -f filesystem $(COBJS)
 
 .PHONY: loop_dev
 loop_dev:

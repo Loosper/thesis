@@ -1,13 +1,14 @@
-#include <fuse_lowlevel.h>
-#include <limits.h>
-#include <stddef.h>
 #include <errno.h>
+#include <stddef.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
-#include "io.h"
+#include <fuse_lowlevel.h>
+
 #include "fs_types.h"
+#include "fs_init.h"
+#include "io.h"
 
 
 static const struct fuse_lowlevel_ops fs_ops = {
@@ -65,26 +66,6 @@ static int opt_proc(void *data, const char *arg, int key, struct fuse_args *outa
 	}
 
 	return 1;
-}
-
-
-static void write_root_inode(struct filesystem *fs)
-{
-	struct inode root = {
-		.size = 512,
-		.refs = 2, // TODO: why?
-		.uid = 0,
-		.gid = 0,
-		.type = INODE_DIR,
-		.mode = S_IFDIR | 0777,
-		.atime = time(NULL),
-		.mtime = time(NULL),
-		.ctime = time(NULL),
-	};
-	// fuse_log(FUSE_LOG_INFO, "hi? %x\n", S_IFDIR | 0755);
-	strcpy(root.name, "root");
-
-	write_data(fs->backing_store, &root, sizeof(struct inode), 1);
 }
 
 static FILE *file = NULL;

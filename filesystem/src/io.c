@@ -1,77 +1,18 @@
-#include "io.h"
-#include "fs_types.h"
+#include <errno.h>
+#include <string.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <time.h>
+#include <unistd.h>
+
+#include <sys/stat.h>
 
 #include <fuse_lowlevel.h>
-#include <stdio.h>
-#include <sys/stat.h>
-#include <unistd.h>
-#include <string.h>
-#include <time.h>
-#include <stdlib.h>
 
-#include <errno.h>
+#include "io.h"
+#include "fs_types.h"
+#include "fs_helpers.h"
 
-#define SECTOR_SIZE 512
-#define BLOCK_SIZE (1 * SECTOR_SIZE)
-
-
-static inline struct filesystem *req_userdata(fuse_req_t req)
-{
-	return fuse_req_userdata(req);
-}
-
-static inline int req_fd(fuse_req_t req)
-{
-	return req_userdata(req)->backing_store;
-}
-
-static inline struct stat stat_from_inode(struct inode *inode, size_t num)
-{
-	struct stat stat = {
-		// .st_dev = 1,
-		.st_ino = num,
-		.st_uid = inode->uid,
-		.st_gid = inode->gid,
-		.st_mode = inode->mode,
-		.st_size = inode->size,
-		.st_blocks = inode->blocks,
-		.st_blksize = BLOCK_SIZE,
-		.st_atime = inode->atime,
-		.st_mtime = inode->mtime,
-		.st_ctime = inode->ctime
-	};
-	return stat;
-}
-
-static void print_inode(struct inode *ino, size_t num)
-{
-	fuse_log(FUSE_LOG_INFO,
-		"inode (%d) %s:\n"
-		"\tsize: %ld\n"
-		"\trefs: %ld\n"
-		"\tblocks: %ld\n"
-		"\tuid/gid: %d/%d\n"
-		"\tmode: %x\n"
-		"\tctime: %ld\n",
-		num, ino->name,
-		ino->size, ino->refs, ino->blocks, ino->uid, ino->gid,
-		ino->mode, ino->ctime
-
-	);
-}
-
-// the file returning error is unrecoverable for now
-static inline void check_errno(ssize_t ret)
-{
-	if (ret < 0) {
-		fuse_log(
-			FUSE_LOG_ERR,
-			"pread/pwrite failed: %s\n", strerror(errno)
-		);
-		// TODO: fuse_session_exit?
-		exit(1);
-	}
-}
 
 // all this because write() can be interrupted by signals and partially
 // complete. We assume the file has good dimensions and don't prevent infinite
@@ -149,7 +90,6 @@ void fs_lookup(fuse_req_t req, fuse_ino_t parent, const char *name)
 	};
 	entry.attr = stat_from_inode(ino, cur_inode);
 
-	print_inode(ino, cur_inode);
 	free(ino);
 	fuse_reply_entry(req, &entry);
 }
@@ -177,8 +117,6 @@ void fs_create(fuse_req_t req, fuse_ino_t parent, const char *name, mode_t mode,
 	};
 	entry.attr = stat_from_inode(&ino, cur_inode);
 
-	print_inode(&ino, cur_inode);
-
 	fuse_reply_create(req, &entry, fi);
 }
 
@@ -187,7 +125,6 @@ void fs_getattr(fuse_req_t req, fuse_ino_t ino, struct fuse_file_info *fi)
 	struct inode *inode = read_inode(req_fd(req), ino);
 	struct stat reply = stat_from_inode(inode, ino);
 
-	print_inode(inode, ino);
 	fuse_log(FUSE_LOG_INFO, "getattr: %ld\n", ino);
 	free(inode);
 
@@ -204,7 +141,6 @@ void fs_setattr(fuse_req_t req, fuse_ino_t ino, struct stat *attr, int to_set, s
 	write_block(req_fd(req), inode, cur_inode);
 
 	fuse_log(FUSE_LOG_INFO, "to_set %08x\n", to_set);
-	print_inode(inode, cur_inode);
 
 	struct stat reply = stat_from_inode(inode, ino);
 	free(inode);

@@ -4,7 +4,6 @@
 #include <fuse_lowlevel.h>
 #include <sys/stat.h>
 
-
 ssize_t write_data(int file, void *data, size_t len, size_t block_no);
 
 void fs_lookup(fuse_req_t req, fuse_ino_t parent, const char *name);

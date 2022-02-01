@@ -5,8 +5,10 @@
 #include <sys/types.h>
 
 
-#define SECTOR_SIZE 512
-#define BLOCK_SIZE (1 * SECTOR_SIZE)
+#define FS_SECTOR_SIZE 512
+// TODO: make dynamic
+#define FS_BLOCK_SIZE FS_SECTOR_SIZE
+// #define FS_BLOCK_SIZE (1 * FS_SECTOR_SIZE)
 
 
 struct fs_opts {
@@ -19,12 +21,21 @@ struct fs_opts {
 
 enum inode_type {INODE_FILE, INODE_DIR};
 
+// simplest way to use this: first 7 point to direct data. 8th points to
+// another one of these. Ad infinitum.
+// FIXME: ^ is FAT style (i.e EXTREMELY slow)
+struct secondary_block {
+	int used;
+	// TODO: ???
+	size_t blocks[FS_SECTOR_SIZE / sizeof(size_t)];
+};
+
 // TODO: types are bad
 struct inode {
 	char name[128];
 	size_t size;
 	size_t refs;
-	size_t blocks;
+	size_t data_block;
 	uid_t uid;
 	gid_t gid;
 	int type;

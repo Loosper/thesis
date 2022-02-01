@@ -5,6 +5,8 @@
 #include <sys/stat.h>
 
 ssize_t write_data(int file, void *data, size_t len, size_t block_no);
+ssize_t write_block(int file, void *data, size_t block_no);
+ssize_t read_block(int file, void *buf, size_t block_no);
 
 void fs_lookup(fuse_req_t req, fuse_ino_t parent, const char *name);
 void fs_create(fuse_req_t req, fuse_ino_t parent, const char *name, mode_t mode, struct fuse_file_info *fi);

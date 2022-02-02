@@ -7,10 +7,10 @@
 #include <fuse_lowlevel.h>
 
 #include "fs_types.h"
-#include "fs_types.h"
 #include "io.h"
 
 extern int backing_store;
+
 
 struct filesystem *req_userdata(fuse_req_t req)
 {
@@ -37,6 +37,14 @@ struct stat stat_from_inode(struct inode *inode, size_t num)
 		.st_ctime = inode->ctime
 	};
 	return stat;
+}
+
+void init_blk_zero(size_t blk_num)
+{
+	uint8_t *blk = malloc(FS_BLOCK_SIZE);
+	memset(blk, 0x00, FS_BLOCK_SIZE);
+	write_block(backing_store, blk, blk_num);
+	free(blk);
 }
 
 void print_inode(struct inode *ino, size_t num)

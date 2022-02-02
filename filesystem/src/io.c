@@ -1,17 +1,16 @@
-#include <errno.h>
+#include <assert.h>
+#include <stdbool.h>
 #include <string.h>
-#include <stdio.h>
 #include <stdlib.h>
-#include <time.h>
 #include <unistd.h>
 
-#include <sys/stat.h>
+#include <sys/param.h>
 
-#include <fuse_lowlevel.h>
-
-#include "io.h"
-#include "fs_types.h"
 #include "fs_helpers.h"
+#include "fs_types.h"
+#include "io.h"
+
+extern int backing_store;
 
 
 // all this because write() can be interrupted by signals and partially
@@ -31,7 +30,6 @@ ssize_t write_block(int file, void *data, size_t block_no)
 		written += ret;
 	}
 
-	// fuse_log(FUSE_LOG_INFO, "written %ld\n", block_no);
 	return written;
 }
 
@@ -66,113 +64,93 @@ ssize_t write_data(int file, void *data, size_t len, size_t block_no)
 struct inode *read_inode(int file, fuse_ino_t ino)
 {
 	struct inode *inode = malloc(FS_BLOCK_SIZE);
-	read_block(file, inode, ino);
+	// read_block(file, inode, ino);
 
 	return inode;
 }
 
-int cur_inode = 1;
-
-void fs_lookup(fuse_req_t req, fuse_ino_t parent, const char *name)
+static size_t get_byte_to_block(size_t ino, size_t byte_n, bool internal)
 {
-	if (cur_inode < 2) {
-		fuse_reply_err(req, ENOENT);
-		return;
+	size_t blk_offset_in_file = byte_n / FS_BLOCK_SIZE;
+	size_t data_ptr_blk_num;
+	size_t ret;
+	struct secondary_block *blk_ptr = malloc(FS_BLOCK_SIZE);
+
+	if (internal) {
+		assert(ino == NUM_INT_ROOT || ino == NUM_INT_FREE);
+		data_ptr_blk_num = (ino) ? BLK_FREE_LIST_SCND : BLK_ROOT_SCND;
+	} else {
+		struct inode *file = (struct inode *) blk_ptr; // use the same memory
+		// TODO: check the inode exists. Porbably extract the finding
+		// of the number in a separate helper fuction
+		fs_int_pread(NUM_INT_ROOT, file, FS_BLOCK_SIZE, ino + 1);
+		data_ptr_blk_num = file->data_block;
 	}
 
-	struct inode *ino = read_inode(req_fd(req), cur_inode);
-	fuse_log(FUSE_LOG_INFO, "lookup: '%s', of: %ld\n", name, parent);
-	struct fuse_entry_param entry = {
-		.ino = cur_inode,
-		// TODO: not critical
-		// .generation = ++generation,
-		.attr_timeout = 1,
-		.entry_timeout = 1,
-	};
-	entry.attr = stat_from_inode(ino, cur_inode);
+	for (size_t i = 0; i <= blk_offset_in_file / 7; i++) {
+		read_block(backing_store, blk_ptr, data_ptr_blk_num);
+		data_ptr_blk_num = blk_ptr->blocks[7];
+	}
 
-	free(ino);
-	fuse_reply_entry(req, &entry);
+	ret = blk_ptr->blocks[blk_offset_in_file % 7];
+	free(blk_ptr);
+
+	return ret;
 }
 
-// TODO: this increments lookup count. What does that mean?
-void fs_create(fuse_req_t req, fuse_ino_t parent, const char *name, mode_t mode, struct fuse_file_info *fi)
+// NOTE: currently only writes up to FS_BLOCK_SIZE
+static ssize_t do_read_write(size_t ino, void *buf, size_t count, off_t offset, bool write, bool internal)
 {
-	++cur_inode;
-	fuse_log(FUSE_LOG_INFO, "create: '%s' (%ld), at: %ld\n", name, cur_inode, parent);
+	uint8_t *data = malloc(FS_BLOCK_SIZE);
+	size_t block_n = get_byte_to_block(ino, offset, internal);
 
-	struct inode ino = {
-		.size = 0, .refs = 1,
-		.uid = 0, .gid = 0, // TODO: I don't actually know who called?
-		.mode = mode,
-		// .mode = S_IFREG | 0755,
-		.atime = time(NULL), .mtime = time(NULL), .ctime = time(NULL),
-	};
-	// strcpy(ino.name, name); // TODO: Do properly
-	write_block(req_fd(req), &ino, cur_inode);
+	read_block(backing_store, data, block_n);
 
-	struct fuse_entry_param entry = {
-		.ino = cur_inode,
-		.attr_timeout = 1,
-		.entry_timeout = 1,
-	};
-	entry.attr = stat_from_inode(&ino, cur_inode);
+	// offset is %-ed because we only want offset within the block
+	// and don't try to copy beyond the end of the block TODO: for now
+	offset %= FS_BLOCK_SIZE;
+	count = MIN(offset + count, FS_BLOCK_SIZE) - offset;
 
-	fuse_reply_create(req, &entry, fi);
+	if (write) {
+		memcpy(data + offset, buf, count);
+		write_block(backing_store, data, block_n);
+	} else {
+		memcpy(buf, data + offset, count);
+	}
+
+	free(data);
+	return count;
 }
 
-void fs_getattr(fuse_req_t req, fuse_ino_t ino, struct fuse_file_info *fi)
+ssize_t fs_int_pread(size_t ino, void *buf, size_t count, off_t offset)
 {
-	// ino = REAL_INODE(ino);
-	struct inode *inode = read_inode(req_fd(req), ino);
-	struct stat reply = stat_from_inode(inode, ino);
-
-	fuse_log(FUSE_LOG_INFO, "getattr: %ld\n", ino);
-	free(inode);
-
-	fuse_reply_attr(req, &reply, 1);
+	return do_read_write(ino, buf, count, offset, false, true);
 }
 
-void fs_setattr(fuse_req_t req, fuse_ino_t ino, struct stat *attr, int to_set, struct fuse_file_info *fi)
+ssize_t fs_int_pwrite(size_t ino, void *buf, size_t count, off_t offset)
 {
-	struct inode *inode = read_inode(req_fd(req), cur_inode);
-	// inode->mode = attr->st_mode;
-	// inode->size = attr->st_size;
-	inode->atime = attr->st_atime;
-	inode->mtime = attr->st_mtime;
-	write_block(req_fd(req), inode, cur_inode);
-
-	fuse_log(FUSE_LOG_INFO, "to_set %08x\n", to_set);
-
-	struct stat reply = stat_from_inode(inode, ino);
-	free(inode);
-
-	fuse_reply_attr(req, &reply, 10);
+	return do_read_write(ino, buf, count, offset, true, true);
 }
 
-void fs_flush(fuse_req_t req, fuse_ino_t ino, struct fuse_file_info *fi)
+ssize_t fs_pread(size_t ino, void *buf, size_t count, off_t offset)
 {
-	fuse_reply_err(req, 0);
+	return do_read_write(ino, buf, count, offset, false, false);
 }
 
-void fs_release(fuse_req_t req, fuse_ino_t ino, struct fuse_file_info *fi)
+ssize_t fs_pwrite(size_t ino, void *buf, size_t count, off_t offset)
 {
-	fuse_reply_err(req, 0);
+	return do_read_write(ino, buf, count, offset, true, false);
 }
 
-void fs_access(fuse_req_t req, fuse_ino_t ino, int mask)
+size_t add_file(struct inode *inode)
 {
-	fuse_reply_err(req, ENOENT);
+	size_t data;
+
+	fs_int_pread(NUM_INT_ROOT, &data, sizeof(size_t), 0);
+	fs_int_pwrite(NUM_INT_ROOT, inode, sizeof(struct inode), data * FS_BLOCK_SIZE);
+	data++;
+	fs_int_pwrite(NUM_INT_ROOT, &data, sizeof(size_t), 0);
+
+	return data;
 }
 
-// TODO: I do not implement a releasedir; will probably need it when/if opening
-// does something
-void fs_opendir(fuse_req_t req, fuse_ino_t ino, struct fuse_file_info *fi)
-{
-	fuse_reply_open(req, fi);
-}
-
-void fs_readdir(fuse_req_t req, fuse_ino_t ino, size_t size, off_t off, struct fuse_file_info *fi)
-{
-	fuse_reply_buf(req, NULL, 0);
-}

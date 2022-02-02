@@ -8,7 +8,7 @@
 
 #include "fs_types.h"
 #include "fs_init.h"
-#include "io.h"
+#include "fs_userapi.h"
 
 
 static const struct fuse_lowlevel_ops fs_ops = {

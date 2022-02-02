@@ -1,3 +1,5 @@
+#include <assert.h>
+#include <stdbool.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -11,75 +13,98 @@
 #include "io.h"
 #include "fs_helpers.h"
 
-#define ROOT_INODE_NUM      0
-#define FREE_LIST_INODE_BLK 1
-#define ROOT_INODE_SCND_BLK 2
-#define FREE_LIST_SCND_BLK  3
 
-static int backing_store = 0;
+// minimal bootstrap:
+// ROOT      inode is block #0
+// FREE LIST inode is block #1
+// #2 and #3 are their data ptrs
+// #4 to #n is the free list data
+// after that filesystem is ready for use
+// the root inode file contains a list of all data inodes (1 block = 1 inode
+// for now)
+#define BLK_ROOT_INO		0
+#define BLK_FREE_LIST_INO	1
+#define BLK_ROOT_SCND		2
+#define BLK_FREE_LIST_SCND	3
+#define BLK_FREE_LIST_DATA	4
+
+#define NUM_INT_ROOT 0
+#define NUM_INT_FREE 1
+
+int backing_store = 0;
 
 
-ssize_t fs_pread(size_t ino, void *buf, size_t count, off_t offset);
-size_t get_byte_to_block(size_t ino, size_t byte_n)
+ssize_t fs_int_pread(size_t ino, void *buf, size_t count, off_t offset);
+size_t get_byte_to_block(size_t ino, size_t byte_n, bool internal)
 {
-	size_t file_block_num = byte_n / FS_BLOCK_SIZE;
-	size_t root_blk_num;
+	size_t blk_offset_in_file = byte_n / FS_BLOCK_SIZE;
+	size_t data_ptr_blk_num;
 	size_t ret;
 	struct secondary_block *blk_ptr = malloc(FS_BLOCK_SIZE);
 
-	if (ino == ROOT_INODE_NUM) {
-		root_blk_num = ROOT_INODE_SCND_BLK;
+	if (internal) {
+		assert(ino == NUM_INT_ROOT || ino == NUM_INT_FREE);
+		data_ptr_blk_num = (ino) ? BLK_FREE_LIST_SCND : BLK_ROOT_SCND;
 	} else {
 		struct inode *file = (struct inode *) blk_ptr; // use the same memory
-		// read the ptr to the inode list (first ino is free list)
-		fs_pread(0, file, FS_BLOCK_SIZE, ino - 1);
-		root_blk_num = file->data_block;
+		fs_int_pread(NUM_INT_ROOT, file, FS_BLOCK_SIZE, ino - 1);
+		data_ptr_blk_num = file->data_block;
 	}
 
-	for (size_t i = 0; i <= file_block_num / 7; i++) {
-		read_block(backing_store, blk_ptr, root_blk_num);
-		root_blk_num = blk_ptr->blocks[7];
+	for (size_t i = 0; i <= blk_offset_in_file / 7; i++) {
+		read_block(backing_store, blk_ptr, data_ptr_blk_num);
+		data_ptr_blk_num = blk_ptr->blocks[7];
 	}
 
-	ret = blk_ptr->blocks[file_block_num % 7];
+	ret = blk_ptr->blocks[blk_offset_in_file % 7];
 	free(blk_ptr);
 
 	return ret;
 }
 
 // NOTE: currently only writes up to FS_BLOCK_SIZE
-ssize_t fs_pread(size_t ino, void *buf, size_t count, off_t offset)
+static ssize_t do_read_write(size_t ino, void *buf, size_t count, off_t offset, bool write, bool internal)
 {
 	uint8_t *data = malloc(FS_BLOCK_SIZE);
-	size_t block_n = get_byte_to_block(ino, offset);
+	size_t block_n = get_byte_to_block(ino, offset, internal);
+	logprintf("block %ld, int %d, ino %ld\n", block_n, internal, ino);
 
 	read_block(backing_store, data, block_n);
+
 	// offset is %-ed because we only want offset within the block
 	// and don't try to copy beyond the end of the block TODO: for now
 	offset %= FS_BLOCK_SIZE;
 	count = MIN(offset + count, FS_BLOCK_SIZE) - offset;
 
-	memcpy(buf, data + offset, count);
+	if (write) {
+		memcpy(data + offset, buf, count);
+		write_block(backing_store, data, block_n);
+	} else {
+		memcpy(buf, data + offset, count);
+	}
 
 	free(data);
 	return count;
 }
 
-ssize_t fs_pwrite(size_t ino, const void *buf, size_t count, off_t offset)
+ssize_t fs_int_pread(size_t ino, void *buf, size_t count, off_t offset)
 {
-	uint8_t *data = malloc(FS_BLOCK_SIZE);
-	size_t block_n = get_byte_to_block(ino, offset);
+	return do_read_write(ino, buf, count, offset, false, true);
+}
 
-	read_block(backing_store, data, block_n);
+ssize_t fs_int_pwrite(size_t ino, void *buf, size_t count, off_t offset)
+{
+	return do_read_write(ino, buf, count, offset, true, true);
+}
 
-	// see note above
-	offset %= FS_BLOCK_SIZE;
-	count = MIN(offset + count, FS_BLOCK_SIZE) - offset;
+ssize_t fs_pread(size_t ino, void *buf, size_t count, off_t offset)
+{
+	return do_read_write(ino, buf, count, offset, false, false);
+}
 
-	memcpy(data + offset, buf, count);
-
-	write_block(backing_store, data, block_n);
-	return count;
+ssize_t fs_pwrite(size_t ino, void *buf, size_t count, off_t offset)
+{
+	return do_read_write(ino, buf, count, offset, true, false);
 }
 
 static void block_set_used(size_t block_num)
@@ -87,63 +112,65 @@ static void block_set_used(size_t block_num)
 	size_t seq_off = block_num % (FS_BLOCK_SIZE * 8);
 	uint8_t byte;
 
-	fs_pread(1, &byte, 1, seq_off / 8);
+	fs_int_pread(1, &byte, 1, seq_off / 8);
 	byte |= 1 << (seq_off % 8);
-	fs_pwrite(1, &byte, 1, seq_off / 8);
+	fs_int_pwrite(1, &byte, 1, seq_off / 8);
 }
 
-// FIXME: jfc this is bad code
+static void init_blk_zero(size_t blk_num)
+{
+	uint8_t *blk = malloc(FS_BLOCK_SIZE);
+	memset(blk, 0x00, FS_BLOCK_SIZE);
+	write_block(backing_store, blk, blk_num);
+	free(blk);
+}
+
 static void write_empty_blocks_file()
 {
 	size_t list_size;
 	// TODO: I shall assume a sector size of 512. This probably isn't true
 	ioctl(backing_store, BLKGETSIZE, &list_size);
-
 	// we use 1 bit per block, a byte has 8
 	list_size /= sizeof(uint8_t);
-	size_t list_blk_num = list_size / FS_BLOCK_SIZE;
-	size_t last_blk_used;
-	fuse_log(FUSE_LOG_INFO, "free list size %ld\n", list_size);
-	fuse_log(FUSE_LOG_INFO, "free list blks %ld\n", list_blk_num);
 
 	struct inode free_list = {
 		.size = list_size,
-		.data_block = FREE_LIST_SCND_BLK
+		.data_block = BLK_FREE_LIST_SCND
 	};
+	size_t blk_req = list_size / FS_BLOCK_SIZE;
+	size_t blk_written = 0;
+	size_t blk_cur_num = BLK_FREE_LIST_SCND;
+	size_t blk_ptr_loc;
 
+	fuse_log(FUSE_LOG_INFO, "free list size %ld\n", list_size);
+	fuse_log(FUSE_LOG_INFO, "free list blks %ld\n", blk_req);
+	write_data(backing_store, &free_list, sizeof(struct inode), BLK_FREE_LIST_INO);
 
-	// TODO: technically this is writing to the inode file. the indoe_blk num is the file's spot
-	write_data(backing_store, &free_list, sizeof(struct inode), FREE_LIST_INODE_BLK);
+	while (blk_written < blk_req) {
+		struct secondary_block data_ptr = {.used = 0};
+		// place the intermediary pointer on the first available block
+		blk_ptr_loc = blk_cur_num++;
 
-	size_t initial_blk = FREE_LIST_SCND_BLK;
-	struct secondary_block data = {
-		.used = 0
-	};
-
-	for (size_t i = 0, block_idx = 0; i < list_blk_num; block_idx = (block_idx + 1) % 8) {
-		size_t block_num = initial_blk + block_idx + 1;
-		last_blk_used = block_num;
-		data.used++;
-		data.blocks[block_idx] = block_num;
-
-		// fuse_log(FUSE_LOG_INFO, "allocate %ld at %ld\n", data.blocks[block_idx], initial_blk);
-
-		// don't increment allocated counter cos this one doesn't count
-		if (block_idx == 7) {
-			write_block(backing_store, &data, initial_blk);
-			initial_blk = block_num;
-			data.used = 0;
-		} else {
-			uint8_t *blk = malloc(FS_BLOCK_SIZE);
-			memset(blk, 0x00, FS_BLOCK_SIZE);
-			write_block(backing_store, blk, block_num);
-			free(blk);
-			i++;
+		// fill in the ptr struct ("allocate" blocks in a sense)
+		for (int i = 0; i <= 7; i++) {
+			data_ptr.used++;
+			data_ptr.blocks[i] = blk_cur_num;
+			init_blk_zero(blk_cur_num);
+			// last block is bookkeeping, so it doesn't count
+			if (i != 7)
+				blk_written++;
+			blk_cur_num++;
+			if (blk_written == blk_req)
+				break;
 		}
+
+		// write the intermediary block as filled in
+		write_data(backing_store, &data_ptr, sizeof(struct secondary_block), blk_ptr_loc);
 	}
 
 	// TODO: this is a hack, i can probably hard code it
-	for (size_t i = 0; i < last_blk_used; i++) {
+	// blk_cur_num points to first "unallocated" block
+	for (size_t i = 0; i < blk_cur_num; i++) {
 		block_set_used(i);
 	}
 }
@@ -161,38 +188,27 @@ static void write_empty_blocks_file()
 // 	fs_pwrite(fs, 2, &root_dir, sizeof(struct inode), FS_BLOCK_SIZE);
 // }
 
-// inode file is file #1. This file has a list of all inodes. Inode 1 is the
-// free blocks file, which contains a list of all free blocks. Inode 2 is
-// optional. It has a list of free inodes
 void write_root_inode()
 {
 	struct inode root = {
 		// NOTE: only these matter for a WAFL style root inode
-		.size = FS_SECTOR_SIZE * 7,
-		.data_block = 1
+		.size = 0,
+		.data_block = BLK_ROOT_SCND
 	};
 
 	struct secondary_block data = {
-		.used = 7,
-		.blocks = {FREE_LIST_INODE_BLK}
+		.used = 0,
 	};
 
-	write_data(backing_store, &root, sizeof(struct inode), ROOT_INODE_NUM);
-	write_data(backing_store, &data, sizeof(struct secondary_block), ROOT_INODE_SCND_BLK);
+	write_data(backing_store, &root, sizeof(struct inode), BLK_ROOT_INO);
+	write_data(backing_store, &data, sizeof(struct secondary_block), BLK_ROOT_SCND);
 }
 
 
 void fs_init(struct filesystem *fs)
 {
-
-	fs->backing_store = backing_store;
+	backing_store = fs->backing_store;
 	write_root_inode();
 	write_empty_blocks_file();
 	// write_root_dir();
-
-	// uint8_t buf[100] = "hello";
-	// fs_pwrite(fs, 1, buf, 2, 0);
-	// fs_pread(fs, 1, buf, 16, 0);
-	// logprintf("%x %x\n", buf[0], buf[1]);
-
 }

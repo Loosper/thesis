@@ -10,6 +10,7 @@
 #include "fs_types.h"
 #include "io.h"
 
+extern int backing_store;
 
 struct filesystem *req_userdata(fuse_req_t req)
 {
@@ -54,11 +55,11 @@ void print_inode(struct inode *ino, size_t num)
 	);
 }
 
-void print_block(struct filesystem *fs, size_t block_num)
+void print_block(size_t block_num)
 {
 	uint8_t *data = malloc(FS_BLOCK_SIZE);
 	void *to_free = data;
-	read_block(fs->backing_store, data, block_num);
+	read_block(backing_store, data, block_num);
 
 	fuse_log(FUSE_LOG_INFO, "block %ld:\n", block_num);
 	for (int i = 0; i < FS_BLOCK_SIZE / 32; i++) {

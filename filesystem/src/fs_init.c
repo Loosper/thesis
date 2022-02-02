@@ -67,7 +67,6 @@ static ssize_t do_read_write(size_t ino, void *buf, size_t count, off_t offset, 
 {
 	uint8_t *data = malloc(FS_BLOCK_SIZE);
 	size_t block_n = get_byte_to_block(ino, offset, internal);
-	logprintf("block %ld, int %d, ino %ld\n", block_n, internal, ino);
 
 	read_block(backing_store, data, block_n);
 
@@ -107,14 +106,42 @@ ssize_t fs_pwrite(size_t ino, void *buf, size_t count, off_t offset)
 	return do_read_write(ino, buf, count, offset, true, false);
 }
 
-static void block_set_used(size_t block_num)
+// TODO: this is dumb as fuck, but it works for now!
+static size_t allocate_block()
 {
-	size_t seq_off = block_num % (FS_BLOCK_SIZE * 8);
-	uint8_t byte;
+	uint8_t *data = malloc(FS_BLOCK_SIZE);
+	size_t bit_num;
 
-	fs_int_pread(1, &byte, 1, seq_off / 8);
-	byte |= 1 << (seq_off % 8);
-	fs_int_pwrite(1, &byte, 1, seq_off / 8);
+	for (bit_num = 0; ; bit_num++) {
+		size_t cur_blk = bit_num / (FS_BLOCK_SIZE * 8);
+		size_t file_offset = cur_blk * FS_BLOCK_SIZE;
+
+		size_t bit_index_in_blk = bit_num % FS_BLOCK_SIZE;
+		size_t index_in_block = bit_index_in_blk / 8;
+		uint8_t bitmask = 1 << (bit_index_in_blk % 8);
+
+		// refresh block when we reach its end
+		if (bit_num == cur_blk * (FS_BLOCK_SIZE * 8))
+			fs_int_pread(
+				BLK_FREE_LIST_INO, data, FS_BLOCK_SIZE,
+				file_offset
+			);
+
+		// it's allocated
+		if (data[index_in_block] & bitmask)
+			continue;
+
+		// allocate and quit
+		data[index_in_block] |= bitmask;
+		fs_int_pwrite(
+			BLK_FREE_LIST_INO, data, FS_BLOCK_SIZE,
+			file_offset
+		);
+		break;
+	}
+
+	free(data);
+	return bit_num;
 }
 
 static void init_blk_zero(size_t blk_num)
@@ -155,6 +182,7 @@ static void write_empty_blocks_file()
 		for (int i = 0; i <= 7; i++) {
 			data_ptr.used++;
 			data_ptr.blocks[i] = blk_cur_num;
+			// logprintf("used %ld\n", blk_cur_num);
 			init_blk_zero(blk_cur_num);
 			// last block is bookkeeping, so it doesn't count
 			if (i != 7)
@@ -164,14 +192,21 @@ static void write_empty_blocks_file()
 				break;
 		}
 
+		// logprintf("written %ld\n", blk_ptr_loc);
 		// write the intermediary block as filled in
 		write_data(backing_store, &data_ptr, sizeof(struct secondary_block), blk_ptr_loc);
 	}
 
-	// TODO: this is a hack, i can probably hard code it
-	// blk_cur_num points to first "unallocated" block
+	// TODO: this is a hack. Since we are making the free list, we can't
+	// call allocate yet.  We can do it postfactum though. Can probably be
+	// hardcoded tbh
 	for (size_t i = 0; i < blk_cur_num; i++) {
-		block_set_used(i);
+		allocate_block();
+	}
+
+	// do this for the root inode too
+	for (size_t i = 0; i < BLK_FREE_LIST_DATA; i++) {
+		allocate_block();
 	}
 }
 

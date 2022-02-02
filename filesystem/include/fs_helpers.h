@@ -3,6 +3,10 @@
 
 #include <sys/stat.h>
 
+#include <fuse_lowlevel.h>
+
+#define logprintf(...) fuse_log(FUSE_LOG_INFO, ##__VA_ARGS__)
+
 
 struct stat stat_from_inode(struct inode *inode, size_t num);
 void print_inode(struct inode *ino, size_t num);

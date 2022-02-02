@@ -50,7 +50,6 @@ void print_inode(struct inode *ino, size_t num)
 		num, ino->name,
 		ino->size, ino->refs, ino->uid, ino->gid,
 		ino->mode, ino->ctime
-
 	);
 }
 

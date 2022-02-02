@@ -32,7 +32,7 @@ struct secondary_block {
 
 // TODO: types are bad
 struct inode {
-	char name[128];
+	// char name[128];
 	size_t size;
 	size_t refs;
 	size_t data_block;

@@ -108,7 +108,7 @@ void fs_create(fuse_req_t req, fuse_ino_t parent, const char *name, mode_t mode,
 		// .mode = S_IFREG | 0755,
 		.atime = time(NULL), .mtime = time(NULL), .ctime = time(NULL),
 	};
-	strcpy(ino.name, name); // TODO: Do properly
+	// strcpy(ino.name, name); // TODO: Do properly
 	write_block(req_fd(req), &ino, cur_inode);
 
 	struct fuse_entry_param entry = {
@@ -123,6 +123,7 @@ void fs_create(fuse_req_t req, fuse_ino_t parent, const char *name, mode_t mode,
 
 void fs_getattr(fuse_req_t req, fuse_ino_t ino, struct fuse_file_info *fi)
 {
+	// ino = REAL_INODE(ino);
 	struct inode *inode = read_inode(req_fd(req), ino);
 	struct stat reply = stat_from_inode(inode, ino);
 

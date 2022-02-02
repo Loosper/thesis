@@ -117,7 +117,7 @@ int main(int argc, char *argv[])
 		return 1;
 	}
 
-	write_root_inode(fs);
+	fs_init(fs);
 
 	sess = fuse_session_new(&args, &fs_ops, sizeof(fs_ops), fs);
 	if (sess == NULL)

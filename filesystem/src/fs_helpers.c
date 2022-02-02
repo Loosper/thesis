@@ -41,13 +41,14 @@ struct stat stat_from_inode(struct inode *inode, size_t num)
 void print_inode(struct inode *ino, size_t num)
 {
 	fuse_log(FUSE_LOG_INFO,
-		"inode (%d) %s:\n"
+		"inode (%d):\n"
 		"\tsize: %ld\n"
 		"\trefs: %ld\n"
 		"\tuid/gid: %d/%d\n"
 		"\tmode: %x\n"
 		"\tctime: %ld\n",
-		num, ino->name,
+		num,
+		// ino->name,
 		ino->size, ino->refs, ino->uid, ino->gid,
 		ino->mode, ino->ctime
 	);

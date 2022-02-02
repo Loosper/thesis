@@ -20,8 +20,8 @@
 // #2 and #3 are their data ptrs
 // #4 to #n is the free list data
 // after that filesystem is ready for use
-// the root inode file contains a list of all data inodes (1 block = 1 inode
-// for now)
+// the root inode file contains a block for bookkeeping info (number of indoes)
+// followed by a list of all data inodes (1 block = 1 inode for now)
 #define BLK_ROOT_INO		0
 #define BLK_FREE_LIST_INO	1
 #define BLK_ROOT_SCND		2
@@ -47,7 +47,9 @@ size_t get_byte_to_block(size_t ino, size_t byte_n, bool internal)
 		data_ptr_blk_num = (ino) ? BLK_FREE_LIST_SCND : BLK_ROOT_SCND;
 	} else {
 		struct inode *file = (struct inode *) blk_ptr; // use the same memory
-		fs_int_pread(NUM_INT_ROOT, file, FS_BLOCK_SIZE, ino - 1);
+		// TODO: check the inode exists. Porbably extract the finding
+		// of the number in a separate helper fuction
+		fs_int_pread(NUM_INT_ROOT, file, FS_BLOCK_SIZE, ino + 1);
 		data_ptr_blk_num = file->data_block;
 	}
 
@@ -104,6 +106,18 @@ ssize_t fs_pread(size_t ino, void *buf, size_t count, off_t offset)
 ssize_t fs_pwrite(size_t ino, void *buf, size_t count, off_t offset)
 {
 	return do_read_write(ino, buf, count, offset, true, false);
+}
+
+static size_t add_file(struct inode *inode)
+{
+	size_t data;
+
+	fs_int_pread(NUM_INT_ROOT, &data, sizeof(size_t), 0);
+	fs_int_pwrite(NUM_INT_ROOT, inode, sizeof(struct inode), data * FS_BLOCK_SIZE);
+	data++;
+	fs_int_pwrite(NUM_INT_ROOT, &data, sizeof(size_t), 0);
+
+	return data;
 }
 
 // TODO: this is dumb as fuck, but it works for now!
@@ -210,18 +224,40 @@ static void write_empty_blocks_file()
 	}
 }
 
+void allocate_root_file()
+{
+	struct secondary_block *data = malloc(FS_BLOCK_SIZE);
+	data->used = 0;
+	size_t data_blk_num = BLK_ROOT_SCND;
 
-// static void write_root_dir()
-// {
-// 	struct inode root_dir = {
-// 		.size = 0, .refs = 1,
-// 		.uid = 0, .gid = 0,
-// 		.mode = S_IFREG | 0755,
-// 		.atime = time(NULL), .mtime = time(NULL), .ctime = time(NULL),
-// 	};
+	// TODO: allocate 10 static blocks for simplicity
+	for (int allocated = 0; allocated < 10; allocated++) {
+		data->blocks[data->used] = allocate_block();
+		init_blk_zero(data->blocks[data->used]);
+		data->used++;
 
-// 	fs_pwrite(fs, 2, &root_dir, sizeof(struct inode), FS_BLOCK_SIZE);
-// }
+		if (data->used >= 8) {
+			write_block(backing_store, data, data_blk_num);
+			// get the number of the next one, reset and start over
+			data_blk_num = data->blocks[7];
+			data->used = 0;
+		}
+	}
+
+	free(data);
+}
+
+static void write_root_dir()
+{
+	struct inode root_dir = {
+		.size = 0, .refs = 1,
+		.uid = 0, .gid = 0,
+		.mode = S_IFREG | 0755, .type = INODE_DIR,
+		.atime = time(NULL), .mtime = time(NULL), .ctime = time(NULL),
+	};
+
+	int ret = add_file(&root_dir);
+}
 
 void write_root_inode()
 {
@@ -239,11 +275,11 @@ void write_root_inode()
 	write_data(backing_store, &data, sizeof(struct secondary_block), BLK_ROOT_SCND);
 }
 
-
 void fs_init(struct filesystem *fs)
 {
 	backing_store = fs->backing_store;
 	write_root_inode();
 	write_empty_blocks_file();
-	// write_root_dir();
+	allocate_root_file();
+	write_root_dir();
 }

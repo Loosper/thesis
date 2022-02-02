@@ -38,7 +38,7 @@ struct inode {
 	size_t data_block;
 	uid_t uid;
 	gid_t gid;
-	int type;
+	enum inode_type type;
 	mode_t mode;
 	time_t atime;
 	time_t mtime;

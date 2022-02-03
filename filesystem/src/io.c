@@ -1,7 +1,9 @@
 #include <assert.h>
+#include <errno.h>
 #include <stdbool.h>
-#include <string.h>
+#include <stddef.h>
 #include <stdlib.h>
+#include <string.h>
 #include <unistd.h>
 
 #include <sys/param.h>
@@ -12,6 +14,45 @@
 
 extern int backing_store;
 
+
+// TODO: this is dumb as fuck, but it works for now!
+size_t allocate_block()
+{
+	uint8_t *data = malloc(FS_BLOCK_SIZE);
+	size_t bit_num;
+
+	for (bit_num = 0; ; bit_num++) {
+		size_t cur_blk = bit_num / (FS_BLOCK_SIZE * 8);
+		size_t file_offset = cur_blk * FS_BLOCK_SIZE;
+
+		size_t bit_index_in_blk = bit_num % FS_BLOCK_SIZE;
+		size_t index_in_block = bit_index_in_blk / 8;
+		uint8_t bitmask = 1 << (bit_index_in_blk % 8);
+
+		// refresh block when we reach its end
+		if (bit_num == cur_blk * (FS_BLOCK_SIZE * 8))
+			fs_int_pread(
+				BLK_FREE_LIST_INO, data, FS_BLOCK_SIZE,
+				file_offset
+			);
+
+		// it's allocated
+		if (data[index_in_block] & bitmask)
+			continue;
+
+		// allocate and quit
+		data[index_in_block] |= bitmask;
+		fs_int_pwrite(
+			BLK_FREE_LIST_INO, data, FS_BLOCK_SIZE,
+			file_offset
+		);
+		break;
+	}
+
+	free(data);
+	// logprintf("allocated %ld\n", bit_num);
+	return bit_num;
+}
 
 // all this because write() can be interrupted by signals and partially
 // complete. We assume the file has good dimensions and don't prevent infinite
@@ -60,15 +101,6 @@ ssize_t write_data(int file, void *data, size_t len, size_t block_no)
 	return write_block(file, block, block_no);
 }
 
-// TODO: terribly wasteful but simple to implement
-struct inode *read_inode(int file, fuse_ino_t ino)
-{
-	struct inode *inode = malloc(FS_BLOCK_SIZE);
-	// read_block(file, inode, ino);
-
-	return inode;
-}
-
 static size_t get_byte_to_block(size_t ino, size_t byte_n, bool internal)
 {
 	size_t blk_offset_in_file = byte_n / FS_BLOCK_SIZE;
@@ -83,7 +115,7 @@ static size_t get_byte_to_block(size_t ino, size_t byte_n, bool internal)
 		struct inode *file = (struct inode *) blk_ptr; // use the same memory
 		// TODO: check the inode exists. Porbably extract the finding
 		// of the number in a separate helper fuction
-		fs_int_pread(NUM_INT_ROOT, file, FS_BLOCK_SIZE, ino + 1);
+		read_inode(ino, file);
 		data_ptr_blk_num = file->data_block;
 	}
 
@@ -127,9 +159,9 @@ ssize_t fs_int_pread(size_t ino, void *buf, size_t count, off_t offset)
 	return do_read_write(ino, buf, count, offset, false, true);
 }
 
-ssize_t fs_int_pwrite(size_t ino, void *buf, size_t count, off_t offset)
+ssize_t fs_int_pwrite(size_t ino, const void *buf, size_t count, off_t offset)
 {
-	return do_read_write(ino, buf, count, offset, true, true);
+	return do_read_write(ino, (void *) buf, count, offset, true, true);
 }
 
 ssize_t fs_pread(size_t ino, void *buf, size_t count, off_t offset)
@@ -137,20 +169,134 @@ ssize_t fs_pread(size_t ino, void *buf, size_t count, off_t offset)
 	return do_read_write(ino, buf, count, offset, false, false);
 }
 
-ssize_t fs_pwrite(size_t ino, void *buf, size_t count, off_t offset)
+ssize_t fs_pwrite(size_t ino, const void *buf, size_t count, off_t offset)
 {
-	return do_read_write(ino, buf, count, offset, true, false);
+	return do_read_write(ino, (void *) buf, count, offset, true, false);
+}
+
+static size_t get_num_files()
+{
+	size_t data;
+	fs_int_pread(NUM_INT_ROOT, &data, sizeof(size_t), 0);
+	return data;
+}
+
+// TODO: eventually do a proper check
+static bool file_exists(size_t filenum)
+{
+	return filenum > 0 && filenum < get_num_files();
 }
 
 size_t add_file(struct inode *inode)
 {
-	size_t data;
+	size_t data = get_num_files();
+	inode->data_block = allocate_block();
+	struct secondary_block *blk = malloc(sizeof(struct secondary_block));
 
-	fs_int_pread(NUM_INT_ROOT, &data, sizeof(size_t), 0);
-	fs_int_pwrite(NUM_INT_ROOT, inode, sizeof(struct inode), data * FS_BLOCK_SIZE);
+	// TODO: dynamic size
+	blk->used = 7;
+	for (int i = 0; i < blk->used; i++) {
+		blk->blocks[i] = allocate_block();
+		init_blk_zero(blk->blocks[i]);
+	}
+	write_block(backing_store, blk, inode->data_block);
+
+	// TODO: do this via the size of the file?
+	fs_int_pwrite(NUM_INT_ROOT, inode, sizeof(struct inode), (data + 1) * FS_BLOCK_SIZE);
 	data++;
 	fs_int_pwrite(NUM_INT_ROOT, &data, sizeof(size_t), 0);
 
-	return data;
+	// -1 because the new count is the total, not the inode num
+	return data - 1;
 }
 
+int read_inode(size_t num, struct inode *inode)
+{
+	if (!file_exists(num))
+		return -ENOENT;
+	fs_int_pread(NUM_INT_ROOT, inode, sizeof(struct inode), num * FS_BLOCK_SIZE);
+	return 0;
+}
+
+int write_inode(size_t num, struct inode *inode)
+{
+	fs_int_pwrite(NUM_INT_ROOT, inode, sizeof(struct inode), num * FS_BLOCK_SIZE);
+	return 0;
+}
+
+int add_direntry(size_t dir_ino, struct dirent *entry)
+{
+	size_t count;
+
+	// TODO: not sure if i need to check the directory (kernel might do it
+	// for me)
+	if (!file_exists(dir_ino) || !file_exists(entry->inode))
+		return -ENOENT;
+
+	fs_pread(dir_ino, &count, sizeof(size_t), 0);
+	// logprintf("hang1\n");
+	fs_pwrite(
+		dir_ino, entry->name, member_size(struct dirent, name),
+		count * sizeof(struct dirent) + offsetof(struct dirent, name)
+	);
+	// logprintf("%ld, %ld, %ld, %ld\n",
+	// 	dir_ino, entry->inode, member_size(struct dirent, inode),
+	// 	count * sizeof(struct dirent) + offsetof(struct dirent, inode)
+	// );
+	// return 0;
+	fs_pwrite(
+		dir_ino, &(entry->inode), member_size(struct dirent, inode),
+		count * sizeof(struct dirent) + offsetof(struct dirent, inode)
+	);
+	// logprintf("hang3\n");
+	count++;
+	fs_pwrite(dir_ino, &count, sizeof(size_t), 0);
+
+	// logprintf("hang4\n");
+	return 0;
+}
+
+size_t get_direntry(size_t dir_ino, const char *filename)
+{
+	assert(file_exists(dir_ino));
+
+	size_t total;
+
+	fs_pread(dir_ino, &total, sizeof(size_t), 0);
+	for (size_t i = 0; i < total; i++) {
+		char candidate[MAX_NAME_LEN];
+
+		fs_pread(
+			dir_ino, candidate, MAX_NAME_LEN,
+			i * sizeof(struct dirent) + offsetof(struct dirent, name)
+		);
+		if (strncmp(filename, candidate, MAX_NAME_LEN) == 0) {
+			size_t ino;
+			fs_pread(
+				dir_ino, &ino, member_size(struct dirent, inode),
+				i * sizeof(struct dirent) + offsetof(struct dirent, inode)
+			);
+			return ino;
+		}
+	}
+
+	return 0;
+}
+
+struct dirent list_dir(size_t dir_ino, off_t idx)
+{
+	size_t count;
+	struct dirent entry;
+	assert(file_exists(dir_ino));
+
+	fs_pread(dir_ino, &count, sizeof(size_t), 0);
+	if ((off_t) count >= idx) {
+		entry.inode = 0;
+		return entry;
+	}
+	fs_pread(
+		dir_ino, &entry, sizeof(struct dirent),
+		idx * sizeof(struct dirent)
+	);
+	return entry;
+}

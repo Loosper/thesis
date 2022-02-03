@@ -11,44 +11,6 @@
 int backing_store = 0;
 
 
-// TODO: this is dumb as fuck, but it works for now!
-static size_t allocate_block()
-{
-	uint8_t *data = malloc(FS_BLOCK_SIZE);
-	size_t bit_num;
-
-	for (bit_num = 0; ; bit_num++) {
-		size_t cur_blk = bit_num / (FS_BLOCK_SIZE * 8);
-		size_t file_offset = cur_blk * FS_BLOCK_SIZE;
-
-		size_t bit_index_in_blk = bit_num % FS_BLOCK_SIZE;
-		size_t index_in_block = bit_index_in_blk / 8;
-		uint8_t bitmask = 1 << (bit_index_in_blk % 8);
-
-		// refresh block when we reach its end
-		if (bit_num == cur_blk * (FS_BLOCK_SIZE * 8))
-			fs_int_pread(
-				BLK_FREE_LIST_INO, data, FS_BLOCK_SIZE,
-				file_offset
-			);
-
-		// it's allocated
-		if (data[index_in_block] & bitmask)
-			continue;
-
-		// allocate and quit
-		data[index_in_block] |= bitmask;
-		fs_int_pwrite(
-			BLK_FREE_LIST_INO, data, FS_BLOCK_SIZE,
-			file_offset
-		);
-		break;
-	}
-
-	free(data);
-	return bit_num;
-}
-
 static void write_empty_blocks_file()
 {
 	size_t list_size;
@@ -116,6 +78,7 @@ static void allocate_root_file()
 	// TODO: allocate 10 static blocks for simplicity
 	for (int allocated = 0; allocated < 10; allocated++) {
 		data->blocks[data->used] = allocate_block();
+		// logprintf("root needs %ld\n", data->blocks[data->used]);
 		init_blk_zero(data->blocks[data->used]);
 		data->used++;
 
@@ -126,6 +89,8 @@ static void allocate_root_file()
 			data->used = 0;
 		}
 	}
+	// flush out any incomplete ptr blocks
+	write_block(backing_store, data, data_blk_num);
 
 	free(data);
 }
@@ -133,13 +98,16 @@ static void allocate_root_file()
 static void write_root_dir()
 {
 	struct inode root_dir = {
-		.size = 0, .refs = 1,
+		.size = 512, .refs = 2,
 		.uid = 0, .gid = 0,
-		.mode = S_IFREG | 0755, .type = INODE_DIR,
+		.mode = S_IFDIR | 0777, .type = INODE_DIR,
 		.atime = time(NULL), .mtime = time(NULL), .ctime = time(NULL),
 	};
 
-	int ret = add_file(&root_dir);
+	// TODO: it's double on purpose. Simplest way to get rid of inode 0.
+	// Do I need to store something there?
+	add_file(&root_dir);
+	add_file(&root_dir);
 }
 
 static void write_root_inode()
@@ -165,4 +133,8 @@ void fs_init(struct filesystem *fs)
 	write_empty_blocks_file();
 	allocate_root_file();
 	write_root_dir();
+
+	// print_block(32);
+	// print_block(2);
+	// exit(1);
 }

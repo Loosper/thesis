@@ -52,14 +52,17 @@ void print_inode(struct inode *ino, size_t num)
 	fuse_log(FUSE_LOG_INFO,
 		"inode (%d):\n"
 		"\tsize: %ld\n"
+		"\tscnd: %ld\n"
 		"\trefs: %ld\n"
 		"\tuid/gid: %d/%d\n"
 		"\tmode: %x\n"
+		"\tatime: %ld\n"
+		"\tmtime: %ld\n"
 		"\tctime: %ld\n",
 		num,
 		// ino->name,
-		ino->size, ino->refs, ino->uid, ino->gid,
-		ino->mode, ino->ctime
+		ino->size, ino->data_block, ino->refs, ino->uid, ino->gid,
+		ino->mode, ino->atime, ino->mtime, ino->ctime
 	);
 }
 

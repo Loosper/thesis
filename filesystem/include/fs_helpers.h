@@ -7,6 +7,7 @@
 
 #include "fs_types.h"
 
+#define member_size(type, member) sizeof(((type *)0)->member)
 #define logprintf(...) fuse_log(FUSE_LOG_INFO, ##__VA_ARGS__)
 
 

@@ -13,81 +13,114 @@
 #include "io.h"
 
 
-int cur_inode = 1;
 void fs_lookup(fuse_req_t req, fuse_ino_t parent, const char *name)
 {
-	if (cur_inode < 2) {
-		fuse_reply_err(req, ENOENT);
+	struct inode inode;
+	size_t ino_num;
+	int ret;
+
+	ino_num = get_direntry(parent, name);
+	ret = read_inode(ino_num, &inode);
+	if (ret < 0) {
+		logprintf("lookup refused: '%s', of: %ld\n", name, parent);
+		fuse_reply_err(req, -ret);
 		return;
 	}
 
-	struct inode *ino = read_inode(req_fd(req), cur_inode);
-	fuse_log(FUSE_LOG_INFO, "lookup: '%s', of: %ld\n", name, parent);
+	logprintf("lookup: '%s' (%ld), of: %ld\n", name, ino_num, parent);
 	struct fuse_entry_param entry = {
-		.ino = cur_inode,
+		.ino = ino_num,
 		// TODO: not critical
 		// .generation = ++generation,
 		.attr_timeout = 1,
 		.entry_timeout = 1,
 	};
-	entry.attr = stat_from_inode(ino, cur_inode);
 
-	free(ino);
+	entry.attr = stat_from_inode(&inode, ino_num);
+
 	fuse_reply_entry(req, &entry);
 }
 
 // TODO: this increments lookup count. What does that mean?
 void fs_create(fuse_req_t req, fuse_ino_t parent, const char *name, mode_t mode, struct fuse_file_info *fi)
 {
-	++cur_inode;
-	fuse_log(FUSE_LOG_INFO, "create: '%s' (%ld), at: %ld\n", name, cur_inode, parent);
-
-	struct inode ino = {
+	struct inode inode = {
 		.size = 0, .refs = 1,
 		.uid = 0, .gid = 0, // TODO: I don't actually know who called?
 		.mode = mode,
 		// .mode = S_IFREG | 0755,
 		.atime = time(NULL), .mtime = time(NULL), .ctime = time(NULL),
 	};
-	// strcpy(ino.name, name); // TODO: Do properly
-	// write_block(req_fd(req), &ino, cur_inode);
 
-	struct fuse_entry_param entry = {
-		.ino = cur_inode,
+	struct dirent entry;
+	entry.inode = add_file(&inode);
+	strncpy(entry.name, name, MAX_NAME_LEN);
+
+	int ret = add_direntry(parent, &entry);
+	if (ret < 0) {
+		fuse_reply_err(req, -ret);
+		return;
+	}
+	fuse_log(FUSE_LOG_INFO, "create: '%s' (%ld), at: %ld\n", name, entry.inode, parent);
+
+	struct fuse_entry_param reply = {
+		.ino = entry.inode,
 		.attr_timeout = 1,
 		.entry_timeout = 1,
 	};
-	entry.attr = stat_from_inode(&ino, cur_inode);
-
-	fuse_reply_create(req, &entry, fi);
+	reply.attr = stat_from_inode(&inode, entry.inode);
+	fuse_reply_create(req, &reply, fi);
 }
 
 void fs_getattr(fuse_req_t req, fuse_ino_t ino, struct fuse_file_info *fi)
 {
-	// ino = REAL_INODE(ino);
-	struct inode *inode = read_inode(req_fd(req), ino);
-	struct stat reply = stat_from_inode(inode, ino);
+	struct inode inode;
+	if (read_inode(ino, &inode) == -1) {
+		logprintf("getattr refused %ld\n", ino);
+		fuse_reply_err(req, ENOENT);
+		return;
+	}
+	struct stat reply = stat_from_inode(&inode, ino);
 
 	fuse_log(FUSE_LOG_INFO, "getattr: %ld\n", ino);
-	free(inode);
 
 	fuse_reply_attr(req, &reply, 1);
 }
 
 void fs_setattr(fuse_req_t req, fuse_ino_t ino, struct stat *attr, int to_set, struct fuse_file_info *fi)
 {
-	struct inode *inode = read_inode(req_fd(req), cur_inode);
-	// inode->mode = attr->st_mode;
-	// inode->size = attr->st_size;
-	inode->atime = attr->st_atime;
-	inode->mtime = attr->st_mtime;
-	// write_block(req_fd(req), inode, cur_inode);
+	struct inode inode;
+	int ret = read_inode(ino, &inode);
+	if (ret < 0) {
+		fuse_reply_err(req, -ret);
+		return;
+	}
+	logprintf("setattr of %ld,\n", ino);
 
-	fuse_log(FUSE_LOG_INFO, "to_set %08x\n", to_set);
+	if (
+		to_set & FUSE_SET_ATTR_MODE ||
+		to_set & FUSE_SET_ATTR_UID ||
+		to_set & FUSE_SET_ATTR_GID ||
+		to_set & FUSE_SET_ATTR_SIZE
+	)
+		logprintf("bad to_set for now\n");
 
-	struct stat reply = stat_from_inode(inode, ino);
-	free(inode);
+	if (to_set & FUSE_SET_ATTR_MTIME) {
+		inode.mtime = attr->st_mtime;
+		if (to_set & FUSE_SET_ATTR_MTIME_NOW)
+			inode.mtime = time(NULL);
+	}
+	if (to_set & FUSE_SET_ATTR_ATIME) {
+		inode.atime = attr->st_atime;
+		if (to_set & FUSE_SET_ATTR_ATIME_NOW)
+			inode.atime = time(NULL);
+	}
+	if (to_set & FUSE_SET_ATTR_CTIME)
+		inode.ctime = attr->st_ctime;
 
+	write_inode(ino, &inode);
+
+	struct stat reply = stat_from_inode(&inode, ino);
 	fuse_reply_attr(req, &reply, 10);
 }
 
@@ -115,5 +148,25 @@ void fs_opendir(fuse_req_t req, fuse_ino_t ino, struct fuse_file_info *fi)
 
 void fs_readdir(fuse_req_t req, fuse_ino_t ino, size_t size, off_t off, struct fuse_file_info *fi)
 {
+	struct inode inode;
+	struct dirent entry;
+	struct stat statbuf;
+
+	logprintf("list %ld at %ld\n", off, ino);
+
+	entry = list_dir(ino, off);
+	// we're done
+	if (entry.inode == 0) {
+		logprintf("done\n");
+		fuse_reply_buf(req, NULL, 0);
+		return;
+	}
+
+	read_inode(entry.inode, &inode);
+	statbuf = stat_from_inode(&inode, entry.inode);
+
+	size_t req_size = fuse_add_direntry(req, NULL, 0, entry.name, &statbuf, off);
+	logprintf("size %ld\n", req_size);
+
 	fuse_reply_buf(req, NULL, 0);
 }

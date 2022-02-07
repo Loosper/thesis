@@ -202,7 +202,9 @@ size_t add_file(struct inode *inode)
 	write_block(backing_store, blk, inode->data_block);
 
 	// TODO: do this via the size of the file?
-	fs_int_pwrite(NUM_INT_ROOT, inode, sizeof(struct inode), (data + 1) * FS_BLOCK_SIZE);
+	// data isn't an index, it's max size and since index 0 is reserved, we
+	// use it here
+	fs_int_pwrite(NUM_INT_ROOT, inode, sizeof(struct inode), data * FS_BLOCK_SIZE);
 	data++;
 	fs_int_pwrite(NUM_INT_ROOT, &data, sizeof(size_t), 0);
 
@@ -234,25 +236,13 @@ int add_direntry(size_t dir_ino, struct dirent *entry)
 		return -ENOENT;
 
 	fs_pread(dir_ino, &count, sizeof(size_t), 0);
-	// logprintf("hang1\n");
 	fs_pwrite(
-		dir_ino, entry->name, member_size(struct dirent, name),
-		count * sizeof(struct dirent) + offsetof(struct dirent, name)
+		dir_ino, entry, sizeof(struct dirent),
+		(count + 1) * sizeof(struct dirent)
 	);
-	// logprintf("%ld, %ld, %ld, %ld\n",
-	// 	dir_ino, entry->inode, member_size(struct dirent, inode),
-	// 	count * sizeof(struct dirent) + offsetof(struct dirent, inode)
-	// );
-	// return 0;
-	fs_pwrite(
-		dir_ino, &(entry->inode), member_size(struct dirent, inode),
-		count * sizeof(struct dirent) + offsetof(struct dirent, inode)
-	);
-	// logprintf("hang3\n");
 	count++;
 	fs_pwrite(dir_ino, &count, sizeof(size_t), 0);
 
-	// logprintf("hang4\n");
 	return 0;
 }
 
@@ -264,19 +254,17 @@ size_t get_direntry(size_t dir_ino, const char *filename)
 
 	fs_pread(dir_ino, &total, sizeof(size_t), 0);
 	for (size_t i = 0; i < total; i++) {
-		char candidate[MAX_NAME_LEN];
+		struct dirent dirent;
 
+		// mildly inefficient, as it will read inode num too,
+		// but insignificant
+		// +1 because index 0 is metadata (num files)
 		fs_pread(
-			dir_ino, candidate, MAX_NAME_LEN,
-			i * sizeof(struct dirent) + offsetof(struct dirent, name)
+			dir_ino, &dirent, sizeof(struct dirent),
+			(i + 1) * sizeof(struct dirent)
 		);
-		if (strncmp(filename, candidate, MAX_NAME_LEN) == 0) {
-			size_t ino;
-			fs_pread(
-				dir_ino, &ino, member_size(struct dirent, inode),
-				i * sizeof(struct dirent) + offsetof(struct dirent, inode)
-			);
-			return ino;
+		if (strncmp(filename, dirent.name, MAX_NAME_LEN) == 0) {
+			return dirent.inode;
 		}
 	}
 

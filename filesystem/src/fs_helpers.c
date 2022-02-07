@@ -26,6 +26,7 @@ struct stat stat_from_inode(struct inode *inode, size_t num)
 {
 	struct stat stat = {
 		// .st_dev = 1,
+		// .st_nlink = 1,
 		.st_ino = num,
 		.st_uid = inode->uid,
 		.st_gid = inode->gid,

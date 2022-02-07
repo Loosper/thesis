@@ -15,8 +15,36 @@
 
 #define ASSERT_GOOD(reply) assert(reply == 0)
 
+static inline struct fuse_entry_param make_reply_entry(size_t ino_num, struct inode *inode)
+{
+	struct fuse_entry_param entry = {
+		.ino = ino_num,
+		.attr_timeout = 1,
+		.entry_timeout = 1,
+	};
+	entry.attr = stat_from_inode(inode, ino_num);
+
+	return entry;
+}
+
+static size_t make_empty_inode(struct inode *inode, mode_t mode)
+{
+	inode->size = 0;
+	inode->refs = 1;
+	// TODO: I don't actually know who called?
+	inode->uid = 0;
+	inode->gid = 0;
+	inode->mode = mode;
+	inode->atime = time(NULL);
+	inode->mtime = time(NULL);
+	inode->ctime = time(NULL);
+
+	return add_file(inode);
+}
+
 void fs_lookup(fuse_req_t req, fuse_ino_t parent, const char *name)
 {
+	struct fuse_entry_param reply;
 	struct inode inode;
 	size_t ino_num;
 	int ret;
@@ -30,45 +58,31 @@ void fs_lookup(fuse_req_t req, fuse_ino_t parent, const char *name)
 	}
 
 	logprintf("lookup: '%s' (%ld), of: %ld\n", name, ino_num, parent);
-	struct fuse_entry_param entry = {
-		.ino = ino_num,
-		.attr_timeout = 1,
-		.entry_timeout = 1,
-	};
-	entry.attr = stat_from_inode(&inode, ino_num);
 
-	ASSERT_GOOD(fuse_reply_entry(req, &entry));
+	reply = make_reply_entry(ino_num, &inode);
+	ASSERT_GOOD(fuse_reply_entry(req, &reply));
 }
 
 // TODO: this increments lookup count. What does that mean?
 void fs_create(fuse_req_t req, fuse_ino_t parent, const char *name, mode_t mode, struct fuse_file_info *fi)
 {
-	struct inode inode = {
-		.size = 0, .refs = 1,
-		.uid = 0, .gid = 0, // TODO: I don't actually know who called?
-		.mode = mode,
-		// .mode = S_IFREG | 0755,
-		.atime = time(NULL), .mtime = time(NULL), .ctime = time(NULL),
-	};
-
+	struct fuse_entry_param reply;
 	struct dirent entry;
-	entry.inode = add_file(&inode);
+	struct inode inode;
+	int ret;
+
+	entry.inode = make_empty_inode(&inode, mode);
 	strncpy(entry.name, name, MAX_NAME_LEN);
 
-	int ret = add_direntry(parent, &entry);
+	ret = add_direntry(parent, &entry);
 	if (ret < 0) {
 		ASSERT_GOOD(fuse_reply_err(req, -ret));
 		return;
 	}
-	fuse_log(FUSE_LOG_INFO, "create: '%s' (%ld), at: %ld\n", name, entry.inode, parent);
 
-	struct fuse_entry_param reply = {
-		.ino = entry.inode,
-		.attr_timeout = 1,
-		.entry_timeout = 1,
-	};
-	reply.attr = stat_from_inode(&inode, entry.inode);
+	logprintf("create: '%s' (%ld), at: %ld\n", name, entry.inode, parent);
 
+	reply = make_reply_entry(entry.inode, &inode);
 	ASSERT_GOOD(fuse_reply_create(req, &reply, fi));
 }
 
@@ -137,6 +151,28 @@ void fs_release(fuse_req_t req, fuse_ino_t ino, struct fuse_file_info *fi)
 void fs_access(fuse_req_t req, fuse_ino_t ino, int mask)
 {
 	ASSERT_GOOD(fuse_reply_err(req, ENOENT));
+}
+
+void fs_mkdir(fuse_req_t req, fuse_ino_t parent, const char *name, mode_t mode)
+{
+	struct fuse_entry_param reply;
+	struct dirent entry;
+	struct inode inode;
+	int ret;
+
+	entry.inode = make_empty_inode(&inode, mode | S_IFDIR);
+	strncpy(entry.name, name, MAX_NAME_LEN);
+
+	ret = add_direntry(parent, &entry);
+	if (ret < 0) {
+		ASSERT_GOOD(fuse_reply_err(req, -ret));
+		return;
+	}
+
+	logprintf("mkdir: '%s' (%ld), at: %ld\n", name, entry.inode, parent);
+
+	reply = make_reply_entry(entry.inode, &inode);
+	ASSERT_GOOD(fuse_reply_entry(req, &reply));
 }
 
 // TODO: I do not implement a releasedir; will probably need it when/if opening

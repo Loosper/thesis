@@ -22,6 +22,7 @@ static const struct fuse_lowlevel_ops fs_ops = {
 	.release = fs_release,
 	.getattr = fs_getattr,
 	.setattr = fs_setattr,
+	.mkdir = fs_mkdir,
 	.opendir = fs_opendir,
 	.readdir = fs_readdir
 };

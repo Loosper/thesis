@@ -151,8 +151,10 @@ void fs_readdir(fuse_req_t req, fuse_ino_t ino, size_t size, off_t off, struct f
 	struct inode inode;
 	struct dirent entry;
 	struct stat statbuf;
+	size_t reply_size;
+	void *reply;
 
-	logprintf("list %ld at %ld\n", off, ino);
+	logprintf("list %ld, step %ld\n", ino, off);
 
 	entry = list_dir(ino, off);
 	// we're done
@@ -164,7 +166,11 @@ void fs_readdir(fuse_req_t req, fuse_ino_t ino, size_t size, off_t off, struct f
 	read_inode(entry.inode, &inode);
 	statbuf = stat_from_inode(&inode, entry.inode);
 
-	size_t req_size = fuse_add_direntry(req, NULL, 0, entry.name, &statbuf, off);
+	// get the size we need for the reply
+	reply_size = fuse_add_direntry(req, NULL, 0, entry.name, &statbuf, off + 1);
+	reply = malloc(reply_size);
+	// actually make the reply
+	fuse_add_direntry(req, reply, reply_size, entry.name, &statbuf, off + 1);
 
-	ASSERT_GOOD(fuse_reply_buf(req, NULL, 0));
+	ASSERT_GOOD(fuse_reply_buf(req, reply, reply_size));
 }

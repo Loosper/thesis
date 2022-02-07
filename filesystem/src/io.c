@@ -278,13 +278,14 @@ struct dirent list_dir(size_t dir_ino, off_t idx)
 	assert(file_exists(dir_ino));
 
 	fs_pread(dir_ino, &count, sizeof(size_t), 0);
-	if ((off_t) count >= idx) {
+	// we're done
+	if (idx >= (off_t) count) {
 		entry.inode = 0;
 		return entry;
 	}
 	fs_pread(
 		dir_ino, &entry, sizeof(struct dirent),
-		idx * sizeof(struct dirent)
+		(idx + 1) * sizeof(struct dirent)
 	);
 	return entry;
 }

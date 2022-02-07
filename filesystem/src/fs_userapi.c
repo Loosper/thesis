@@ -27,21 +27,6 @@ static inline struct fuse_entry_param make_reply_entry(size_t ino_num, struct in
 	return entry;
 }
 
-static size_t make_empty_inode(struct inode *inode, mode_t mode)
-{
-	inode->size = 0;
-	inode->refs = 1;
-	// TODO: I don't actually know who called?
-	inode->uid = 0;
-	inode->gid = 0;
-	inode->mode = mode;
-	inode->atime = time(NULL);
-	inode->mtime = time(NULL);
-	inode->ctime = time(NULL);
-
-	return add_file(inode);
-}
-
 void fs_lookup(fuse_req_t req, fuse_ino_t parent, const char *name)
 {
 	struct fuse_entry_param reply;

@@ -36,9 +36,6 @@ struct fs_opts {
 	int foreground;
 };
 
-// TODO: i think this is redundant. S_IFDIR would work, no?
-enum inode_type {INODE_FILE, INODE_DIR};
-
 // simplest way to use this: first 7 point to direct data. 8th points to
 // another one of these. Ad infinitum.
 // FIXME: ^ is FAT style (i.e EXTREMELY slow)
@@ -55,7 +52,6 @@ struct inode {
 	size_t data_block;
 	uid_t uid;
 	gid_t gid;
-	enum inode_type type;
 	mode_t mode;
 	time_t atime;
 	time_t mtime;
@@ -63,7 +59,6 @@ struct inode {
 };
 
 #define MAX_NAME_LEN 128
-// #define DIRENT_LEN (MAX_NAME_LEN + sizeof(size_t))
 struct dirent {
 	size_t inode;
 	char name[MAX_NAME_LEN];

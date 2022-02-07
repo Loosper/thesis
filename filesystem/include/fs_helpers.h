@@ -12,6 +12,7 @@
 
 
 int req_fd(fuse_req_t req);
+size_t make_empty_inode(struct inode *inode, mode_t mode);
 struct stat stat_from_inode(struct inode *inode, size_t num);
 void init_blk_zero(size_t blk_num);
 void print_inode(struct inode *ino, size_t num);

@@ -97,17 +97,11 @@ static void allocate_root_file()
 
 static void write_root_dir()
 {
-	struct inode root_dir = {
-		.size = 512, .refs = 2,
-		.uid = 0, .gid = 0,
-		.mode = S_IFDIR | 0777, .type = INODE_DIR,
-		.atime = time(NULL), .mtime = time(NULL), .ctime = time(NULL),
-	};
-
+	struct inode root_dir;
 	// TODO: it's double on purpose. Simplest way to get rid of inode 0.
 	// Do I need to store something there?
-	add_file(&root_dir);
-	add_file(&root_dir);
+	make_empty_inode(&root_dir, S_IFDIR | 0777);
+	make_empty_inode(&root_dir, S_IFDIR | 0777);
 }
 
 static void write_root_inode()
@@ -133,8 +127,4 @@ void fs_init(struct filesystem *fs)
 	write_empty_blocks_file();
 	allocate_root_file();
 	write_root_dir();
-
-	// print_block(32);
-	// print_block(2);
-	// exit(1);
 }

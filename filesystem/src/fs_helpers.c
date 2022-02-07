@@ -22,6 +22,21 @@ int req_fd(fuse_req_t req)
 	return req_userdata(req)->backing_store;
 }
 
+size_t make_empty_inode(struct inode *inode, mode_t mode)
+{
+	inode->size = 0;
+	inode->refs = 1;
+	// TODO: I don't actually know who called?
+	inode->uid = 0;
+	inode->gid = 0;
+	inode->mode = mode;
+	inode->atime = time(NULL);
+	inode->mtime = time(NULL);
+	inode->ctime = time(NULL);
+
+	return add_file(inode);
+}
+
 struct stat stat_from_inode(struct inode *inode, size_t num)
 {
 	struct stat stat = {

@@ -30,7 +30,7 @@ static void write_empty_blocks_file()
 
 	fuse_log(FUSE_LOG_INFO, "free list size %ld\n", list_size);
 	fuse_log(FUSE_LOG_INFO, "free list blks %ld\n", blk_req);
-	write_data(backing_store, &free_list, sizeof(struct inode), BLK_FREE_LIST_INO);
+	write_data(backing_store, &free_list, sizeof(free_list), BLK_FREE_LIST_INO);
 
 	while (blk_written < blk_req) {
 		struct secondary_block data_ptr = {.used = 0};
@@ -53,7 +53,7 @@ static void write_empty_blocks_file()
 
 		// logprintf("written %ld\n", blk_ptr_loc);
 		// write the intermediary block as filled in
-		write_data(backing_store, &data_ptr, sizeof(struct secondary_block), blk_ptr_loc);
+		write_data(backing_store, &data_ptr, sizeof(data_ptr), blk_ptr_loc);
 	}
 
 	// TODO: this is a hack. Since we are making the free list, we can't
@@ -116,8 +116,8 @@ static void write_root_inode()
 		.used = 0,
 	};
 
-	write_data(backing_store, &root, sizeof(struct inode), BLK_ROOT_INO);
-	write_data(backing_store, &data, sizeof(struct secondary_block), BLK_ROOT_SCND);
+	write_data(backing_store, &root, sizeof(root), BLK_ROOT_INO);
+	write_data(backing_store, &data, sizeof(data), BLK_ROOT_SCND);
 }
 
 void fs_init(struct filesystem *fs)

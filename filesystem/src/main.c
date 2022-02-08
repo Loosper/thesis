@@ -111,7 +111,7 @@ int main(int argc, char *argv[])
 
 	fuse_set_log_func(log_to_file);
 
-	fs = malloc(sizeof(struct filesystem));
+	fs = malloc(sizeof(fs));
 	fs->backing_store = open(opts.backing_store, O_RDWR);
 	if (fs->backing_store == -1) {
 		perror("fs: couldn't open file");

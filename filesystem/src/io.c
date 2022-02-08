@@ -177,7 +177,7 @@ ssize_t fs_pwrite(size_t ino, const void *buf, size_t count, off_t offset)
 static size_t get_num_files()
 {
 	size_t data;
-	fs_int_pread(NUM_INT_ROOT, &data, sizeof(size_t), 0);
+	fs_int_pread(NUM_INT_ROOT, &data, sizeof(data), 0);
 	return data;
 }
 
@@ -191,7 +191,7 @@ size_t add_file(struct inode *inode)
 {
 	size_t data = get_num_files();
 	inode->data_block = allocate_block();
-	struct secondary_block *blk = malloc(sizeof(struct secondary_block));
+	struct secondary_block *blk = malloc(sizeof(*blk));
 
 	// TODO: dynamic size
 	blk->used = 7;
@@ -204,9 +204,9 @@ size_t add_file(struct inode *inode)
 	// TODO: do this via the size of the file?
 	// data isn't an index, it's max size and since index 0 is reserved, we
 	// use it here
-	fs_int_pwrite(NUM_INT_ROOT, inode, sizeof(struct inode), data * FS_BLOCK_SIZE);
+	fs_int_pwrite(NUM_INT_ROOT, inode, sizeof(*inode), data * FS_BLOCK_SIZE);
 	data++;
-	fs_int_pwrite(NUM_INT_ROOT, &data, sizeof(size_t), 0);
+	fs_int_pwrite(NUM_INT_ROOT, &data, sizeof(data), 0);
 
 	// -1 because the new count is the total, not the inode num
 	return data - 1;
@@ -216,13 +216,13 @@ int read_inode(size_t num, struct inode *inode)
 {
 	if (!file_exists(num))
 		return -ENOENT;
-	fs_int_pread(NUM_INT_ROOT, inode, sizeof(struct inode), num * FS_BLOCK_SIZE);
+	fs_int_pread(NUM_INT_ROOT, inode, sizeof(*inode), num * FS_BLOCK_SIZE);
 	return 0;
 }
 
 int write_inode(size_t num, struct inode *inode)
 {
-	fs_int_pwrite(NUM_INT_ROOT, inode, sizeof(struct inode), num * FS_BLOCK_SIZE);
+	fs_int_pwrite(NUM_INT_ROOT, inode, sizeof(*inode), num * FS_BLOCK_SIZE);
 	return 0;
 }
 
@@ -235,13 +235,13 @@ int add_direntry(size_t dir_ino, struct dirent *entry)
 	if (!file_exists(dir_ino) || !file_exists(entry->inode))
 		return -ENOENT;
 
-	fs_pread(dir_ino, &count, sizeof(size_t), 0);
+	fs_pread(dir_ino, &count, sizeof(count), 0);
 	fs_pwrite(
-		dir_ino, entry, sizeof(struct dirent),
-		(count + 1) * sizeof(struct dirent)
+		dir_ino, entry, sizeof(*entry),
+		(count + 1) * sizeof(*entry)
 	);
 	count++;
-	fs_pwrite(dir_ino, &count, sizeof(size_t), 0);
+	fs_pwrite(dir_ino, &count, sizeof(count), 0);
 
 	return 0;
 }
@@ -252,7 +252,7 @@ size_t get_direntry(size_t dir_ino, const char *filename)
 
 	size_t total;
 
-	fs_pread(dir_ino, &total, sizeof(size_t), 0);
+	fs_pread(dir_ino, &total, sizeof(total), 0);
 	for (size_t i = 0; i < total; i++) {
 		struct dirent dirent;
 
@@ -260,8 +260,8 @@ size_t get_direntry(size_t dir_ino, const char *filename)
 		// but insignificant
 		// +1 because index 0 is metadata (num files)
 		fs_pread(
-			dir_ino, &dirent, sizeof(struct dirent),
-			(i + 1) * sizeof(struct dirent)
+			dir_ino, &dirent, sizeof(dirent),
+			(i + 1) * sizeof(dirent)
 		);
 		if (strncmp(filename, dirent.name, MAX_NAME_LEN) == 0) {
 			return dirent.inode;
@@ -277,15 +277,15 @@ struct dirent list_dir(size_t dir_ino, off_t idx)
 	struct dirent entry;
 	assert(file_exists(dir_ino));
 
-	fs_pread(dir_ino, &count, sizeof(size_t), 0);
+	fs_pread(dir_ino, &count, sizeof(count), 0);
 	// we're done
 	if (idx >= (off_t) count) {
 		entry.inode = 0;
 		return entry;
 	}
 	fs_pread(
-		dir_ino, &entry, sizeof(struct dirent),
-		(idx + 1) * sizeof(struct dirent)
+		dir_ino, &entry, sizeof(entry),
+		(idx + 1) * sizeof(entry)
 	);
 	return entry;
 }

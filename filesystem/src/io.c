@@ -212,12 +212,21 @@ cleanup:
 	return pblock;
 }
 
+// TODO: idea: have the 0th inode in the inode file be the inode for the file
+// itself. It can be at a fixed location and will drop special handling and
+// kinda short circuit bootstrap
+
 // NOTE: currently only writes up to FS_BLOCK_SIZE
 static ssize_t do_read_write(size_t ino, void *buf, size_t count, off_t offset, bool write, bool internal)
 {
 	uint8_t data[FS_BLOCK_SIZE];
 	struct inode inode;
 	size_t block_n;
+	// offset is %-ed because we only want offset within the block
+	size_t blk_offset = offset % FS_BLOCK_SIZE;
+	// don't try to copy beyond the end of the block TODO: for now
+	count = MIN(blk_offset + count, FS_BLOCK_SIZE) - blk_offset;
+
 
 	// get the inode of the file (read AND write)
 	if (internal) {
@@ -234,6 +243,8 @@ static ssize_t do_read_write(size_t ino, void *buf, size_t count, off_t offset, 
 		do_read_write(NUM_INT_ROOT, &inode, sizeof(inode), ino * FS_BLOCK_SIZE, false, true);
 	}
 
+	// TODO: ideally, this won't extend the space itself, but rather will
+	// let us know.  When it does, we'd set the file size
 	block_n = get_pblock_of_byte(&inode, offset, write);
 
 	if (block_n == 0)
@@ -241,16 +252,26 @@ static ssize_t do_read_write(size_t ino, void *buf, size_t count, off_t offset, 
 
 	read_block(backing_store, data, block_n);
 
-	// offset is %-ed because we only want offset within the block
-	// and don't try to copy beyond the end of the block TODO: for now
-	offset %= FS_BLOCK_SIZE;
-	count = MIN(offset + count, FS_BLOCK_SIZE) - offset;
-
 	if (write) {
-		memcpy(data + offset, buf, count);
+		memcpy(data + blk_offset, buf, count);
 		write_block(backing_store, data, block_n);
+
+		if (inode.size < offset + count) {
+			inode.size = offset + count;
+			if (internal) {
+				// TODO: lazy; I don't expect the free list to change so
+				// I let myself not handle it
+				assert(ino != NUM_INT_FREE);
+				write_data(backing_store, &inode, sizeof(inode), BLK_ROOT_INO);
+			} else {
+				do_read_write(
+					NUM_INT_ROOT, &inode, sizeof(inode),
+					ino * FS_BLOCK_SIZE, true, true
+				);
+			}
+		}
 	} else {
-		memcpy(buf, data + offset, count);
+		memcpy(buf, data + blk_offset, count);
 	}
 
 	return count;

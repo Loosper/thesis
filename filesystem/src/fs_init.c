@@ -61,14 +61,17 @@ static void allocate_root_file()
 {
 	struct secondary_block data;
 	struct inode inode;
+	size_t count = 1;
 
 	read_data(backing_store, &inode, sizeof(struct inode), BLK_ROOT_INO);
 
 	// the internal data (number of files)
 	inode.size = FS_BLOCK_SIZE;
 	data.blocks[0] = allocate_block();
-	init_blk_zero(data.blocks[0]);
 	data.used = 1;
+	// init with a single file to skip inode 0
+	init_blk_zero(data.blocks[0]);
+	write_data(backing_store, &count, sizeof(count), data.blocks[0]);
 
 	write_data(backing_store, &inode, sizeof(struct inode), BLK_ROOT_INO);
 	write_data(backing_store, &data, sizeof(struct secondary_block), BLK_ROOT_SCND);
@@ -79,7 +82,6 @@ static void write_root_dir()
 	struct inode root_dir;
 	// TODO: it's double on purpose. Simplest way to get rid of inode 0.
 	// Do I need to store something there?
-	make_empty_inode(&root_dir, S_IFDIR | 0777);
 	make_empty_inode(&root_dir, S_IFDIR | 0777);
 }
 

@@ -39,6 +39,7 @@ struct fs_opts {
 // simplest way to use this: first 7 point to direct data. 8th points to
 // another one of these. Ad infinitum.
 // FIXME: ^ is FAT style (i.e EXTREMELY slow)
+#define SCND_CAPACITY 8
 struct secondary_block {
 	int used;
 	// TODO: ???

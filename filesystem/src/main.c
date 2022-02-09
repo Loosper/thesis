@@ -10,6 +10,8 @@
 #include "fs_init.h"
 #include "fs_userapi.h"
 
+// this is just to help debugging more dynamically
+int debug = 1;
 
 static const struct fuse_lowlevel_ops fs_ops = {
 	// this is for configuring things mostly
@@ -77,13 +79,15 @@ static void log_to_file(enum fuse_log_level level, const char *fmt, va_list ap)
 	if (file == NULL)
 		file = fopen("fs_log.log", "w");
 
+	if (!debug)
+		return;
+
 	if (level == FUSE_LOG_INFO)
 		vfprintf(file, fmt, ap);
 	else
 		vfprintf(stderr, fmt, ap);
 
 	fflush(file);
-
 }
 
 int main(int argc, char *argv[])

@@ -34,7 +34,10 @@ size_t make_empty_inode(struct inode *inode, mode_t mode)
 	inode->mtime = time(NULL);
 	inode->ctime = time(NULL);
 
-	return add_file(inode);
+	if (S_ISDIR(mode))
+		return add_dir(inode);
+	else
+		return add_file(inode);
 }
 
 struct stat stat_from_inode(struct inode *inode, size_t num)

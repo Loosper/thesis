@@ -14,6 +14,12 @@
 
 extern int backing_store;
 
+// FIXME: change names of all of the below to something consistent. read_inode
+// is high level and read_data isn't. This has to be communicated. You could do
+// the _name things here too for static and genrally internal things
+
+// NOTE: Let vblock be virtual address of block, pblock be the actual address
+// of a block
 
 // TODO: this is dumb as fuck, but it works for now!
 size_t allocate_block()
@@ -101,40 +107,137 @@ ssize_t write_data(int file, void *data, size_t len, size_t block_no)
 	return write_block(file, block, block_no);
 }
 
-static size_t get_byte_to_block(size_t ino, size_t byte_n, bool internal)
+ssize_t read_data(int file, void *data, size_t len, size_t block_no)
 {
-	size_t blk_offset_in_file = byte_n / FS_BLOCK_SIZE;
-	size_t data_ptr_blk_num;
-	size_t ret;
-	struct secondary_block *blk_ptr = malloc(FS_BLOCK_SIZE);
+	uint8_t block[FS_BLOCK_SIZE];
+	ssize_t ret;
 
-	if (internal) {
-		assert(ino == NUM_INT_ROOT || ino == NUM_INT_FREE);
-		data_ptr_blk_num = (ino) ? BLK_FREE_LIST_SCND : BLK_ROOT_SCND;
-	} else {
-		struct inode *file = (struct inode *) blk_ptr; // use the same memory
-		// TODO: check the inode exists. Porbably extract the finding
-		// of the number in a separate helper fuction
-		read_inode(ino, file);
-		data_ptr_blk_num = file->data_block;
-	}
-
-	for (size_t i = 0; i <= blk_offset_in_file / 7; i++) {
-		read_block(backing_store, blk_ptr, data_ptr_blk_num);
-		data_ptr_blk_num = blk_ptr->blocks[7];
-	}
-
-	ret = blk_ptr->blocks[blk_offset_in_file % 7];
-	free(blk_ptr);
+	ret = read_block(file, block, block_no);
+	memcpy(data, block, len);
 
 	return ret;
+}
+
+// assumes secondary_blk is valid;
+// returns last accessible block
+size_t file_add_space(size_t secondary_blk, size_t blk_req, size_t (*allocator)())
+{
+	struct secondary_block data_ptr;
+	size_t blk_written = 0;
+	size_t blk_ptr_loc = secondary_blk;
+	bool first = true;
+	size_t new_block;
+
+	read_data(backing_store, &data_ptr, sizeof(data_ptr), secondary_blk);
+
+	while (blk_written < blk_req) {
+		if (!first) {
+			data_ptr.used = 0;
+			blk_ptr_loc = allocator();
+		}
+		first = false;
+
+		// TODO: this can be shrank by replacing i with block.used
+		// fill in the ptr struct ("allocate" blocks in a sense)
+		while (data_ptr.used < SCND_CAPACITY) {
+			new_block = allocator();
+			data_ptr.blocks[data_ptr.used++] = new_block;
+			init_blk_zero(new_block);
+
+			// last block is bookkeeping, so it doesn't count
+			if (data_ptr.used != SCND_CAPACITY - 1)
+				blk_written++;
+			if (blk_written == blk_req)
+				break;
+		}
+
+		// write the intermediary block as filled in
+		write_data(backing_store, &data_ptr, sizeof(data_ptr), blk_ptr_loc);
+	}
+
+	// logprintf("out %ld\n", new_block);
+	return new_block;
+}
+
+// returns the block number where this byte will be located in. Checks if
+// reading after end of file. If writing, will extend the file
+static size_t get_pblock_of_byte(struct inode *inode, size_t byte_n, bool write)
+{
+	// virtual/physical
+	// +1 to make it a count instead of an index
+	// if (byte_n > 1000)
+	size_t vblocks_needed = byte_n / FS_BLOCK_SIZE + 1;
+	size_t pblock;
+	struct secondary_block *blk_ptr = malloc(FS_BLOCK_SIZE);
+	size_t vblocks_found = 0;
+
+	pblock = inode->data_block;
+	// TODO: can probably be MUCH prettier, but works for now and i'm deep fried
+	while (1) {
+		size_t new_found;
+
+		read_block(backing_store, blk_ptr, pblock);
+		// last one is internal so drop it if it's there
+		new_found = MIN(blk_ptr->used, SCND_CAPACITY - 1);
+
+		// FOUND!
+		if (vblocks_found + new_found >= vblocks_needed) {
+			// we know it is there and we're on the right one set so just get it
+			pblock = blk_ptr->blocks[(vblocks_needed - 1) % SCND_CAPACITY];
+			vblocks_found = ((vblocks_needed - 1) % SCND_CAPACITY) + 1;
+			break;
+		}
+
+		vblocks_found += new_found;
+
+		// means we reached the last one
+		if (blk_ptr->used != SCND_CAPACITY) {
+			// error
+			if (!write) {
+				pblock = 0;
+				goto cleanup;
+			}
+
+			pblock = file_add_space(pblock, vblocks_needed - vblocks_found, &allocate_block);
+			goto cleanup;
+		}
+
+		pblock = blk_ptr->blocks[SCND_CAPACITY - 1];
+	}
+
+	assert(vblocks_found == vblocks_needed);
+
+cleanup:
+	free(blk_ptr);
+	return pblock;
 }
 
 // NOTE: currently only writes up to FS_BLOCK_SIZE
 static ssize_t do_read_write(size_t ino, void *buf, size_t count, off_t offset, bool write, bool internal)
 {
-	uint8_t *data = malloc(FS_BLOCK_SIZE);
-	size_t block_n = get_byte_to_block(ino, offset, internal);
+	uint8_t data[FS_BLOCK_SIZE];
+	struct inode inode;
+	size_t block_n;
+
+	// get the inode of the file (read AND write)
+	if (internal) {
+		size_t inode_blk;
+		assert(ino == NUM_INT_ROOT || ino == NUM_INT_FREE);
+		if (ino == NUM_INT_ROOT)
+			inode_blk = BLK_ROOT_INO;
+		else if (ino == NUM_INT_FREE)
+			inode_blk = BLK_FREE_LIST_INO;
+		read_data(backing_store, &inode, sizeof(inode), inode_blk);
+	} else {
+		// TODO: this has to be connected with read_inode somehow. code
+		// is duplicate
+		do_read_write(NUM_INT_ROOT, &inode, sizeof(inode), ino * FS_BLOCK_SIZE, false, true);
+	}
+
+	block_n = get_pblock_of_byte(&inode, offset, write);
+
+	if (block_n == 0)
+		return -EINVAL;
 
 	read_block(backing_store, data, block_n);
 
@@ -150,7 +253,6 @@ static ssize_t do_read_write(size_t ino, void *buf, size_t count, off_t offset, 
 		memcpy(buf, data + offset, count);
 	}
 
-	free(data);
 	return count;
 }
 
@@ -187,19 +289,24 @@ static bool file_exists(size_t filenum)
 	return filenum > 0 && filenum < get_num_files();
 }
 
+size_t add_dir(struct inode *inode)
+{
+	size_t num = add_file(inode);
+	uint8_t zeroes[FS_BLOCK_SIZE] = {0};
+
+	assert(S_ISDIR(inode->mode));
+
+	// directories need initialization
+	fs_pwrite(num, zeroes, FS_BLOCK_SIZE, 0);
+
+	return num;
+}
+
 size_t add_file(struct inode *inode)
 {
 	size_t data = get_num_files();
 	inode->data_block = allocate_block();
 	struct secondary_block *blk = malloc(sizeof(*blk));
-
-	// TODO: dynamic size
-	blk->used = 7;
-	for (int i = 0; i < blk->used; i++) {
-		blk->blocks[i] = allocate_block();
-		init_blk_zero(blk->blocks[i]);
-	}
-	write_block(backing_store, blk, inode->data_block);
 
 	// TODO: do this via the size of the file?
 	// data isn't an index, it's max size and since index 0 is reserved, we
@@ -208,6 +315,7 @@ size_t add_file(struct inode *inode)
 	data++;
 	fs_int_pwrite(NUM_INT_ROOT, &data, sizeof(data), 0);
 
+	free(blk);
 	// -1 because the new count is the total, not the inode num
 	return data - 1;
 }

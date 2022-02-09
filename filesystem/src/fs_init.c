@@ -10,6 +10,15 @@
 
 int backing_store = 0;
 
+// TODO: if I can short circuit the allocator to not read the free list, I can
+// skip this
+static size_t dummy_allocate()
+{
+	static size_t blk_cur_num = BLK_FREE_LIST_SCND;
+
+	blk_cur_num++;
+	return blk_cur_num;
+}
 
 static void write_empty_blocks_file()
 {
@@ -19,42 +28,21 @@ static void write_empty_blocks_file()
 	// we use 1 bit per block, a byte has 8
 	list_size /= sizeof(uint8_t);
 
+	struct secondary_block scnd = {0};
 	struct inode free_list = {
 		.size = list_size,
 		.data_block = BLK_FREE_LIST_SCND
 	};
 	size_t blk_req = list_size / FS_BLOCK_SIZE;
-	size_t blk_written = 0;
-	size_t blk_cur_num = BLK_FREE_LIST_SCND;
-	size_t blk_ptr_loc;
+	size_t blk_cur_num;
 
 	fuse_log(FUSE_LOG_INFO, "free list size %ld\n", list_size);
 	fuse_log(FUSE_LOG_INFO, "free list blks %ld\n", blk_req);
 	write_data(backing_store, &free_list, sizeof(free_list), BLK_FREE_LIST_INO);
+	write_data(backing_store, &scnd, sizeof(scnd), BLK_FREE_LIST_SCND);
 
-	while (blk_written < blk_req) {
-		struct secondary_block data_ptr = {.used = 0};
-		// place the intermediary pointer on the first available block
-		blk_ptr_loc = blk_cur_num++;
+	blk_cur_num = file_add_space(BLK_FREE_LIST_SCND, blk_req, &dummy_allocate);
 
-		// fill in the ptr struct ("allocate" blocks in a sense)
-		for (int i = 0; i <= 7; i++) {
-			data_ptr.used++;
-			data_ptr.blocks[i] = blk_cur_num;
-			// logprintf("used %ld\n", blk_cur_num);
-			init_blk_zero(blk_cur_num);
-			// last block is bookkeeping, so it doesn't count
-			if (i != 7)
-				blk_written++;
-			blk_cur_num++;
-			if (blk_written == blk_req)
-				break;
-		}
-
-		// logprintf("written %ld\n", blk_ptr_loc);
-		// write the intermediary block as filled in
-		write_data(backing_store, &data_ptr, sizeof(data_ptr), blk_ptr_loc);
-	}
 
 	// TODO: this is a hack. Since we are making the free list, we can't
 	// call allocate yet.  We can do it postfactum though. Can probably be
@@ -71,28 +59,19 @@ static void write_empty_blocks_file()
 
 static void allocate_root_file()
 {
-	struct secondary_block *data = malloc(FS_BLOCK_SIZE);
-	data->used = 0;
-	size_t data_blk_num = BLK_ROOT_SCND;
+	struct secondary_block data;
+	struct inode inode;
 
-	// TODO: allocate 10 static blocks for simplicity
-	for (int allocated = 0; allocated < 10; allocated++) {
-		data->blocks[data->used] = allocate_block();
-		// logprintf("root needs %ld\n", data->blocks[data->used]);
-		init_blk_zero(data->blocks[data->used]);
-		data->used++;
+	read_data(backing_store, &inode, sizeof(struct inode), BLK_ROOT_INO);
 
-		if (data->used >= 8) {
-			write_block(backing_store, data, data_blk_num);
-			// get the number of the next one, reset and start over
-			data_blk_num = data->blocks[7];
-			data->used = 0;
-		}
-	}
-	// flush out any incomplete ptr blocks
-	write_block(backing_store, data, data_blk_num);
+	// the internal data (number of files)
+	inode.size = FS_BLOCK_SIZE;
+	data.blocks[0] = allocate_block();
+	init_blk_zero(data.blocks[0]);
+	data.used = 1;
 
-	free(data);
+	write_data(backing_store, &inode, sizeof(struct inode), BLK_ROOT_INO);
+	write_data(backing_store, &data, sizeof(struct secondary_block), BLK_ROOT_SCND);
 }
 
 static void write_root_dir()
@@ -112,9 +91,7 @@ static void write_root_inode()
 		.data_block = BLK_ROOT_SCND
 	};
 
-	struct secondary_block data = {
-		.used = 0,
-	};
+	struct secondary_block data = {0};
 
 	write_data(backing_store, &root, sizeof(root), BLK_ROOT_INO);
 	write_data(backing_store, &data, sizeof(data), BLK_ROOT_SCND);

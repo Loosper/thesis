@@ -3,7 +3,8 @@ CFLAGS += $(FUSE_FLAGS) -Wall -Wextra -Iinclude -g
 CC := gcc
 
 # DEBUG helpers
-CFLAGS += -Wno-unused-variable -Wno-unused-parameter
+CFLAGS += -Wno-unused-parameter
+# CFLAGS += -Wno-unused-variable
 
 COBJS  := $(patsubst %.c, %.o, $(wildcard src/*.c))
 # TODO: make dynamic

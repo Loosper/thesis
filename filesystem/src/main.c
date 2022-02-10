@@ -26,7 +26,9 @@ static const struct fuse_lowlevel_ops fs_ops = {
 	.setattr = fs_setattr,
 	.mkdir = fs_mkdir,
 	.opendir = fs_opendir,
-	.readdir = fs_readdir
+	.readdir = fs_readdir,
+	.write = fs_write,
+	.read = fs_read
 };
 
 #define FS_OPT(opt, field) \

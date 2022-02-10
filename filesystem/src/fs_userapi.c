@@ -15,6 +15,8 @@
 
 #define ASSERT_GOOD(reply) assert(reply == 0)
 
+// TODO: malloc()ed buffers need to be freed by ME after the reply. Function
+// doesn't end on reply (if you rememeber)
 static inline struct fuse_entry_param make_reply_entry(size_t ino_num, struct inode *inode)
 {
 	struct fuse_entry_param entry = {
@@ -121,6 +123,22 @@ void fs_setattr(fuse_req_t req, fuse_ino_t ino, struct stat *attr, int to_set, s
 
 	struct stat reply = stat_from_inode(&inode, ino);
 	ASSERT_GOOD(fuse_reply_attr(req, &reply, 1));
+}
+
+void fs_write(fuse_req_t req, fuse_ino_t ino, const char *buf,
+	size_t size, off_t off, struct fuse_file_info *fi)
+{
+	ssize_t ret = fs_pwrite(ino, buf, size, off);
+	ASSERT_GOOD(fuse_reply_write(req, ret));
+}
+
+void fs_read(fuse_req_t req, fuse_ino_t ino, size_t size, off_t off, struct fuse_file_info *fi)
+{
+	char *buf = malloc(size);
+	ssize_t ret = fs_pread(ino, buf, size, off);
+
+	ASSERT_GOOD(fuse_reply_buf(req, buf, ret));
+	free(buf);
 }
 
 void fs_flush(fuse_req_t req, fuse_ino_t ino, struct fuse_file_info *fi)

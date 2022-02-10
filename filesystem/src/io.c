@@ -21,7 +21,12 @@ extern int backing_store;
 // NOTE: Let vblock be virtual address of block, pblock be the actual address
 // of a block
 
+// TODO: now that files extend themselves, we don't need to write whole blocks
+// to them, can be just like normal files. I.E. the bookkeeping data for dirs
+// and such could be small
+
 // TODO: this is dumb as fuck, but it works for now!
+// DOES NOT initialize blocks!!! It's caller responsibility
 size_t allocate_block()
 {
 	uint8_t *data = malloc(FS_BLOCK_SIZE);
@@ -141,6 +146,9 @@ size_t file_add_space(size_t secondary_blk, size_t blk_req, size_t (*allocator)(
 		// fill in the ptr struct ("allocate" blocks in a sense)
 		while (data_ptr.used < SCND_CAPACITY) {
 			new_block = allocator();
+			// TODO: see add_file comment. This is bad.
+			// Keep it for sanity for now
+			init_blk_zero(new_block);
 			data_ptr.blocks[data_ptr.used++] = new_block;
 			init_blk_zero(new_block);
 
@@ -155,7 +163,6 @@ size_t file_add_space(size_t secondary_blk, size_t blk_req, size_t (*allocator)(
 		write_data(backing_store, &data_ptr, sizeof(data_ptr), blk_ptr_loc);
 	}
 
-	// logprintf("out %ld\n", new_block);
 	return new_block;
 }
 
@@ -201,7 +208,6 @@ static size_t get_pblock_of_byte(struct inode *inode, size_t byte_n, bool write)
 			pblock = file_add_space(pblock, vblocks_needed - vblocks_found, &allocate_block);
 			goto cleanup;
 		}
-
 		pblock = blk_ptr->blocks[SCND_CAPACITY - 1];
 	}
 
@@ -323,10 +329,13 @@ size_t add_dir(struct inode *inode)
 	return num;
 }
 
+// TODO: zeroing is a MASSIVE problem. I need a routine that initializes things
+// properly. Currently I zero blocks in 5 different places
 size_t add_file(struct inode *inode)
 {
 	size_t data = get_num_files();
 	inode->data_block = allocate_block();
+	init_blk_zero(inode->data_block);
 	struct secondary_block *blk = malloc(sizeof(*blk));
 
 	// TODO: do this via the size of the file?

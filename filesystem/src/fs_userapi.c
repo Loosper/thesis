@@ -125,6 +125,8 @@ void fs_setattr(fuse_req_t req, fuse_ino_t ino, struct stat *attr, int to_set, s
 	ASSERT_GOOD(fuse_reply_attr(req, &reply, 1));
 }
 
+// TODO: these are extremely buggy. They only work on single blocks of data
+// (and should work on any length) and will probably break massively on EOF
 void fs_write(fuse_req_t req, fuse_ino_t ino, const char *buf,
 	size_t size, off_t off, struct fuse_file_info *fi)
 {
@@ -140,6 +142,15 @@ void fs_read(fuse_req_t req, fuse_ino_t ino, size_t size, off_t off, struct fuse
 	ASSERT_GOOD(fuse_reply_buf(req, buf, ret));
 	free(buf);
 }
+
+void fs_unlink(fuse_req_t req, fuse_ino_t parent, const char *name)
+{
+	int ret = rm_direntry(parent, name);
+
+	fuse_reply_err(req, ret);
+}
+
+// void (*rmdir) (fuse_req_t req, fuse_ino_t parent, const char *name);
 
 void fs_flush(fuse_req_t req, fuse_ino_t ino, struct fuse_file_info *fi)
 {

@@ -414,6 +414,13 @@ static size_t get_direntry_idx(struct dirent *dirent, size_t dir_ino, const char
 	return SIZE_MAX;
 }
 
+// TODO:
+static int unlink_inode(size_t num)
+{
+	assert(num != 0);
+	return 0;
+}
+
 int rm_direntry(size_t dir_ino, const char *filename)
 {
 	struct dirent dirent;
@@ -421,6 +428,8 @@ int rm_direntry(size_t dir_ino, const char *filename)
 	// conscious choice to not check it. I assume the kernel will only
 	// feed me valid stuff for now
 	assert(dirent.inode != 0);
+
+	unlink_inode(dirent.inode);
 
 	dirent.name[0] = '\0';
 	dirent.inode = 0;

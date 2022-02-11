@@ -150,7 +150,11 @@ void fs_unlink(fuse_req_t req, fuse_ino_t parent, const char *name)
 	fuse_reply_err(req, ret);
 }
 
-// void (*rmdir) (fuse_req_t req, fuse_ino_t parent, const char *name);
+void fs_rmdir(fuse_req_t req, fuse_ino_t parent, const char *name)
+{
+	// TODO: even though this will defo work, is it correct?
+	fs_unlink(req, parent, name);
+}
 
 void fs_flush(fuse_req_t req, fuse_ino_t ino, struct fuse_file_info *fi)
 {

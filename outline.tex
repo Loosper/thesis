@@ -61,7 +61,7 @@
 
         \paragraph{implementation details}
 
-        directory - a list of (file, i-number) pairs (14 and 2 bytes
+        directory - a list of (file, i-number (i=index)) pairs (14 and 2 bytes
         respectively, 16 B/entry, 32 entries per block) if i-number is 0, the
         entry is null. A regular file in all other regards
 
@@ -345,6 +345,8 @@
 
 
     \subsection{ZFS}
+        % some more info:
+        % https://arstechnica.com/information-technology/2020/05/zfs-101-understanding-zfs-storage-and-performance/
         needs loads of cache for good read perf (stuff is scattered on disk) -
         60GB was given as a minimum work best when not filled (3/4 is max,
         recomemnded is no more that 50\% ful). Normal can go up to 90+\% I
@@ -359,12 +361,74 @@
         mirror vdev: 2 children: 1 100GB disk vdev (with 100GB device) and 1
         100GB concat vdev (with 2 50GB device vdevs, each having 50GB devices)
 
-        SPA - it's like an MMU for drives (128 bit addresses)
+        zpool - a self contianed pool of storage composed of any number of
+        vdevs. Cannot share vdevs with one another. NO REDUNDANCY HERE. If one
+        vdev dies, whole pool is out
+
+        SPA - handles allocation of blocks (128 bit addresses)
+
+        DMU - data management unit - MMU for drives. Sits on top of the SPA?
 
         Copy on write - editing a file causes a "ripple" of writes that ends in
         the overwriting of the uberblock. Until then, everything is consisten
         (the new one is not in the tree yet) and rewriting the uberblock is as
         atomic as possible
+
+    \subsection{ext4}
+
+        \paragraph{Inode table} Inode table is linear (not exactly dynamic (see
+        free lists seciton for more), there's a linear formula to get block
+        group number for an inode). Has a (linear) bitmap to track usage.  An
+        inode is up to 256 bytes
+
+        \paragraph{Free list} None (in a way). Disk is split into block groups,
+        each group lists how many blocks/inodes in it are free. Both number of
+        blocks and number of inodes is fixed. Scanning through all is somewhat
+        faster
+
+
+        % src: https://ext4.wiki.kernel.org/index.php/Ext4_Disk_Layout#Block_and_inode_Bitmaps
+        \paragraph{File pointer tree} A node in the tree is followed (the node
+        itself is a struct with a field on how many it has (and another one on
+        how many it could have; presumably indicates available storage), and
+        its last element is a var list). Length is arbitrary. Root node is in
+        the inode (+ a few blocks). Only leaves point directly to data blocks.
+        This removes a level of indirection. Balanced as a B-tree apparently
+
+
+        \paragraph{Directories} (classic and not directly used) Basically a flat file
+        with arbitrary filename strings. Organised in per-block sections, inode
+        0 indicates unused (I think in practice a name is 255 or name\_max bytes)
+
+        % described in the HTree paper; look at Linux src
+        (modern and current) A Hashed Btree (Htree). Contains . and .. .
+        Basically like a static BTree, keys indicate buckets of possible hashes
+        (31 bit, last bit indicates a collision). A single node is a block
+        long, limiting max number of keys in it. Has max 2 levels (although 1
+        is common). Leaf nodes are the same layout as a classic dir (see above,
+        although limited to 1 block in size) and contain entries that share the
+        hash. If block is full, collision bit of keys is set and block is split
+        (fixed op). Whole thing is layed out in a contiguous file and nodes
+        start with zeores, so the whole directory file can be read in the old
+        way, except it would appear as if it had more than expected empty
+        entries.  Assuming a leaf holds 200 entries, 1 level is ~75K entries, 2
+        lvl is ~30M.
+
+        Hash function: used to be some weird hack hash, current one is TEA
+        (Tiny Encription Algo). Both are about 20 LOC.
+
+        Search in Htree keys: binary
+        Search in Htree leaves: linear
+        Performance: good, doesn't need rebalancing (unlike B/B*/B+ trees).
+            Simple implementation. Hashes freqeuently used in other FSs
+
+
+        NOTE: max filename lenth is 255 bytes on Linux (NAME\_MAX in linux/limits.h)
+
+    \section{HFS+}
+        \paragraph{Inode table} Called catalogue file. A Btree.
+        \paragraph{Free list} A linear bitmap. Also just a file
+        HFS+ has a field in the header saying which is the next free inode num
 
     \subsection{Soft updates}
 
@@ -406,6 +470,12 @@
 
         They use metadata heavy benchmarks. 4 users copying a whole dir or
         deleting a load of files
+    \subsection{Shadow pages, the postgres paper}
+
+    \subsection{JFS which did journaling first}
+
+        can't find an original source from IBM. Use the McKusick comparison
+        with soft updates and Cedar File system reimplemntation.
 
     \subsection{Backblaze vault}
         \paragraph{Redundancy/Drive failure}
@@ -435,6 +505,17 @@
 
 
 \section{tools}
+    \subsection{how to benchmark}
+
+        \paragraph{Flexible IO tester (fio)} Can run "any" workload on a
+        filesystem automatically. Useul for dev
+
+        \paragraph{Postmark benchmark} A small file benchmark. Simulates a mail
+        server.
+        Citaiton seems to be: Jeffrey Katcher, PostMark: A New File System
+        Benchmark. Link didn't load, this one is best so far
+        https://www.yumpu.com/en/document/read/18367213/postmark-a-new-file-system-benchmark
+
     \subsection{LVM}
         Uses device mapper.
 
@@ -470,8 +551,32 @@
 
         Boral 83 is a metric?
 
+        \paragraph{notes from disperate reading}
+
+        RAID kinda sucks because it doesn't address a corrupted sector (which
+        can happen in an SSD, as far as I gather), and power loss: if it loses
+        power during the write of the parity and the partiy is wrong, on
+        reconsutrction the data will be wrong. This is essentially the same
+        issue (?), but there is no way to know if the parity is correct.
+        Reconstruction is a simple math operation, no checks happen
+
+        "An Analysis of Data Corruption in the Storage Stack" - proves that
+        silent erros occur lots. They even use a modified RAID that stores
+        checksums itself (blocks are 520B, the last 8 are stored for a chunk of
+        blocks on a separate block)
+
+        HDDs do manage to detect and report lots of errors. But a lot also slip
+        through. The paper above and the one by google for SSDs lead me to
+        believe the situation is the same for SSDs (although more frequent).
+
+        MDADM uses a journal to fix the write hole in RAID. I couldn't find
+        anything to suggest any checksuming is doen to ensure data is not
+        silently corrupt though (\url{https://lwn.net/Articles/665299/})
+
+
     \subsection{SSD failures}
 
+        \paragraph{Google paper}
         At lest the drives Google use, have ECC in them. They seem to be able
         to detect all errors (even unrecoverabe ones). They distinguish between
         recoverable and unrecoverabe ones. Recoverable are plentiful,
@@ -489,6 +594,44 @@
 
         A majority of drives experience an unrecoverable error in the first 4
         years.
+
+        \paragraph{Jeff Bonwick (zfs creator), 2D RAID}
+        Drives (almost) don't wear out and fail suddenly.
+
+        SSDs degrade over time. When new, 1 every 10\^-3/10\^-4 bits errors. When
+        close to EOL, 1 in 10\^-2 bits are bad. Has 40 to 80 ECC for correction
+        (BCH or LDPC codes). It even requires writes to be scrambled, because
+        adjacent charges can interfere with each other (so we want data to be
+        roughly random).
+
+        Random vs sequential IO is the same, so queue depth doesn't have to be
+        as deep (no need to sort and optimise).
+
+        Introduces D-dimensional raid. Sectors/blocks are arranged in a D
+        dimensional grid. When using parity of M, a failure in one row of M+1
+        erros can be recovered from by using the other dimensions. He gave an
+        example where he recovered from more than half the blocks having
+        errors. Only "bad" failures are in a perfect square/cube/... where
+        there error of M+1 is in all dimensions. I.e. (M+1)\^D in a perfect grid
+        is the smallest unsolvable error.
+
+        This only becomes space efficient with a large number of devices (SSD
+        chips, which they have hunderds of in a drive, are suitable), at least
+        for parity of 2 is overhead of 17\% (raid 6 pretty much). The fixed
+        parity is fine, because flash is like CoW, and in place rewrites don't
+        effectively happen. Higher capacity flash drives tend to last longer,
+        because bandwidth tends to stay constant and increasing size gives more
+        space to do wear leveling (and ssds fail due to writes).
+
+        At VERY high frequencies, interrupts cause too many context switches =>
+        overhead. Polling solves this, we onlly do the overhead when we need to
+
+        NOTE: I'd need access to physical flash for this to be effective.
+
+        Also an amazing visual for matrix multiply.
+
+        "Flash is basically garbage. It barely works. We tolerate it because its fast"
+        NOTE: I think the implication is that HDDs don't have ECC, while SSDs do.
 
 \section{Observation}
     \subsection{evolution}
@@ -552,6 +695,7 @@
         * device mapper in linux (lvm building block)
         * what's the SSD utilization? (HDD benchmarks are plentiful)
         * SSD filesystems?
+        * Does the NVMe driver expose channels of the SSD to the FS (prob no)?
 
         * papers on FS testing (specifically Linux)
 
@@ -612,6 +756,7 @@
 
 
 \chapter{Thesis}
+% How to format this: https://www.overleaf.com/learn/latex/How_to_Write_a_Thesis_in_LaTeX_(Part_1)%3A_Basic_Structure
     \section{NAME}
         \paragraph{A filesystem with native drive failure resiliance.}
         Very narrow topic, I won't consider any other aspects (unles trivial to
@@ -623,9 +768,18 @@
         to existing and I can see it later). Focus on ZFS, RAID, journaling
         (not much), SSD reliability.
 
+        Discard RAID. Label it unreliable and roll your own.
+
 
         \paragraph{TODO} next meeting: aim for a concrete plan on how to implement that and
         test it. What workloads did they use? What metrics. Come up with important ones
+
+        Planning report for next meeting
+        start implementing, think about what arch will look like, how am i going to demonstrate the benefits of what i'm doing. Demonstrate in planning report
+
+        Read up on SSD performance. I think this will be a big benchmark (if I
+        was to do the virtual memory on a drive thing, I'd have to make sure
+        IOPS don't become a bottleneck vs synchronous read)
 
 
     \section{risk (mitigation)}
@@ -670,15 +824,67 @@
 
             network/cluster filesystems
 
+            HDD fs. As far as I am conserned, it's a solved problem for what
+            I'm considering (ZFS)
+
 
     \section{evaluation methods}
         % by christmas I need metrics to evaluate the project
         % I found a few eval methods, but not sure which I need, will prob decide
         % later on
 
+    planning report: realistic plan, scope, everything I'm going to use, how to test, timelines. ALl features of FS, how to implement, how to test
+    Draft should be done 3 weeks before deadline. Have a prototype. Try to motivate why we need the FS. Risk assesment, backup if it fails. Ethics - none, I don't deal with humans?
+
+    Marking is on the report (mostly). Focus on that. Final, report has to be stellar
+
+    overhead mesurements. (turn off checksums and test again) measure costs of things
+
+    TODO: extents are useful even on SSDs. See kernel.org ext4 (allowacion policy)
+
         \subsection{Success metrics}
             success metrics: on par performance, correct silent errors
 
+        Self-appraisal isn't a technical one. It's for the project. Any technical remarks should be in the main body of the report
+        Things like what i'd do differently, (if i had more time, knowledge etc) and ideas for future work
+
     jabref?
+
+    For the report: say how stupdendously difficult this is. I made a mistake
+    of trying to make it linear, impelentation was stupid hard
+
+    % TODO:
+    error recovery, how many errors i can recover from
+    wait to wednesday, then send email for planning report
+    make a demo!!!!, check how to share screen on zoom
+
+
+    for meeting:
+    IMPLEMENTATION "complete" (it's working, but insanely buggy). Now I need these things:
+        * a tree struct for blocks
+        * a tree struct for files
+        * a tree struct for free list
+        * an allocator (and a way to mark what's used and what isn't)
+    % Need to see how modern ones do it and do it similarly.
+    Does supervisor know:
+        * what struct allocators use/ some tree struct that has quick arbitrary
+        lookup, but also good exhaustive search (in context of an allocator)
+        IDEA: use 2 self balancing trees. 1 for used and 1 for unused (havent
+        even looked at my notes to know if feasible)
+        NOTE: Btrees can be "linearly" searched fairly easily
+    Advice:
+        * I could go through NTFS and and apFS in detail and pick and choose
+            desirable features. For time, should I? Or do I just say, ext4 is "OK"
+            and I somewhat stick with it
+
+        * Btree implementations seem hard to come by. Most have some licences.
+            How do I deal with those? Do I need to respect them in a special
+            way? Also are usually meant for memory, so I'll need to modify them
+            A LOT. What do? Also, big one, it's in a file. => will be stored
+            linearly. How do I manage space allocation? Do I need to write an
+            allocator?
+
+            TODO: copy feedback from assessor here
+
 
 \end{document}

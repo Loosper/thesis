@@ -6,6 +6,7 @@
 
 #include "fs_helpers.h"
 #include "fs_types.h"
+#include "itable.h"
 #include "io.h"
 
 int backing_store = 0;
@@ -98,7 +99,9 @@ static void write_root_dir()
 	struct inode root_dir;
 	// TODO: it's double on purpose. Simplest way to get rid of inode 0.
 	// Do I need to store something there?
-	make_empty_inode(&root_dir, S_IFDIR | 0777);
+	make_empty_inode(&root_dir, S_IFDIR | 0777, allocate_block());
+
+	add_dir(&root_dir);
 }
 
 void fs_init(struct fs_metadata *fs)
@@ -106,8 +109,8 @@ void fs_init(struct fs_metadata *fs)
 	backing_store = fs->backing_store;
 	write_flist();
 	write_itable();
+	write_root_dir();
 
 	// write the superblock
 	write_data(&superblock, sizeof(superblock), 0);
-	write_root_dir();
 }

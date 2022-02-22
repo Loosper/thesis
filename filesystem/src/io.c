@@ -10,10 +10,8 @@
 
 #include "fs_helpers.h"
 #include "fs_types.h"
+#include "itable.h"
 #include "io.h"
-
-extern int backing_store;
-extern struct superblock superblock;
 
 // all this because write() can be interrupted by signals and partially
 // complete. We assume the file has good dimensions and don't prevent infinite
@@ -273,19 +271,6 @@ size_t allocate_block()
 	return bit_num;
 }
 
-static size_t get_num_files()
-{
-	size_t data;
-	fs_int_pread(NUM_INT_ROOT, &data, sizeof(data), 0);
-	return data;
-}
-
-// TODO: eventually do a proper check
-static bool file_exists(size_t filenum)
-{
-	return filenum > 0 && filenum < get_num_files();
-}
-
 size_t add_dir(struct inode *inode)
 {
 	size_t num = add_file(inode);
@@ -294,31 +279,11 @@ size_t add_dir(struct inode *inode)
 	assert(S_ISDIR(inode->mode));
 
 	// directories need initialization
-	fs_pwrite(num, zeroes, FS_BLOCK_SIZE, 0);
+	pwrite_ino(inode, zeroes, FS_BLOCK_SIZE, 0);
 
 	return num;
 }
 
-// TODO: zeroing is a MASSIVE problem. I need a routine that initializes things
-// properly. Currently I zero blocks in 5 different places
-size_t add_file(struct inode *inode)
-{
-	size_t data = get_num_files();
-	inode->data_block = allocate_block();
-	init_blk_zero(inode->data_block);
-	struct secondary_block *blk = malloc(sizeof(*blk));
-
-	// TODO: do this via the size of the file?
-	// data isn't an index, it's max size and since index 0 is reserved, we
-	// use it here
-	fs_int_pwrite(NUM_INT_ROOT, inode, sizeof(*inode), data * FS_BLOCK_SIZE);
-	data++;
-	fs_int_pwrite(NUM_INT_ROOT, &data, sizeof(data), 0);
-
-	free(blk);
-	// -1 because the new count is the total, not the inode num
-	return data - 1;
-}
 
 int read_inode(size_t num, struct inode *inode)
 {

@@ -22,22 +22,18 @@
 // 	return req_userdata(req)->backing_store;
 // }
 
-size_t make_empty_inode(struct inode *inode, mode_t mode)
+void make_empty_inode(struct inode *inode, mode_t mode, size_t scnd)
 {
 	inode->size = 0;
 	inode->refs = 1;
 	// TODO: I don't actually know who called?
 	inode->uid = 0;
 	inode->gid = 0;
+	inode->data_block = scnd;
 	inode->mode = mode;
 	inode->atime = time(NULL);
 	inode->mtime = time(NULL);
 	inode->ctime = time(NULL);
-
-	if (S_ISDIR(mode))
-		return add_dir(inode);
-	else
-		return add_file(inode);
 }
 
 struct stat stat_from_inode(struct inode *inode, size_t num)

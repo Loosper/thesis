@@ -30,6 +30,10 @@
 #define NUM_INT_FREE 1
 
 
+extern int backing_store;
+extern struct superblock superblock;
+
+
 struct fs_opts {
 	char *mountpoint;
 	char *backing_store;

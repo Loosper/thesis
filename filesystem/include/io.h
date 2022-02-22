@@ -17,7 +17,7 @@ ssize_t pwrite_ino(struct inode* ino, const void *buf, size_t count, off_t offse
 
 size_t allocate_block();
 
-size_t add_file(struct inode *inode);
+
 size_t add_dir(struct inode *inode);
 int read_inode(size_t num, struct inode *inode);
 int write_inode(size_t num, struct inode *inode);

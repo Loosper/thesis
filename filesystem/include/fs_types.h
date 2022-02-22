@@ -80,7 +80,7 @@ struct fs_metadata {
 
 struct superblock {
 	// the block number of their inodes
-	size_t ifile_blk;
+	size_t itable_blk;
 	size_t flist_blk;
 };
 

@@ -59,7 +59,7 @@ static void write_flist()
 
 static void write_itable()
 {
-	superblock.ifile_blk = allocate_block();
+	superblock.itable_blk = allocate_block();
 
 	struct inode root = {
 		// NOTE: only these matter for a WAFL style root inode
@@ -69,7 +69,7 @@ static void write_itable()
 
 	struct secondary_block data = {0};
 
-	write_data(&root, sizeof(root), superblock.ifile_blk);
+	write_data(&root, sizeof(root), superblock.itable_blk);
 	write_data(&data, sizeof(data), root.data_block);
 }
 

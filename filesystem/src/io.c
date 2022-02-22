@@ -115,63 +115,13 @@ size_t file_add_space(struct inode *inode, size_t blk_req, size_t (*allocator)()
 	return new_block;
 }
 
-// FIXME: change names of all of the below to something consistent. read_inode
-// is high level and read_data isn't. This has to be communicated. You could do
-// the _name things here too for static and genrally internal things
-
-// NOTE: Let vblock be virtual address of block, pblock be the actual address
-// of a block
-
-// TODO: now that files extend themselves, we don't need to write whole blocks
-// to them, can be just like normal files. I.E. the bookkeeping data for dirs
-// and such could be small
-
-// TODO: this is dumb as fuck, but it works for now!
-// DOES NOT initialize blocks!!! It's caller responsibility
-size_t allocate_block()
-{
-	uint8_t *data = malloc(FS_BLOCK_SIZE);
-	size_t bit_num;
-
-	for (bit_num = 0; ; bit_num++) {
-		size_t cur_blk = bit_num / (FS_BLOCK_SIZE * 8);
-		size_t file_offset = cur_blk * FS_BLOCK_SIZE;
-
-		size_t bit_index_in_blk = bit_num % FS_BLOCK_SIZE;
-		size_t index_in_block = bit_index_in_blk / 8;
-		uint8_t bitmask = 1 << (bit_index_in_blk % 8);
-
-		// refresh block when we reach its end
-		if (bit_num == cur_blk * (FS_BLOCK_SIZE * 8))
-			fs_int_pread(
-				BLK_FREE_LIST_INO, data, FS_BLOCK_SIZE,
-				file_offset
-			);
-
-		// it's allocated
-		if (data[index_in_block] & bitmask)
-			continue;
-
-		// allocate and quit
-		data[index_in_block] |= bitmask;
-		fs_int_pwrite(
-			BLK_FREE_LIST_INO, data, FS_BLOCK_SIZE,
-			file_offset
-		);
-		break;
-	}
-
-	free(data);
-	// logprintf("allocated %ld\n", bit_num);
-	return bit_num;
-}
-
-// TODO TODO TODO TODO: make the file access routine only take an inode struct,
-// not an inode num. This way struct of inode file doesn't have to impact that
-// routine
+// THE READ/WRITE ROUTINE. EVERYTHING AFTER DEPENDS ON THIS
+// above this point it is not usable. After, it's free for all and assumed "set up"
 
 // returns the block number where this byte will be located in. Checks if
 // reading after end of file. If writing, will extend the file
+// NOTE: Let vblock be virtual address of block, pblock be the actual address
+// of a block
 static size_t get_pblock_of_byte(struct inode *inode, size_t byte_n, bool write)
 {
 	// virtual/physical
@@ -286,6 +236,58 @@ static ssize_t do_read_write(size_t ino, void *buf, size_t count, off_t offset, 
 
 	return count;
 }
+
+// FIXME: change names of all of the below to something consistent. read_inode
+// is high level and read_data isn't. This has to be communicated. You could do
+// the _name things here too for static and genrally internal things
+
+// TODO: now that files extend themselves, we don't need to write whole blocks
+// to them, can be just like normal files. I.E. the bookkeeping data for dirs
+// and such could be small
+
+// TODO: this is dumb as fuck, but it works for now!
+// DOES NOT initialize blocks!!! It's caller responsibility
+size_t allocate_block()
+{
+	uint8_t *data = malloc(FS_BLOCK_SIZE);
+	size_t bit_num;
+
+	for (bit_num = 0; ; bit_num++) {
+		size_t cur_blk = bit_num / (FS_BLOCK_SIZE * 8);
+		size_t file_offset = cur_blk * FS_BLOCK_SIZE;
+
+		size_t bit_index_in_blk = bit_num % FS_BLOCK_SIZE;
+		size_t index_in_block = bit_index_in_blk / 8;
+		uint8_t bitmask = 1 << (bit_index_in_blk % 8);
+
+		// refresh block when we reach its end
+		if (bit_num == cur_blk * (FS_BLOCK_SIZE * 8))
+			fs_int_pread(
+				BLK_FREE_LIST_INO, data, FS_BLOCK_SIZE,
+				file_offset
+			);
+
+		// it's allocated
+		if (data[index_in_block] & bitmask)
+			continue;
+
+		// allocate and quit
+		data[index_in_block] |= bitmask;
+		fs_int_pwrite(
+			BLK_FREE_LIST_INO, data, FS_BLOCK_SIZE,
+			file_offset
+		);
+		break;
+	}
+
+	free(data);
+	// logprintf("allocated %ld\n", bit_num);
+	return bit_num;
+}
+
+// TODO TODO TODO TODO: make the file access routine only take an inode struct,
+// not an inode num. This way struct of inode file doesn't have to impact that
+// routine
 
 ssize_t fs_int_pread(size_t ino, void *buf, size_t count, off_t offset)
 {

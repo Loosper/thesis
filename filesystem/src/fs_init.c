@@ -38,8 +38,8 @@ static void write_empty_blocks_file()
 
 	fuse_log(FUSE_LOG_INFO, "free list size %ld\n", list_size);
 	fuse_log(FUSE_LOG_INFO, "free list blks %ld\n", blk_req);
-	write_data(backing_store, &free_list, sizeof(free_list), BLK_FREE_LIST_INO);
-	write_data(backing_store, &scnd, sizeof(scnd), BLK_FREE_LIST_SCND);
+	write_data(&free_list, sizeof(free_list), BLK_FREE_LIST_INO);
+	write_data(&scnd, sizeof(scnd), BLK_FREE_LIST_SCND);
 
 	blk_cur_num = file_add_space(BLK_FREE_LIST_SCND, blk_req, &dummy_allocate);
 
@@ -63,7 +63,7 @@ static void allocate_root_file()
 	struct inode inode;
 	size_t count = 1;
 
-	read_data(backing_store, &inode, sizeof(struct inode), BLK_ROOT_INO);
+	read_data(&inode, sizeof(struct inode), BLK_ROOT_INO);
 
 	// the internal data (number of files)
 	inode.size = FS_BLOCK_SIZE;
@@ -71,10 +71,10 @@ static void allocate_root_file()
 	data.used = 1;
 	// init with a single file to skip inode 0
 	init_blk_zero(data.blocks[0]);
-	write_data(backing_store, &count, sizeof(count), data.blocks[0]);
+	write_data(&count, sizeof(count), data.blocks[0]);
 
-	write_data(backing_store, &inode, sizeof(struct inode), BLK_ROOT_INO);
-	write_data(backing_store, &data, sizeof(struct secondary_block), BLK_ROOT_SCND);
+	write_data(&inode, sizeof(struct inode), BLK_ROOT_INO);
+	write_data(&data, sizeof(struct secondary_block), BLK_ROOT_SCND);
 }
 
 static void write_root_dir()
@@ -95,8 +95,8 @@ static void write_root_inode()
 
 	struct secondary_block data = {0};
 
-	write_data(backing_store, &root, sizeof(root), BLK_ROOT_INO);
-	write_data(backing_store, &data, sizeof(data), BLK_ROOT_SCND);
+	write_data(&root, sizeof(root), BLK_ROOT_INO);
+	write_data(&data, sizeof(data), BLK_ROOT_SCND);
 }
 
 void fs_init(struct filesystem *fs)

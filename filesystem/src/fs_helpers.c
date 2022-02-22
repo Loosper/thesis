@@ -9,7 +9,7 @@
 #include "fs_types.h"
 #include "io.h"
 
-extern int backing_store;
+// extern int backing_store;
 
 
 struct filesystem *req_userdata(fuse_req_t req)
@@ -17,10 +17,10 @@ struct filesystem *req_userdata(fuse_req_t req)
 	return fuse_req_userdata(req);
 }
 
-int req_fd(fuse_req_t req)
-{
-	return req_userdata(req)->backing_store;
-}
+// int req_fd(fuse_req_t req)
+// {
+// 	return req_userdata(req)->backing_store;
+// }
 
 size_t make_empty_inode(struct inode *inode, mode_t mode)
 {
@@ -62,7 +62,7 @@ void init_blk_zero(size_t blk_num)
 {
 	uint8_t *blk = malloc(FS_BLOCK_SIZE);
 	memset(blk, 0x00, FS_BLOCK_SIZE);
-	write_block(backing_store, blk, blk_num);
+	write_block(blk, blk_num);
 	free(blk);
 }
 
@@ -89,7 +89,7 @@ void print_block(size_t block_num)
 {
 	uint8_t *data = malloc(FS_BLOCK_SIZE);
 	void *to_free = data;
-	read_block(backing_store, data, block_num);
+	read_block(data, block_num);
 
 	fuse_log(FUSE_LOG_INFO, "block %ld:\n", block_num);
 	for (int i = 0; i < FS_BLOCK_SIZE / 32; i++) {

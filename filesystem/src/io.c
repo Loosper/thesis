@@ -68,14 +68,14 @@ size_t allocate_block()
 // all this because write() can be interrupted by signals and partially
 // complete. We assume the file has good dimensions and don't prevent infinite
 // spin
-ssize_t write_block(int file, void *data, size_t block_no)
+ssize_t write_block(void *data, size_t block_no)
 {
 	size_t written = 0;
 	ssize_t ret;
 
 	while (written < FS_BLOCK_SIZE) {
 		ret = pwrite(
-			file, data + written, FS_BLOCK_SIZE - written,
+			backing_store, data + written, FS_BLOCK_SIZE - written,
 			block_no * FS_BLOCK_SIZE + written
 		);
 		check_errno(ret);
@@ -86,14 +86,14 @@ ssize_t write_block(int file, void *data, size_t block_no)
 }
 
 // see write_block() comment
-ssize_t read_block(int file, void *buf, size_t block_no)
+ssize_t read_block(void *buf, size_t block_no)
 {
 	size_t rread = 0;
 	ssize_t ret;
 
 	while (rread < FS_BLOCK_SIZE) {
 		ret = pread(
-			file, buf + rread, FS_BLOCK_SIZE - rread,
+			backing_store, buf + rread, FS_BLOCK_SIZE - rread,
 			block_no * FS_BLOCK_SIZE + rread
 		);
 		check_errno(ret);
@@ -104,20 +104,20 @@ ssize_t read_block(int file, void *buf, size_t block_no)
 }
 
 // any data, of any size up to a block. Will be padded and written
-ssize_t write_data(int file, void *data, size_t len, size_t block_no)
+ssize_t write_data(void *data, size_t len, size_t block_no)
 {
 	uint8_t block[FS_BLOCK_SIZE] = {0};
 	memcpy(block, data, len);
 
-	return write_block(file, block, block_no);
+	return write_block(block, block_no);
 }
 
-ssize_t read_data(int file, void *data, size_t len, size_t block_no)
+ssize_t read_data(void *data, size_t len, size_t block_no)
 {
 	uint8_t block[FS_BLOCK_SIZE];
 	ssize_t ret;
 
-	ret = read_block(file, block, block_no);
+	ret = read_block(block, block_no);
 	memcpy(data, block, len);
 
 	return ret;
@@ -133,7 +133,7 @@ size_t file_add_space(size_t secondary_blk, size_t blk_req, size_t (*allocator)(
 	bool first = true;
 	size_t new_block;
 
-	read_data(backing_store, &data_ptr, sizeof(data_ptr), secondary_blk);
+	read_data(&data_ptr, sizeof(data_ptr), secondary_blk);
 
 	while (blk_written < blk_req) {
 		if (!first) {
@@ -160,11 +160,15 @@ size_t file_add_space(size_t secondary_blk, size_t blk_req, size_t (*allocator)(
 		}
 
 		// write the intermediary block as filled in
-		write_data(backing_store, &data_ptr, sizeof(data_ptr), blk_ptr_loc);
+		write_data(&data_ptr, sizeof(data_ptr), blk_ptr_loc);
 	}
 
 	return new_block;
 }
+
+// TODO TODO TODO TODO: make the file access routine only take an inode struct,
+// not an inode num. This way struct of inode file doesn't have to impact that
+// routine
 
 // returns the block number where this byte will be located in. Checks if
 // reading after end of file. If writing, will extend the file
@@ -183,7 +187,7 @@ static size_t get_pblock_of_byte(struct inode *inode, size_t byte_n, bool write)
 	while (1) {
 		size_t new_found;
 
-		read_block(backing_store, blk_ptr, pblock);
+		read_block(blk_ptr, pblock);
 		// last one is internal so drop it if it's there
 		new_found = MIN(blk_ptr->used, SCND_CAPACITY - 1);
 
@@ -242,7 +246,7 @@ static ssize_t do_read_write(size_t ino, void *buf, size_t count, off_t offset, 
 			inode_blk = BLK_ROOT_INO;
 		else if (ino == NUM_INT_FREE)
 			inode_blk = BLK_FREE_LIST_INO;
-		read_data(backing_store, &inode, sizeof(inode), inode_blk);
+		read_data(&inode, sizeof(inode), inode_blk);
 	} else {
 		// TODO: this has to be connected with read_inode somehow. code
 		// is duplicate
@@ -256,11 +260,11 @@ static ssize_t do_read_write(size_t ino, void *buf, size_t count, off_t offset, 
 	if (block_n == 0)
 		return -EINVAL;
 
-	read_block(backing_store, data, block_n);
+	read_block(data, block_n);
 
 	if (write) {
 		memcpy(data + blk_offset, buf, count);
-		write_block(backing_store, data, block_n);
+		write_block(data, block_n);
 
 		if (inode.size < offset + count) {
 			inode.size = offset + count;
@@ -268,7 +272,7 @@ static ssize_t do_read_write(size_t ino, void *buf, size_t count, off_t offset, 
 				// TODO: lazy; I don't expect the free list to change so
 				// I let myself not handle it
 				assert(ino != NUM_INT_FREE);
-				write_data(backing_store, &inode, sizeof(inode), BLK_ROOT_INO);
+				write_data(&inode, sizeof(inode), BLK_ROOT_INO);
 			} else {
 				do_read_write(
 					NUM_INT_ROOT, &inode, sizeof(inode),

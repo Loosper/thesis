@@ -47,6 +47,7 @@ struct secondary_block {
 };
 
 // TODO: types are bad
+// TODO: checksum this separately of the block?
 struct inode {
 	size_t size;
 	size_t refs;
@@ -64,6 +65,11 @@ struct dirent {
 	size_t inode;
 	char name[MAX_NAME_LEN];
 };
+
+// TODO: put free list/inode list pointers here. This way the macros don't have
+// to exit this file and can be changed more easily
+
+// TODO: HFS+ has a field here saying which is the next free inode num
 
 struct filesystem {
 	int backing_store;

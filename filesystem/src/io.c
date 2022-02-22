@@ -14,57 +14,6 @@
 
 extern int backing_store;
 
-// FIXME: change names of all of the below to something consistent. read_inode
-// is high level and read_data isn't. This has to be communicated. You could do
-// the _name things here too for static and genrally internal things
-
-// NOTE: Let vblock be virtual address of block, pblock be the actual address
-// of a block
-
-// TODO: now that files extend themselves, we don't need to write whole blocks
-// to them, can be just like normal files. I.E. the bookkeeping data for dirs
-// and such could be small
-
-// TODO: this is dumb as fuck, but it works for now!
-// DOES NOT initialize blocks!!! It's caller responsibility
-size_t allocate_block()
-{
-	uint8_t *data = malloc(FS_BLOCK_SIZE);
-	size_t bit_num;
-
-	for (bit_num = 0; ; bit_num++) {
-		size_t cur_blk = bit_num / (FS_BLOCK_SIZE * 8);
-		size_t file_offset = cur_blk * FS_BLOCK_SIZE;
-
-		size_t bit_index_in_blk = bit_num % FS_BLOCK_SIZE;
-		size_t index_in_block = bit_index_in_blk / 8;
-		uint8_t bitmask = 1 << (bit_index_in_blk % 8);
-
-		// refresh block when we reach its end
-		if (bit_num == cur_blk * (FS_BLOCK_SIZE * 8))
-			fs_int_pread(
-				BLK_FREE_LIST_INO, data, FS_BLOCK_SIZE,
-				file_offset
-			);
-
-		// it's allocated
-		if (data[index_in_block] & bitmask)
-			continue;
-
-		// allocate and quit
-		data[index_in_block] |= bitmask;
-		fs_int_pwrite(
-			BLK_FREE_LIST_INO, data, FS_BLOCK_SIZE,
-			file_offset
-		);
-		break;
-	}
-
-	free(data);
-	// logprintf("allocated %ld\n", bit_num);
-	return bit_num;
-}
-
 // all this because write() can be interrupted by signals and partially
 // complete. We assume the file has good dimensions and don't prevent infinite
 // spin
@@ -121,6 +70,57 @@ ssize_t read_data(void *data, size_t len, size_t block_no)
 	memcpy(data, block, len);
 
 	return ret;
+}
+
+// FIXME: change names of all of the below to something consistent. read_inode
+// is high level and read_data isn't. This has to be communicated. You could do
+// the _name things here too for static and genrally internal things
+
+// NOTE: Let vblock be virtual address of block, pblock be the actual address
+// of a block
+
+// TODO: now that files extend themselves, we don't need to write whole blocks
+// to them, can be just like normal files. I.E. the bookkeeping data for dirs
+// and such could be small
+
+// TODO: this is dumb as fuck, but it works for now!
+// DOES NOT initialize blocks!!! It's caller responsibility
+size_t allocate_block()
+{
+	uint8_t *data = malloc(FS_BLOCK_SIZE);
+	size_t bit_num;
+
+	for (bit_num = 0; ; bit_num++) {
+		size_t cur_blk = bit_num / (FS_BLOCK_SIZE * 8);
+		size_t file_offset = cur_blk * FS_BLOCK_SIZE;
+
+		size_t bit_index_in_blk = bit_num % FS_BLOCK_SIZE;
+		size_t index_in_block = bit_index_in_blk / 8;
+		uint8_t bitmask = 1 << (bit_index_in_blk % 8);
+
+		// refresh block when we reach its end
+		if (bit_num == cur_blk * (FS_BLOCK_SIZE * 8))
+			fs_int_pread(
+				BLK_FREE_LIST_INO, data, FS_BLOCK_SIZE,
+				file_offset
+			);
+
+		// it's allocated
+		if (data[index_in_block] & bitmask)
+			continue;
+
+		// allocate and quit
+		data[index_in_block] |= bitmask;
+		fs_int_pwrite(
+			BLK_FREE_LIST_INO, data, FS_BLOCK_SIZE,
+			file_offset
+		);
+		break;
+	}
+
+	free(data);
+	// logprintf("allocated %ld\n", bit_num);
+	return bit_num;
 }
 
 // assumes secondary_blk is valid;

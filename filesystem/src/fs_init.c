@@ -55,32 +55,43 @@ static void write_flist()
 	for (size_t i = 0; i < blk_cur_num; i++) {
 		allocate_block();
 	}
-
-	// // do this for the root inode too
-	// for (size_t i = 0; i < BLK_FREE_LIST_DATA; i++) {
-	// 	allocate_block();
-	// }
 }
 
-static void allocate_root_file()
+static void write_itable()
 {
-	struct secondary_block data;
-	struct inode inode;
-	size_t count = 1;
+	superblock.ifile_blk = allocate_block();
 
-	read_data(&inode, sizeof(struct inode), BLK_ROOT_INO);
+	struct inode root = {
+		// NOTE: only these matter for a WAFL style root inode
+		.size = 0,
+		.data_block = allocate_block()
+	};
 
-	// the internal data (number of files)
-	inode.size = FS_BLOCK_SIZE;
-	data.blocks[0] = allocate_block();
-	data.used = 1;
-	// init with a single file to skip inode 0
-	init_blk_zero(data.blocks[0]);
-	write_data(&count, sizeof(count), data.blocks[0]);
+	struct secondary_block data = {0};
 
-	write_data(&inode, sizeof(struct inode), BLK_ROOT_INO);
-	write_data(&data, sizeof(struct secondary_block), BLK_ROOT_SCND);
+	write_data(&root, sizeof(root), superblock.ifile_blk);
+	write_data(&data, sizeof(data), root.data_block);
 }
+
+// static void allocate_root_file()
+// {
+// 	struct secondary_block data;
+// 	struct inode inode;
+// 	size_t count = 1;
+
+// 	read_data(&inode, sizeof(struct inode), BLK_ROOT_INO);
+
+// 	// the internal data (number of files)
+// 	inode.size = FS_BLOCK_SIZE;
+// 	data.blocks[0] = allocate_block();
+// 	data.used = 1;
+// 	// init with a single file to skip inode 0
+// 	init_blk_zero(data.blocks[0]);
+// 	write_data(&count, sizeof(count), data.blocks[0]);
+
+// 	write_data(&inode, sizeof(struct inode), BLK_ROOT_INO);
+// 	write_data(&data, sizeof(struct secondary_block), BLK_ROOT_SCND);
+// }
 
 static void write_root_dir()
 {
@@ -90,28 +101,13 @@ static void write_root_dir()
 	make_empty_inode(&root_dir, S_IFDIR | 0777);
 }
 
-static void write_root_inode()
-{
-	struct inode root = {
-		// NOTE: only these matter for a WAFL style root inode
-		.size = 0,
-		.data_block = BLK_ROOT_SCND
-	};
-
-	struct secondary_block data = {0};
-
-	write_data(&root, sizeof(root), BLK_ROOT_INO);
-	write_data(&data, sizeof(data), BLK_ROOT_SCND);
-}
-
 void fs_init(struct fs_metadata *fs)
 {
 	backing_store = fs->backing_store;
 	write_flist();
+	write_itable();
 
 	// write the superblock
 	write_data(&superblock, sizeof(superblock), 0);
-	write_root_inode();
-	allocate_root_file();
 	write_root_dir();
 }

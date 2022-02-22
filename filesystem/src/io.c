@@ -13,10 +13,16 @@
 #include "io.h"
 
 extern int backing_store;
+extern struct superblock superblock;
 
 // all this because write() can be interrupted by signals and partially
 // complete. We assume the file has good dimensions and don't prevent infinite
 // spin
+
+// FIXME: change names of all of the below to something consistent. read_inode
+// is high level and read_data isn't. This has to be communicated. You could do
+// the _name things here too for static and genrally internal things
+
 ssize_t write_block(void *data, size_t block_no)
 {
 	size_t written = 0;
@@ -159,7 +165,7 @@ static size_t get_pblock_of_byte(struct inode *inode, size_t byte_n, bool write)
 				goto cleanup;
 			}
 
-			pblock = file_add_space(pblock, vblocks_needed - vblocks_found, &allocate_block);
+			pblock = file_add_space(inode, vblocks_needed - vblocks_found, &allocate_block);
 			goto cleanup;
 		}
 		pblock = blk_ptr->blocks[SCND_CAPACITY - 1];
@@ -177,35 +183,18 @@ cleanup:
 // kinda short circuit bootstrap
 
 // NOTE: currently only writes up to FS_BLOCK_SIZE
-static ssize_t do_read_write(size_t ino, void *buf, size_t count, off_t offset, bool write, bool internal)
+static ssize_t do_read_write(struct inode *inode, void *buf, size_t count, off_t offset, bool write, bool internal)
 {
 	uint8_t data[FS_BLOCK_SIZE];
-	struct inode inode;
 	size_t block_n;
 	// offset is %-ed because we only want offset within the block
 	size_t blk_offset = offset % FS_BLOCK_SIZE;
 	// don't try to copy beyond the end of the block TODO: for now
 	count = MIN(blk_offset + count, FS_BLOCK_SIZE) - blk_offset;
 
-
-	// get the inode of the file (read AND write)
-	if (internal) {
-		size_t inode_blk;
-		assert(ino == NUM_INT_ROOT || ino == NUM_INT_FREE);
-		if (ino == NUM_INT_ROOT)
-			inode_blk = BLK_ROOT_INO;
-		else if (ino == NUM_INT_FREE)
-			inode_blk = BLK_FREE_LIST_INO;
-		read_data(&inode, sizeof(inode), inode_blk);
-	} else {
-		// TODO: this has to be connected with read_inode somehow. code
-		// is duplicate
-		do_read_write(NUM_INT_ROOT, &inode, sizeof(inode), ino * FS_BLOCK_SIZE, false, true);
-	}
-
 	// TODO: ideally, this won't extend the space itself, but rather will
 	// let us know.  When it does, we'd set the file size
-	block_n = get_pblock_of_byte(&inode, offset, write);
+	block_n = get_pblock_of_byte(inode, offset, write);
 
 	if (block_n == 0)
 		return -EINVAL;
@@ -216,19 +205,9 @@ static ssize_t do_read_write(size_t ino, void *buf, size_t count, off_t offset, 
 		memcpy(data + blk_offset, buf, count);
 		write_block(data, block_n);
 
-		if (inode.size < offset + count) {
-			inode.size = offset + count;
-			if (internal) {
-				// TODO: lazy; I don't expect the free list to change so
-				// I let myself not handle it
-				assert(ino != NUM_INT_FREE);
-				write_data(&inode, sizeof(inode), BLK_ROOT_INO);
-			} else {
-				do_read_write(
-					NUM_INT_ROOT, &inode, sizeof(inode),
-					ino * FS_BLOCK_SIZE, true, true
-				);
-			}
+		if (inode->size < offset + count) {
+			// TODO: how to write it back with updated value
+			inode->size = offset + count;
 		}
 	} else {
 		memcpy(buf, data + blk_offset, count);
@@ -237,18 +216,33 @@ static ssize_t do_read_write(size_t ino, void *buf, size_t count, off_t offset, 
 	return count;
 }
 
-// FIXME: change names of all of the below to something consistent. read_inode
-// is high level and read_data isn't. This has to be communicated. You could do
-// the _name things here too for static and genrally internal things
+// shorthands for the above. Please use these and not that monstrocity
+ssize_t pread_ino(struct inode* ino, void *buf, size_t count, off_t offset)
+{
+	return do_read_write(ino, buf, count, offset, false, false);
+}
+
+ssize_t pwrite_ino(struct inode* ino, const void *buf, size_t count, off_t offset)
+{
+	return do_read_write(ino, (void *) buf, count, offset, true, false);
+}
 
 // TODO: now that files extend themselves, we don't need to write whole blocks
 // to them, can be just like normal files. I.E. the bookkeeping data for dirs
 // and such could be small
 
+static inline struct inode get_flist_inode()
+{
+	struct inode inode;
+	read_data(&inode, sizeof(inode), superblock.flist_blk);
+	return inode;
+}
+
 // TODO: this is dumb as fuck, but it works for now!
 // DOES NOT initialize blocks!!! It's caller responsibility
 size_t allocate_block()
 {
+	struct inode flist = get_flist_inode();
 	uint8_t *data = malloc(FS_BLOCK_SIZE);
 	size_t bit_num;
 
@@ -262,10 +256,7 @@ size_t allocate_block()
 
 		// refresh block when we reach its end
 		if (bit_num == cur_blk * (FS_BLOCK_SIZE * 8))
-			fs_int_pread(
-				BLK_FREE_LIST_INO, data, FS_BLOCK_SIZE,
-				file_offset
-			);
+			pread_ino(&flist, data, FS_BLOCK_SIZE, file_offset);
 
 		// it's allocated
 		if (data[index_in_block] & bitmask)
@@ -273,40 +264,13 @@ size_t allocate_block()
 
 		// allocate and quit
 		data[index_in_block] |= bitmask;
-		fs_int_pwrite(
-			BLK_FREE_LIST_INO, data, FS_BLOCK_SIZE,
-			file_offset
-		);
+		pwrite_ino(&flist, data, FS_BLOCK_SIZE, file_offset);
 		break;
 	}
 
 	free(data);
 	// logprintf("allocated %ld\n", bit_num);
 	return bit_num;
-}
-
-// TODO TODO TODO TODO: make the file access routine only take an inode struct,
-// not an inode num. This way struct of inode file doesn't have to impact that
-// routine
-
-ssize_t fs_int_pread(size_t ino, void *buf, size_t count, off_t offset)
-{
-	return do_read_write(ino, buf, count, offset, false, true);
-}
-
-ssize_t fs_int_pwrite(size_t ino, const void *buf, size_t count, off_t offset)
-{
-	return do_read_write(ino, (void *) buf, count, offset, true, true);
-}
-
-ssize_t fs_pread(size_t ino, void *buf, size_t count, off_t offset)
-{
-	return do_read_write(ino, buf, count, offset, false, false);
-}
-
-ssize_t fs_pwrite(size_t ino, const void *buf, size_t count, off_t offset)
-{
-	return do_read_write(ino, (void *) buf, count, offset, true, false);
 }
 
 static size_t get_num_files()

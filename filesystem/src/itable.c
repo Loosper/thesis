@@ -1,6 +1,6 @@
 #include <stdbool.h>
 #include <stdlib.h>
-
+#include <errno.h>
 
 #include "fs_helpers.h"
 #include "io.h"
@@ -24,11 +24,10 @@ static size_t get_num_files()
 	return data;
 }
 
-// // TODO: eventually do a proper check
-// static bool file_exists(size_t filenum)
-// {
-// 	return filenum > 0 && filenum < get_num_files();
-// }
+bool file_exists(size_t filenum)
+{
+	return filenum > 0 && filenum < get_num_files();
+}
 
 // TODO: zeroing is a MASSIVE problem. I need a routine that initializes things
 // properly. Currently I zero blocks in 5 different places
@@ -50,4 +49,22 @@ size_t add_file(struct inode *inode)
 	free(blk);
 	// -1 because the new count is the total, not the inode num
 	return data - 1;
+}
+
+int read_inode(size_t num, struct inode *inode)
+{
+	struct inode itable = get_itable_inode();
+
+	if (!file_exists(num))
+		return -ENOENT;
+	pread_ino(&itable, inode, sizeof(*inode), num * FS_BLOCK_SIZE);
+	return 0;
+}
+
+int write_inode(size_t num, struct inode *inode)
+{
+	struct inode itable = get_itable_inode();
+
+	pwrite_ino(&itable, inode, sizeof(*inode), num * FS_BLOCK_SIZE);
+	return 0;
 }

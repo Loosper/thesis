@@ -78,7 +78,7 @@ ssize_t write_block(void *data, size_t block_no)
 			backing_store, data + written, FS_BLOCK_SIZE - written,
 			block_no * FS_BLOCK_SIZE + written
 		);
-		check_errno(ret);
+		CHECK_ERRNO(ret);
 		written += ret;
 	}
 
@@ -96,7 +96,7 @@ ssize_t read_block(void *buf, size_t block_no)
 			backing_store, buf + rread, FS_BLOCK_SIZE - rread,
 			block_no * FS_BLOCK_SIZE + rread
 		);
-		check_errno(ret);
+		CHECK_ERRNO(ret);
 		rread += ret;
 	}
 

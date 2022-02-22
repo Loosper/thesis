@@ -105,16 +105,3 @@ void print_block(size_t block_num)
 	}
 	free(to_free);
 }
-
-// the file returning error is unrecoverable for now
-void check_errno(ssize_t ret)
-{
-	if (ret < 0) {
-		fuse_log(
-			FUSE_LOG_ERR,
-			"pread/pwrite failed: %s\n", strerror(errno)
-		);
-		// TODO: fuse_session_exit?
-		exit(1);
-	}
-}

@@ -12,10 +12,10 @@
 // extern int backing_store;
 
 
-struct filesystem *req_userdata(fuse_req_t req)
-{
-	return fuse_req_userdata(req);
-}
+// struct filesystem *req_userdata(fuse_req_t req)
+// {
+// 	return fuse_req_userdata(req);
+// }
 
 // int req_fd(fuse_req_t req)
 // {

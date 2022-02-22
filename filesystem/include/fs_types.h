@@ -71,7 +71,8 @@ struct dirent {
 
 // TODO: HFS+ has a field here saying which is the next free inode num
 
-struct filesystem {
+// NOTE: not a superblock
+struct fs_metadata {
 	int backing_store;
 };
 

@@ -99,7 +99,7 @@ static void write_root_inode()
 	write_data(&data, sizeof(data), BLK_ROOT_SCND);
 }
 
-void fs_init(struct filesystem *fs)
+void fs_init(struct fs_metadata *fs)
 {
 	backing_store = fs->backing_store;
 	write_root_inode();

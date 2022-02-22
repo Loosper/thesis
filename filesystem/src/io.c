@@ -72,6 +72,49 @@ ssize_t read_data(void *data, size_t len, size_t block_no)
 	return ret;
 }
 
+// assumes secondary_blk is valid;
+// returns last accessible block
+size_t file_add_space(struct inode *inode, size_t blk_req, size_t (*allocator)())
+{
+	struct secondary_block data_ptr;
+	size_t blk_written = 0;
+	size_t blk_ptr_loc = inode->data_block;
+	bool first = true;
+	size_t new_block;
+
+	read_data(&data_ptr, sizeof(data_ptr), inode->data_block);
+
+	while (blk_written < blk_req) {
+		if (!first) {
+			data_ptr.used = 0;
+			blk_ptr_loc = allocator();
+		}
+		first = false;
+
+		// TODO: this can be shrank by replacing i with block.used
+		// fill in the ptr struct ("allocate" blocks in a sense)
+		while (data_ptr.used < SCND_CAPACITY) {
+			new_block = allocator();
+			// TODO: see add_file comment. This is bad.
+			// Keep it for sanity for now
+			init_blk_zero(new_block);
+			data_ptr.blocks[data_ptr.used++] = new_block;
+			init_blk_zero(new_block);
+
+			// last block is bookkeeping, so it doesn't count
+			if (data_ptr.used != SCND_CAPACITY - 1)
+				blk_written++;
+			if (blk_written == blk_req)
+				break;
+		}
+
+		// write the intermediary block as filled in
+		write_data(&data_ptr, sizeof(data_ptr), blk_ptr_loc);
+	}
+
+	return new_block;
+}
+
 // FIXME: change names of all of the below to something consistent. read_inode
 // is high level and read_data isn't. This has to be communicated. You could do
 // the _name things here too for static and genrally internal things
@@ -121,49 +164,6 @@ size_t allocate_block()
 	free(data);
 	// logprintf("allocated %ld\n", bit_num);
 	return bit_num;
-}
-
-// assumes secondary_blk is valid;
-// returns last accessible block
-size_t file_add_space(size_t secondary_blk, size_t blk_req, size_t (*allocator)())
-{
-	struct secondary_block data_ptr;
-	size_t blk_written = 0;
-	size_t blk_ptr_loc = secondary_blk;
-	bool first = true;
-	size_t new_block;
-
-	read_data(&data_ptr, sizeof(data_ptr), secondary_blk);
-
-	while (blk_written < blk_req) {
-		if (!first) {
-			data_ptr.used = 0;
-			blk_ptr_loc = allocator();
-		}
-		first = false;
-
-		// TODO: this can be shrank by replacing i with block.used
-		// fill in the ptr struct ("allocate" blocks in a sense)
-		while (data_ptr.used < SCND_CAPACITY) {
-			new_block = allocator();
-			// TODO: see add_file comment. This is bad.
-			// Keep it for sanity for now
-			init_blk_zero(new_block);
-			data_ptr.blocks[data_ptr.used++] = new_block;
-			init_blk_zero(new_block);
-
-			// last block is bookkeeping, so it doesn't count
-			if (data_ptr.used != SCND_CAPACITY - 1)
-				blk_written++;
-			if (blk_written == blk_req)
-				break;
-		}
-
-		// write the intermediary block as filled in
-		write_data(&data_ptr, sizeof(data_ptr), blk_ptr_loc);
-	}
-
-	return new_block;
 }
 
 // TODO TODO TODO TODO: make the file access routine only take an inode struct,

@@ -9,6 +9,8 @@
 #include "io.h"
 
 int backing_store = 0;
+struct superblock superblock;
+
 
 // TODO: if I can short circuit the allocator to not read the free list, I can
 // skip this
@@ -20,7 +22,9 @@ static size_t dummy_allocate()
 	return blk_cur_num;
 }
 
-static void write_empty_blocks_file()
+// this is first as it substantially reduces bootrstrap efforts
+// after that we can mostly use all the normal routines
+static void write_flist()
 {
 	size_t list_size;
 	// TODO: I shall assume a sector size of 512. This probably isn't true
@@ -29,32 +33,33 @@ static void write_empty_blocks_file()
 	list_size /= sizeof(uint8_t);
 
 	struct secondary_block scnd = {0};
+	// put the inode here
+	superblock.flist_blk = SUPERBLOCK_BLK + 1;
 	struct inode free_list = {
 		.size = list_size,
-		.data_block = BLK_FREE_LIST_SCND
+		.data_block = SUPERBLOCK_BLK + 2 // just after inode
 	};
 	size_t blk_req = list_size / FS_BLOCK_SIZE;
 	size_t blk_cur_num;
 
 	fuse_log(FUSE_LOG_INFO, "free list size %ld\n", list_size);
 	fuse_log(FUSE_LOG_INFO, "free list blks %ld\n", blk_req);
-	write_data(&free_list, sizeof(free_list), BLK_FREE_LIST_INO);
-	write_data(&scnd, sizeof(scnd), BLK_FREE_LIST_SCND);
+	write_data(&free_list, sizeof(free_list), superblock.flist_blk);
+	write_data(&scnd, sizeof(scnd), SUPERBLOCK_BLK + 2);
 
-	blk_cur_num = file_add_space(BLK_FREE_LIST_SCND, blk_req, &dummy_allocate);
-
+	blk_cur_num = file_add_space(&free_list, blk_req, &dummy_allocate);
 
 	// TODO: this is a hack. Since we are making the free list, we can't
-	// call allocate yet.  We can do it postfactum though. Can probably be
-	// hardcoded tbh
+	// call allocate yet. We can do it postfactum though. Can probably be
+	// hardcoded tbh. Should be linear (all blocks from 0 to however many)
 	for (size_t i = 0; i < blk_cur_num; i++) {
 		allocate_block();
 	}
 
-	// do this for the root inode too
-	for (size_t i = 0; i < BLK_FREE_LIST_DATA; i++) {
-		allocate_block();
-	}
+	// // do this for the root inode too
+	// for (size_t i = 0; i < BLK_FREE_LIST_DATA; i++) {
+	// 	allocate_block();
+	// }
 }
 
 static void allocate_root_file()
@@ -102,8 +107,11 @@ static void write_root_inode()
 void fs_init(struct fs_metadata *fs)
 {
 	backing_store = fs->backing_store;
+	write_flist();
+
+	// write the superblock
+	write_data(&superblock, sizeof(superblock), 0);
 	write_root_inode();
-	write_empty_blocks_file();
 	allocate_root_file();
 	write_root_dir();
 }

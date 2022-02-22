@@ -24,6 +24,8 @@
 #define BLK_FREE_LIST_SCND	3
 #define BLK_FREE_LIST_DATA	4
 
+#define SUPERBLOCK_BLK		1
+
 #define NUM_INT_ROOT 0
 #define NUM_INT_FREE 1
 
@@ -76,5 +78,10 @@ struct fs_metadata {
 	int backing_store;
 };
 
+struct superblock {
+	// the block number of their inodes
+	size_t ifile_blk;
+	size_t flist_blk;
+};
 
 #endif

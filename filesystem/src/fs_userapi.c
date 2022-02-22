@@ -8,10 +8,12 @@
 
 #include <fuse_lowlevel.h>
 
+#include "directory.h"
 #include "fs_userapi.h"
 #include "fs_types.h"
 #include "fs_helpers.h"
 #include "io.h"
+#include "itable.h"
 
 #define ASSERT_GOOD(reply) assert(reply == 0)
 
@@ -34,9 +36,13 @@ void fs_lookup(fuse_req_t req, fuse_ino_t parent, const char *name)
 	struct fuse_entry_param reply;
 	struct inode inode;
 	size_t ino_num;
+	struct inode parent_ino;
 	int ret;
 
-	ino_num = get_direntry(parent, name);
+	ret = read_inode(parent, &parent_ino);
+	assert(ret == 0);
+
+	ino_num = get_direntry(&parent_ino, name);
 	ret = read_inode(ino_num, &inode);
 	if (ret < 0) {
 		logprintf("lookup refused: '%s', of: %ld\n", name, parent);

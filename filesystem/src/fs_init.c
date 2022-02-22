@@ -4,6 +4,7 @@
 #include <linux/fs.h>
 #include <sys/ioctl.h>
 
+#include "directory.h"
 #include "fs_helpers.h"
 #include "fs_types.h"
 #include "itable.h"

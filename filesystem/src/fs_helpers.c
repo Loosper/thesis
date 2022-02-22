@@ -62,42 +62,42 @@ void init_blk_zero(size_t blk_num)
 	free(blk);
 }
 
-// void print_inode(struct inode *ino, size_t num)
-// {
-// 	fuse_log(FUSE_LOG_INFO,
-// 		"inode (%d):\n"
-// 		"\tsize: %ld\n"
-// 		"\tscnd: %ld\n"
-// 		"\trefs: %ld\n"
-// 		"\tuid/gid: %d/%d\n"
-// 		"\tmode: %x\n"
-// 		"\tatime: %ld\n"
-// 		"\tmtime: %ld\n"
-// 		"\tctime: %ld\n",
-// 		num,
-// 		// ino->name,
-// 		ino->size, ino->data_block, ino->refs, ino->uid, ino->gid,
-// 		ino->mode, ino->atime, ino->mtime, ino->ctime
-// 	);
-// }
+void print_inode(struct inode *ino, size_t num)
+{
+	fuse_log(FUSE_LOG_INFO,
+		"inode (%d):\n"
+		"\tsize: %ld\n"
+		"\tscnd: %ld\n"
+		"\trefs: %ld\n"
+		"\tuid/gid: %d/%d\n"
+		"\tmode: %x\n"
+		"\tatime: %ld\n"
+		"\tmtime: %ld\n"
+		"\tctime: %ld\n",
+		num,
+		// ino->name,
+		ino->size, ino->data_block, ino->refs, ino->uid, ino->gid,
+		ino->mode, ino->atime, ino->mtime, ino->ctime
+	);
+}
 
-// void print_block(size_t block_num)
-// {
-// 	uint8_t *data = malloc(FS_BLOCK_SIZE);
-// 	void *to_free = data;
-// 	read_block(data, block_num);
+void print_block(size_t block_num)
+{
+	uint8_t *data = malloc(FS_BLOCK_SIZE);
+	void *to_free = data;
+	read_block(data, block_num);
 
-// 	fuse_log(FUSE_LOG_INFO, "block %ld:\n", block_num);
-// 	for (int i = 0; i < FS_BLOCK_SIZE / 32; i++) {
-// 		for (int j = 0; j < 4; j++) {
-// 			fuse_log(FUSE_LOG_INFO,
-// 				"%02x%02x%02x%02x%02x%02x%02x%02x",
-// 				data[0], data[1], data[2], data[3],
-// 				data[4], data[5], data[6], data[7]
-// 			);
-// 			data += 8;
-// 		}
-// 		fuse_log(FUSE_LOG_INFO, "\n");
-// 	}
-// 	free(to_free);
-// }
+	fuse_log(FUSE_LOG_INFO, "block %ld:\n", block_num);
+	for (int i = 0; i < FS_BLOCK_SIZE / 32; i++) {
+		for (int j = 0; j < 4; j++) {
+			fuse_log(FUSE_LOG_INFO,
+				"%02x%02x%02x%02x%02x%02x%02x%02x",
+				data[0], data[1], data[2], data[3],
+				data[4], data[5], data[6], data[7]
+			);
+			data += 8;
+		}
+		fuse_log(FUSE_LOG_INFO, "\n");
+	}
+	free(to_free);
+}

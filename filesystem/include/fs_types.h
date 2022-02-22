@@ -72,16 +72,12 @@ struct dirent {
 	char name[MAX_NAME_LEN];
 };
 
-// TODO: put free list/inode list pointers here. This way the macros don't have
-// to exit this file and can be changed more easily
-
-// TODO: HFS+ has a field here saying which is the next free inode num
-
 // NOTE: not a superblock
 struct fs_metadata {
 	int backing_store;
 };
 
+// TODO: HFS+ has a field here saying which is the next free inode num
 struct superblock {
 	// the block number of their inodes
 	size_t itable_blk;

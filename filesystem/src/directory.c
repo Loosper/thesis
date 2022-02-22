@@ -67,32 +67,32 @@ static size_t get_direntry_idx(struct dirent *dirent, struct inode *dir_ino, con
 	return SIZE_MAX;
 }
 
-// // TODO:
-// static int unlink_inode(size_t num)
-// {
-// 	assert(num != 0);
-// 	return 0;
-// }
+// TODO:
+static int unlink_inode(size_t num)
+{
+	assert(num != 0);
+	return 0;
+}
 
-// int rm_direntry(size_t dir_ino, const char *filename)
-// {
-// 	struct dirent dirent;
-// 	size_t idx = get_direntry_idx(&dirent, dir_ino, filename);
-// 	// conscious choice to not check it. I assume the kernel will only
-// 	// feed me valid stuff for now
-// 	assert(dirent.inode != 0);
+int rm_direntry(struct inode *dir_ino, const char *filename)
+{
+	struct dirent dirent;
+	size_t idx = get_direntry_idx(&dirent, dir_ino, filename);
+	// conscious choice to not check it. I assume the kernel will only
+	// feed me valid stuff for now
+	assert(dirent.inode != 0);
 
-// 	unlink_inode(dirent.inode);
+	unlink_inode(dirent.inode);
 
-// 	dirent.name[0] = '\0';
-// 	dirent.inode = 0;
-// 	fs_pwrite(
-// 		dir_ino, &dirent, sizeof(dirent),
-// 		(idx + 1) * sizeof(dirent)
-// 	);
+	dirent.name[0] = '\0';
+	dirent.inode = 0;
+	pwrite_ino(
+		dir_ino, &dirent, sizeof(dirent),
+		(idx + 1) * sizeof(dirent)
+	);
 
-// 	return 0;
-// }
+	return 0;
+}
 
 size_t get_direntry(struct inode *dir_ino, const char *filename)
 {
@@ -104,21 +104,20 @@ size_t get_direntry(struct inode *dir_ino, const char *filename)
 	return dirent.inode;
 }
 
-// struct dirent list_dir(size_t dir_ino, off_t idx)
-// {
-// 	size_t count;
-// 	struct dirent entry;
-// 	assert(file_exists(dir_ino));
+struct dirent list_dir(struct inode *dir_ino, off_t idx)
+{
+	size_t count;
+	struct dirent entry;
 
-// 	fs_pread(dir_ino, &count, sizeof(count), 0);
-// 	// we're done
-// 	if (idx >= (off_t) count) {
-// 		entry.inode = 0;
-// 		return entry;
-// 	}
-// 	fs_pread(
-// 		dir_ino, &entry, sizeof(entry),
-// 		(idx + 1) * sizeof(entry)
-// 	);
-// 	return entry;
-// }
+	pread_ino(dir_ino, &count, sizeof(count), 0);
+	// we're done
+	if (idx >= (off_t) count) {
+		entry.inode = 0;
+		return entry;
+	}
+	pread_ino(
+		dir_ino, &entry, sizeof(entry),
+		(idx + 1) * sizeof(entry)
+	);
+	return entry;
+}

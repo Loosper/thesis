@@ -62,12 +62,18 @@ void fs_create(fuse_req_t req, fuse_ino_t parent, const char *name, mode_t mode,
 	struct fuse_entry_param reply;
 	struct dirent entry;
 	struct inode inode;
+	struct inode parent_ino;
 	int ret;
 
-	entry.inode = make_empty_inode(&inode, mode);
+	make_empty_inode(&inode, mode, allocate_block());
+	entry.inode = add_file(&inode);
+
 	strncpy(entry.name, name, MAX_NAME_LEN);
 
-	ret = add_direntry(parent, &entry);
+	ret = read_inode(parent, &parent_ino);
+	assert(ret == 0);
+
+	ret = add_direntry(&parent_ino, &entry);
 	if (ret < 0) {
 		ASSERT_GOOD(fuse_reply_err(req, -ret));
 		return;
@@ -136,14 +142,20 @@ void fs_setattr(fuse_req_t req, fuse_ino_t ino, struct stat *attr, int to_set, s
 void fs_write(fuse_req_t req, fuse_ino_t ino, const char *buf,
 	size_t size, off_t off, struct fuse_file_info *fi)
 {
-	ssize_t ret = fs_pwrite(ino, buf, size, off);
+	struct inode inode;
+	read_inode(ino, &inode);
+
+	ssize_t ret = pwrite_ino(&inode, buf, size, off);
 	ASSERT_GOOD(fuse_reply_write(req, ret));
 }
 
 void fs_read(fuse_req_t req, fuse_ino_t ino, size_t size, off_t off, struct fuse_file_info *fi)
 {
+	struct inode inode;
 	char *buf = malloc(size);
-	ssize_t ret = fs_pread(ino, buf, size, off);
+	read_inode(ino, &inode);
+
+	ssize_t ret = pread_ino(&inode, buf, size, off);
 
 	ASSERT_GOOD(fuse_reply_buf(req, buf, ret));
 	free(buf);
@@ -151,7 +163,10 @@ void fs_read(fuse_req_t req, fuse_ino_t ino, size_t size, off_t off, struct fuse
 
 void fs_unlink(fuse_req_t req, fuse_ino_t parent, const char *name)
 {
-	int ret = rm_direntry(parent, name);
+	struct inode inode;
+	read_inode(parent, &inode);
+
+	int ret = rm_direntry(&inode, name);
 
 	fuse_reply_err(req, ret);
 }
@@ -181,13 +196,17 @@ void fs_mkdir(fuse_req_t req, fuse_ino_t parent, const char *name, mode_t mode)
 {
 	struct fuse_entry_param reply;
 	struct dirent entry;
-	struct inode inode;
+	struct inode new_inode;
+	struct inode dir_inode;
 	int ret;
 
-	entry.inode = make_empty_inode(&inode, mode | S_IFDIR);
+	make_empty_inode(&new_inode, mode | S_IFDIR, allocate_block());
+	entry.inode = add_dir(&new_inode);
 	strncpy(entry.name, name, MAX_NAME_LEN);
 
-	ret = add_direntry(parent, &entry);
+	read_inode(parent, &dir_inode);
+
+	ret = add_direntry(&dir_inode, &entry);
 	if (ret < 0) {
 		ASSERT_GOOD(fuse_reply_err(req, -ret));
 		return;
@@ -195,7 +214,7 @@ void fs_mkdir(fuse_req_t req, fuse_ino_t parent, const char *name, mode_t mode)
 
 	logprintf("mkdir: '%s' (%ld), at: %ld\n", name, entry.inode, parent);
 
-	reply = make_reply_entry(entry.inode, &inode);
+	reply = make_reply_entry(entry.inode, &new_inode);
 	ASSERT_GOOD(fuse_reply_entry(req, &reply));
 }
 
@@ -216,7 +235,9 @@ void fs_readdir(fuse_req_t req, fuse_ino_t ino, size_t size, off_t off, struct f
 
 	logprintf("list %ld, step %ld\n", ino, off);
 
-	entry = list_dir(ino, off);
+	read_inode(ino, &inode);
+
+	entry = list_dir(&inode, off);
 	// we're done
 	if (entry.inode == 0) {
 		ASSERT_GOOD(fuse_reply_buf(req, NULL, 0));

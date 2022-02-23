@@ -17,13 +17,19 @@ static inline struct inode get_flist_inode()
 	return inode;
 }
 
+// minimal bootstrap: superblock is on block 1. After that everything is laid
+// out "dynamically" on a rolling basis. Currently that's first the inode of
+// the flist and then the flist itself, after that the proper allocator is to
+// be used. It is expected that the first block after that will contain root
+// inode and so on
 // TODO: if I can short circuit the allocator to not read the free list, I can
 // skip this
 static size_t dummy_allocate()
 {
-	static size_t blk_cur_num = BLK_FREE_LIST_SCND;
+	static size_t blk_cur_num = SUPERBLOCK_BLK;
 
 	blk_cur_num++;
+	init_blk_zero(blk_cur_num);
 	return blk_cur_num;
 }
 
@@ -39,11 +45,11 @@ size_t gen_flist()
 
 	struct secondary_block scnd = {0};
 	// put the inode here (no allocator yet)
-	size_t location = SUPERBLOCK_BLK + 1;
+	size_t location = dummy_allocate();
 	// TODO: make_empty_inode()?
 	struct inode free_list = {
 		.size = list_size,
-		.data_block = SUPERBLOCK_BLK + 2 // just after inode
+		.data_block = dummy_allocate()
 	};
 	size_t blk_req = list_size / FS_BLOCK_SIZE;
 	size_t blk_cur_num;
@@ -51,14 +57,12 @@ size_t gen_flist()
 	fuse_log(FUSE_LOG_INFO, "free list size %ld\n", list_size);
 	fuse_log(FUSE_LOG_INFO, "free list blks %ld\n", blk_req);
 	write_data(&free_list, sizeof(free_list), location);
-	write_data(&scnd, sizeof(scnd), SUPERBLOCK_BLK + 2);
+	write_data(&scnd, sizeof(scnd), free_list.data_block);
 
 	blk_cur_num = file_add_space(&free_list, blk_req, &dummy_allocate);
 
 	// this will allocate only the blocks the free list itself uses. We
 	// expect everyone else to use the allocation utilities
-	// add the offset from the start, +1 to convert into a counter
-	blk_cur_num += SUPERBLOCK_BLK + 1;
 	// round up bits to nearest mutliple of 8 and convert to bytes
 	size_t bits_len = ((blk_cur_num | 0x8) & ~0x7) / 8;
 	uint8_t *bits = malloc(bits_len);

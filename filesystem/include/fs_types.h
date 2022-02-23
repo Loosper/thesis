@@ -9,26 +9,7 @@
 // TODO: make dynamic
 #define FS_BLOCK_SIZE FS_SECTOR_SIZE
 // #define FS_BLOCK_SIZE (1 * FS_SECTOR_SIZE)
-
-// minimal bootstrap:
-// ROOT      inode is block #0
-// FREE LIST inode is block #1
-// #2 and #3 are their data ptrs
-// #4 to #n is the free list data
-// after that filesystem is ready for use
-// the root inode file contains a block for bookkeeping info (number of indoes)
-// followed by a list of all data inodes (1 block = 1 inode for now)
-#define BLK_ROOT_INO		0
-#define BLK_FREE_LIST_INO	1
-#define BLK_ROOT_SCND		2
-#define BLK_FREE_LIST_SCND	3
-#define BLK_FREE_LIST_DATA	4
-
 #define SUPERBLOCK_BLK		1
-
-#define NUM_INT_ROOT 0
-#define NUM_INT_FREE 1
-
 
 extern int backing_store;
 extern struct superblock superblock;

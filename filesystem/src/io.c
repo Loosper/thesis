@@ -186,7 +186,7 @@ cleanup:
 // kinda short circuit bootstrap
 
 // NOTE: currently only writes up to FS_BLOCK_SIZE
-static ssize_t do_read_write(struct inode *inode, void *buf, size_t count, off_t offset, bool write, bool internal)
+static ssize_t do_read_write_block(struct inode *inode, void *buf, size_t count, off_t offset, bool write, bool internal)
 {
 	uint8_t data[FS_BLOCK_SIZE];
 	size_t block_n;
@@ -219,13 +219,33 @@ static ssize_t do_read_write(struct inode *inode, void *buf, size_t count, off_t
 	return count;
 }
 
+// TODO: this is a very temporary and very ugly HACK
+static ssize_t do_read_write_full(struct inode *inode, void *buf, size_t count, off_t offset, bool write, bool internal)
+{
+	size_t done = 0;
+	while (done < count) {
+		ssize_t ret;
+		ret = do_read_write_block(
+			inode, buf + done, count - done,
+			offset + done, write, internal
+		);
+		if (ret < 0)
+			return ret;
+		done += ret;
+	}
+
+	assert(done == count);
+
+	return done;
+}
+
 // shorthands for the above. Please use these and not that monstrocity
 ssize_t pread_ino(struct inode* ino, void *buf, size_t count, off_t offset)
 {
-	return do_read_write(ino, buf, count, offset, false, false);
+	return do_read_write_full(ino, buf, count, offset, false, false);
 }
 
 ssize_t pwrite_ino(struct inode* ino, const void *buf, size_t count, off_t offset)
 {
-	return do_read_write(ino, (void *) buf, count, offset, true, false);
+	return do_read_write_full(ino, (void *) buf, count, offset, true, false);
 }

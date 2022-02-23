@@ -83,6 +83,7 @@ ssize_t read_data(void *data, size_t len, size_t block_no)
 
 // assumes secondary_blk is valid;
 // returns last accessible block
+// TODO: I think the return is off by 1
 size_t file_add_space(struct inode *inode, size_t blk_req, size_t (*allocator)())
 {
 	struct secondary_block data_ptr;

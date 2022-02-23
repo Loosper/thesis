@@ -8,6 +8,7 @@
 
 #include "fs_types.h"
 #include "io.h"
+#include "fs_helpers.h"
 
 // extern int backing_store;
 

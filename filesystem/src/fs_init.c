@@ -12,27 +12,6 @@ int backing_store = 0;
 struct superblock superblock;
 
 
-
-// static void allocate_root_file()
-// {
-// 	struct secondary_block data;
-// 	struct inode inode;
-// 	size_t count = 1;
-
-// 	read_data(&inode, sizeof(struct inode), BLK_ROOT_INO);
-
-// 	// the internal data (number of files)
-// 	inode.size = FS_BLOCK_SIZE;
-// 	data.blocks[0] = allocate_block();
-// 	data.used = 1;
-// 	// init with a single file to skip inode 0
-// 	init_blk_zero(data.blocks[0]);
-// 	write_data(&count, sizeof(count), data.blocks[0]);
-
-// 	write_data(&inode, sizeof(struct inode), BLK_ROOT_INO);
-// 	write_data(&data, sizeof(struct secondary_block), BLK_ROOT_SCND);
-// }
-
 static void write_root_dir()
 {
 	struct inode root_dir;

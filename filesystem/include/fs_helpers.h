@@ -1,6 +1,8 @@
 #ifndef _FS_HELPERS_H_
 #define _FS_HELPERS_H_
 
+#include <stdlib.h>
+
 #include <sys/stat.h>
 
 #include <fuse_lowlevel.h>
@@ -10,6 +12,12 @@
 #define member_size(type, member) sizeof(((type *)0)->member)
 #define logprintf(...) fuse_log(FUSE_LOG_INFO, ##__VA_ARGS__)
 
+// sole purpose is to make the macro below debugable
+static inline void dummy_exit(int code)
+{
+	exit(code);
+}
+
 // TODO: fuse_session_exit?
 #define CHECK_ERRNO(ret) do { \
 	if (ret < 0) { \
@@ -17,7 +25,7 @@
 			"pread/pwrite failed at %s:%d: %s\n", \
 			__FILE__, __LINE__, strerror(errno) \
 		); \
-		exit(1); \
+		dummy_exit(1); \
 	} \
 } while (0)
 

@@ -8,6 +8,7 @@
 
 #include <fuse_lowlevel.h>
 
+#include "flist.h"
 #include "directory.h"
 #include "fs_userapi.h"
 #include "fs_types.h"

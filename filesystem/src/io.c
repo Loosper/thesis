@@ -8,6 +8,7 @@
 
 #include <sys/param.h>
 
+#include "flist.h"
 #include "fs_helpers.h"
 #include "fs_types.h"
 #include "itable.h"
@@ -20,6 +21,10 @@
 // FIXME: change names of all of the below to something consistent. read_inode
 // is high level and read_data isn't. This has to be communicated. You could do
 // the _name things here too for static and genrally internal things
+
+// TODO: now that files extend themselves, we don't need to write whole blocks
+// to them, can be just like normal files. I.E. the bookkeeping data for dirs
+// and such could be small
 
 ssize_t write_block(void *data, size_t block_no)
 {
@@ -223,50 +228,4 @@ ssize_t pread_ino(struct inode* ino, void *buf, size_t count, off_t offset)
 ssize_t pwrite_ino(struct inode* ino, const void *buf, size_t count, off_t offset)
 {
 	return do_read_write(ino, (void *) buf, count, offset, true, false);
-}
-
-// TODO: now that files extend themselves, we don't need to write whole blocks
-// to them, can be just like normal files. I.E. the bookkeeping data for dirs
-// and such could be small
-
-static inline struct inode get_flist_inode()
-{
-	struct inode inode;
-	read_data(&inode, sizeof(inode), superblock.flist_blk);
-	return inode;
-}
-
-// TODO: this is dumb as fuck, but it works for now!
-// DOES NOT initialize blocks!!! It's caller responsibility
-size_t allocate_block()
-{
-	struct inode flist = get_flist_inode();
-	uint8_t *data = malloc(FS_BLOCK_SIZE);
-	size_t bit_num;
-
-	for (bit_num = 0; ; bit_num++) {
-		size_t cur_blk = bit_num / (FS_BLOCK_SIZE * 8);
-		size_t file_offset = cur_blk * FS_BLOCK_SIZE;
-
-		size_t bit_index_in_blk = bit_num % FS_BLOCK_SIZE;
-		size_t index_in_block = bit_index_in_blk / 8;
-		uint8_t bitmask = 1 << (bit_index_in_blk % 8);
-
-		// refresh block when we reach its end
-		if (bit_num == cur_blk * (FS_BLOCK_SIZE * 8))
-			pread_ino(&flist, data, FS_BLOCK_SIZE, file_offset);
-
-		// it's allocated
-		if (data[index_in_block] & bitmask)
-			continue;
-
-		// allocate and quit
-		data[index_in_block] |= bitmask;
-		pwrite_ino(&flist, data, FS_BLOCK_SIZE, file_offset);
-		break;
-	}
-
-	free(data);
-	// logprintf("allocated %ld\n", bit_num);
-	return bit_num;
 }

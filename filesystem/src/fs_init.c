@@ -1,10 +1,8 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include <linux/fs.h>
-#include <sys/ioctl.h>
-
 #include "directory.h"
+#include "flist.h"
 #include "fs_helpers.h"
 #include "fs_types.h"
 #include "itable.h"
@@ -13,51 +11,6 @@
 int backing_store = 0;
 struct superblock superblock;
 
-
-// TODO: if I can short circuit the allocator to not read the free list, I can
-// skip this
-static size_t dummy_allocate()
-{
-	static size_t blk_cur_num = BLK_FREE_LIST_SCND;
-
-	blk_cur_num++;
-	return blk_cur_num;
-}
-
-// this is first as it substantially reduces bootrstrap efforts
-// after that we can mostly use all the normal routines
-static void write_flist()
-{
-	size_t list_size;
-	// TODO: I shall assume a sector size of 512. This probably isn't true
-	ioctl(backing_store, BLKGETSIZE, &list_size);
-	// we use 1 bit per block, a byte has 8
-	list_size /= sizeof(uint8_t);
-
-	struct secondary_block scnd = {0};
-	// put the inode here
-	superblock.flist_blk = SUPERBLOCK_BLK + 1;
-	struct inode free_list = {
-		.size = list_size,
-		.data_block = SUPERBLOCK_BLK + 2 // just after inode
-	};
-	size_t blk_req = list_size / FS_BLOCK_SIZE;
-	size_t blk_cur_num;
-
-	fuse_log(FUSE_LOG_INFO, "free list size %ld\n", list_size);
-	fuse_log(FUSE_LOG_INFO, "free list blks %ld\n", blk_req);
-	write_data(&free_list, sizeof(free_list), superblock.flist_blk);
-	write_data(&scnd, sizeof(scnd), SUPERBLOCK_BLK + 2);
-
-	blk_cur_num = file_add_space(&free_list, blk_req, &dummy_allocate);
-
-	// TODO: this is a hack. Since we are making the free list, we can't
-	// call allocate yet. We can do it postfactum though. Can probably be
-	// hardcoded tbh. Should be linear (all blocks from 0 to however many)
-	for (size_t i = 0; i < blk_cur_num; i++) {
-		allocate_block();
-	}
-}
 
 
 // static void allocate_root_file()
@@ -93,7 +46,7 @@ static void write_root_dir()
 void fs_init(struct fs_metadata *fs)
 {
 	backing_store = fs->backing_store;
-	write_flist();
+	superblock.flist_blk = gen_flist();
 	superblock.itable_blk = gen_itable();
 	write_root_dir();
 

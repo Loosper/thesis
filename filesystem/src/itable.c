@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <errno.h>
 
+#include "flist.h"
 #include "fs_helpers.h"
 #include "io.h"
 #include "itable.h"

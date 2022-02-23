@@ -4,6 +4,7 @@
 #include <stdint.h>
 #include <string.h>
 
+#include "flist.h"
 #include "fs_helpers.h"
 #include "itable.h"
 #include "io.h"

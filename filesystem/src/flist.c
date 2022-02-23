@@ -1,4 +1,5 @@
 #include <stdlib.h>
+#include <string.h>
 
 #include <linux/fs.h>
 #include <sys/ioctl.h>
@@ -39,6 +40,7 @@ size_t gen_flist()
 	struct secondary_block scnd = {0};
 	// put the inode here (no allocator yet)
 	size_t location = SUPERBLOCK_BLK + 1;
+	// TODO: make_empty_inode()?
 	struct inode free_list = {
 		.size = list_size,
 		.data_block = SUPERBLOCK_BLK + 2 // just after inode
@@ -53,17 +55,30 @@ size_t gen_flist()
 
 	blk_cur_num = file_add_space(&free_list, blk_req, &dummy_allocate);
 
-	// TODO: this is a hack. Since we are making the free list, we can't
-	// call allocate yet. We can do it postfactum though. Can probably be
-	// hardcoded tbh. Should be linear (all blocks from 0 to however many)
-	for (size_t i = 0; i < blk_cur_num; i++) {
-		allocate_block();
+	// this will allocate only the blocks the free list itself uses. We
+	// expect everyone else to use the allocation utilities
+	// add the offset from the start, +1 to convert into a counter
+	blk_cur_num += SUPERBLOCK_BLK + 1;
+	// round up bits to nearest mutliple of 8 and convert to bytes
+	size_t bits_len = ((blk_cur_num | 0x8) & ~0x7) / 8;
+	uint8_t *bits = malloc(bits_len);
+	uint8_t last_byte = 0;
+
+	// make a bit mask for the last few bits
+	for (size_t i = 0; i < blk_cur_num % 8; i++) {
+		last_byte |= 1 << i;
 	}
+	memset(bits, 0xff, bits_len - 1);
+	bits[bits_len - 1] = last_byte;
+
+	pwrite_ino(&free_list, bits, bits_len, 0);
+	free(bits);
 
 	return location;
 }
 
 // TODO: this is dumb as fuck, but it works for now!
+// the byte offset is backwards too (as in it start from LSB and not MSB)
 // DOES NOT initialize blocks!!! It's caller responsibility
 size_t allocate_block()
 {

@@ -24,6 +24,27 @@ static size_t get_num_files()
 	return data;
 }
 
+size_t gen_itable()
+{
+	size_t location = allocate_block();
+	struct inode root = {
+		// NOTE: only these matter for a WAFL style root inode
+		.size = 0,
+		.data_block = allocate_block()
+	};
+
+	struct secondary_block data = {0};
+
+	write_data(&root, sizeof(root), location);
+	write_data(&data, sizeof(data), root.data_block);
+
+	// REVIEW: this is a workaround. I shortcircuit the itable to itself
+	// to a) remove inode 0, and to have it around
+	add_file(&root);
+
+	return location;
+}
+
 bool file_exists(size_t filenum)
 {
 	return filenum > 0 && filenum < get_num_files();

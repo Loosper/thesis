@@ -1,3 +1,4 @@
+#include <assert.h>
 #include <stdbool.h>
 #include <stdlib.h>
 #include <errno.h>
@@ -8,6 +9,7 @@
 #include "itable.h"
 
 
+// TODO: optimise this away somehow. Maybe cache it in a global?
 static inline struct inode get_itable_inode()
 {
 	struct inode inode;
@@ -25,6 +27,38 @@ static size_t get_num_files()
 	return data;
 }
 
+static void write_num_files(size_t num)
+{
+	struct inode itable = get_itable_inode();
+	pwrite_ino(&itable, &num, sizeof(num), 0);
+}
+
+int read_inode(size_t num, struct inode *inode)
+{
+	struct inode itable = get_itable_inode();
+
+	if (!file_exists(num))
+		return -ENOENT;
+
+	pread_ino(
+		&itable, inode, sizeof(*inode),
+		// don't forget to add the initial counter!!!
+		num * FS_BLOCK_SIZE + sizeof(size_t)
+	);
+	return 0;
+}
+
+void write_inode(size_t num, struct inode *inode)
+{
+	struct inode itable = get_itable_inode();
+
+	pwrite_ino(
+		&itable, inode, sizeof(*inode),
+		// don't forget to add the initial counter!!!
+		num * FS_BLOCK_SIZE + sizeof(size_t)
+	);
+}
+
 size_t gen_itable()
 {
 	size_t location = allocate_block();
@@ -34,59 +68,27 @@ size_t gen_itable()
 		.data_block = allocate_block()
 	};
 
-	struct secondary_block data = {0};
-
 	write_data(&root, sizeof(root), location);
-	write_data(&data, sizeof(data), root.data_block);
-
-	// REVIEW: this is a workaround. I shortcircuit the itable to itself
-	// to a) remove inode 0, and to have it around
-	add_file(&root);
+	// TODO: for now I leave nothing at inode 0. I could put the itable or
+	// the flist there?
+	write_num_files(1);
 
 	return location;
 }
 
 bool file_exists(size_t filenum)
 {
-	return filenum > 0 && filenum < get_num_files();
+	return filenum > 0 && filenum <= get_num_files();
 }
 
 // TODO: zeroing is a MASSIVE problem. I need a routine that initializes things
 // properly. Currently I zero blocks in 5 different places
 size_t add_file(struct inode *inode)
 {
-	struct inode itable = get_itable_inode();
-	size_t data = get_num_files();
-	inode->data_block = allocate_block();
-	init_blk_zero(inode->data_block);
-	struct secondary_block *blk = malloc(sizeof(*blk));
+	size_t count = get_num_files();
 
-	// TODO: do this via the size of the file?
-	// data isn't an index, it's max size and since index 0 is reserved, we
-	// use it here
-	pwrite_ino(&itable, inode, sizeof(*inode), data * FS_BLOCK_SIZE);
-	data++;
-	pwrite_ino(&itable, &data, sizeof(data), 0);
+	write_inode(count, inode);
+	write_num_files(count + 1);
 
-	free(blk);
-	// -1 because the new count is the total, not the inode num
-	return data - 1;
-}
-
-int read_inode(size_t num, struct inode *inode)
-{
-	struct inode itable = get_itable_inode();
-
-	if (!file_exists(num))
-		return -ENOENT;
-	pread_ino(&itable, inode, sizeof(*inode), num * FS_BLOCK_SIZE);
-	return 0;
-}
-
-int write_inode(size_t num, struct inode *inode)
-{
-	struct inode itable = get_itable_inode();
-
-	pwrite_ino(&itable, inode, sizeof(*inode), num * FS_BLOCK_SIZE);
-	return 0;
+	return count;
 }

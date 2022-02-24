@@ -11,30 +11,53 @@
 #include "directory.h"
 
 
+static inline size_t dir_get_num_files(struct inode *dir)
+{
+	size_t count;
+
+	pread_ino(dir, &count, sizeof(count), 0);
+
+	return count;
+}
+
+static inline void dir_write_num_files(struct inode *dir, size_t num)
+{
+	pwrite_ino(dir, &num, sizeof(num), 0);
+}
+
+static inline void dir_read_entry(struct inode *dir, struct dirent *entry, size_t num)
+{
+	pread_ino(
+		dir, entry, sizeof(*entry),
+		num * sizeof(*entry) + sizeof(num)
+	);
+}
+
+static inline void dir_write_entry(struct inode *dir, struct dirent *entry, size_t num)
+{
+	pwrite_ino(
+		dir, entry, sizeof(*entry),
+		num * sizeof(*entry) + sizeof(num)
+	);
+}
+
 size_t add_dir(struct inode *inode)
 {
 	size_t num = add_file(inode);
-	uint8_t zeroes[FS_BLOCK_SIZE] = {0};
 
 	assert(S_ISDIR(inode->mode));
-
 	// directories need initialization
-	pwrite_ino(inode, zeroes, FS_BLOCK_SIZE, 0);
+	dir_write_num_files(inode, 0);
 
 	return num;
 }
 
 int add_direntry(struct inode *dir_ino, struct dirent *entry)
 {
-	size_t count;
+	size_t count = dir_get_num_files(dir_ino);
 
-	pread_ino(dir_ino, &count, sizeof(count), 0);
-	pwrite_ino(
-		dir_ino, entry, sizeof(*entry),
-		(count + 1) * sizeof(*entry)
-	);
-	count++;
-	pwrite_ino(dir_ino, &count, sizeof(count), 0);
+	dir_write_entry(dir_ino, entry, count);
+	dir_write_num_files(dir_ino, count + 1);
 
 	return 0;
 }
@@ -47,16 +70,10 @@ int add_direntry(struct inode *dir_ino, struct dirent *entry)
 // solution (Btree?) but this one isn't meant to be efficient anyway
 static size_t get_direntry_idx(struct dirent *dirent, struct inode *dir_ino, const char *filename)
 {
-	size_t total;
-
-	pread_ino(dir_ino, &total, sizeof(total), 0);
+	size_t total = dir_get_num_files(dir_ino);
 
 	for (size_t i = 0; i < total; i++) {
-		// +1 because index 0 is metadata (num files)
-		pread_ino(
-			dir_ino, dirent, sizeof(*dirent),
-			(i + 1) * sizeof(*dirent)
-		);
+		dir_read_entry(dir_ino, dirent, i);
 		if (strncmp(filename, dirent->name, MAX_NAME_LEN) == 0) {
 			return i;
 		}
@@ -87,10 +104,7 @@ int rm_direntry(struct inode *dir_ino, const char *filename)
 
 	dirent.name[0] = '\0';
 	dirent.inode = 0;
-	pwrite_ino(
-		dir_ino, &dirent, sizeof(dirent),
-		(idx + 1) * sizeof(dirent)
-	);
+	dir_write_entry(dir_ino, &dirent, idx);
 
 	return 0;
 }
@@ -107,18 +121,14 @@ size_t get_direntry(struct inode *dir_ino, const char *filename)
 
 struct dirent list_dir(struct inode *dir_ino, off_t idx)
 {
-	size_t count;
+	size_t count = dir_get_num_files(dir_ino);
 	struct dirent entry;
 
-	pread_ino(dir_ino, &count, sizeof(count), 0);
 	// we're done
 	if (idx >= (off_t) count) {
 		entry.inode = 0;
 		return entry;
 	}
-	pread_ino(
-		dir_ino, &entry, sizeof(entry),
-		(idx + 1) * sizeof(entry)
-	);
+	dir_read_entry(dir_ino, &entry, idx);
 	return entry;
 }

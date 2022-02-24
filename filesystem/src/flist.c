@@ -46,16 +46,13 @@ size_t gen_flist()
 	struct secondary_block scnd = {0};
 	// put the inode here (no allocator yet)
 	size_t location = dummy_allocate();
-	// TODO: make_empty_inode()?
-	struct inode free_list = {
-		.size = list_size,
-		.data_block = dummy_allocate()
-	};
+	struct inode free_list;
 	size_t blk_req = list_size / FS_BLOCK_SIZE;
 	size_t blk_cur_num;
 
 	fuse_log(FUSE_LOG_INFO, "free list size %ld\n", list_size);
 	fuse_log(FUSE_LOG_INFO, "free list blks %ld\n", blk_req);
+	make_empty_inode(&free_list, S_IFREG, dummy_allocate());
 	write_data(&free_list, sizeof(free_list), location);
 	write_data(&scnd, sizeof(scnd), free_list.data_block);
 

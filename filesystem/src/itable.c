@@ -63,12 +63,9 @@ void write_inode(size_t num, struct inode *inode)
 size_t gen_itable()
 {
 	size_t location = allocate_block();
-	struct inode root = {
-		// NOTE: only these matter for a WAFL style root inode
-		.size = 0,
-		.data_block = allocate_block()
-	};
+	struct inode root;
 
+	make_empty_inode(&root, S_IFREG, allocate_block());
 	write_data(&root, sizeof(root), location);
 
 	return location;

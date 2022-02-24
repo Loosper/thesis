@@ -74,7 +74,7 @@ size_t gen_itable()
 // may now depend on the superblock
 void init_itable()
 {
-	write_num_files(0);
+	write_num_files(1);
 	// TODO: for now I leave nothing at inode 0. I could put the itable or
 	// the flist there?
 	// add_file(&root);

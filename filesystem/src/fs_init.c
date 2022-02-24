@@ -28,8 +28,10 @@ void fs_init(struct fs_metadata *fs)
 	for (int i = 0; i <= SUPERBLOCK_BLK; i++) {
 		init_blk_zero(i);
 	}
+
 	superblock.flist_blk = gen_flist();
 	superblock.itable_blk = gen_itable();
+	init_itable();
 	write_root_dir();
 
 	// write the superblock

@@ -59,6 +59,7 @@ void write_inode(size_t num, struct inode *inode)
 	);
 }
 
+// must not depend on the superblock as we are initialising it
 size_t gen_itable()
 {
 	size_t location = allocate_block();
@@ -69,11 +70,17 @@ size_t gen_itable()
 	};
 
 	write_data(&root, sizeof(root), location);
-	// TODO: for now I leave nothing at inode 0. I could put the itable or
-	// the flist there?
-	write_num_files(1);
 
 	return location;
+}
+
+// may now depend on the superblock
+void init_itable()
+{
+	write_num_files(0);
+	// TODO: for now I leave nothing at inode 0. I could put the itable or
+	// the flist there?
+	// add_file(&root);
 }
 
 bool file_exists(size_t filenum)

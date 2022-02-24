@@ -1,5 +1,5 @@
 FUSE_FLAGS := $(shell pkg-config fuse3 --cflags --libs) -DFUSE_USE_VERSION=35
-CFLAGS += $(FUSE_FLAGS) -Wall -Wextra -Iinclude -g
+CFLAGS += $(FUSE_FLAGS) -Wall -Wextra -Iinclude -pedantic -g
 CC := gcc
 
 # DEBUG helpers

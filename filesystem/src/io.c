@@ -33,7 +33,7 @@ ssize_t write_block(void *data, size_t block_no)
 
 	while (written < FS_BLOCK_SIZE) {
 		ret = pwrite(
-			backing_store, data + written, FS_BLOCK_SIZE - written,
+			backing_store, (uint8_t *) data + written, FS_BLOCK_SIZE - written,
 			block_no * FS_BLOCK_SIZE + written
 		);
 		CHECK_ERRNO(ret);
@@ -51,7 +51,7 @@ ssize_t read_block(void *buf, size_t block_no)
 
 	while (rread < FS_BLOCK_SIZE) {
 		ret = pread(
-			backing_store, buf + rread, FS_BLOCK_SIZE - rread,
+			backing_store, (uint8_t *) buf + rread, FS_BLOCK_SIZE - rread,
 			block_no * FS_BLOCK_SIZE + rread
 		);
 		CHECK_ERRNO(ret);
@@ -101,7 +101,6 @@ size_t file_add_space(struct inode *inode, size_t blk_req, size_t (*allocator)()
 		}
 		first = false;
 
-		// TODO: this can be shrank by replacing i with block.used
 		// fill in the ptr struct ("allocate" blocks in a sense)
 		while (data_ptr.used < SCND_CAPACITY) {
 			new_block = allocator();
@@ -227,7 +226,7 @@ static ssize_t do_read_write_full(struct inode *inode, void *buf, size_t count, 
 	while (done < count) {
 		ssize_t ret;
 		ret = do_read_write_block(
-			inode, buf + done, count - done,
+			inode, (uint8_t *) buf + done, count - done,
 			offset + done, write, internal
 		);
 		if (ret < 0)

@@ -60,6 +60,8 @@ size_t gen_flist()
 	write_data(&scnd, sizeof(scnd), free_list.data_block);
 
 	blk_cur_num = file_add_space(&free_list, blk_req, &dummy_allocate);
+	// ++ becuase above returns last one in use. We now want a count now
+	blk_cur_num++;
 
 	// this will allocate only the blocks the free list itself uses. We
 	// expect everyone else to use the allocation utilities

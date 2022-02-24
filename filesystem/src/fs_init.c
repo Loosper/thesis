@@ -8,7 +8,7 @@
 #include "itable.h"
 #include "io.h"
 
-int backing_store = 0;
+int backing_store = -1;
 struct superblock superblock;
 
 
@@ -25,10 +25,13 @@ static void write_root_dir()
 void fs_init(struct fs_metadata *fs)
 {
 	backing_store = fs->backing_store;
+	for (int i = 0; i <= SUPERBLOCK_BLK; i++) {
+		init_blk_zero(i);
+	}
 	superblock.flist_blk = gen_flist();
 	superblock.itable_blk = gen_itable();
 	write_root_dir();
 
 	// write the superblock
-	write_data(&superblock, sizeof(superblock), 0);
+	write_data(&superblock, sizeof(superblock), SUPERBLOCK_BLK);
 }

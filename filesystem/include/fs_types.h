@@ -13,6 +13,8 @@
 
 extern int backing_store;
 extern struct superblock superblock;
+// this is for debug, but it's nice to have access anywhere
+extern int debug;
 
 
 struct fs_opts {

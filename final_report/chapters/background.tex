@@ -24,6 +24,7 @@
 % TODO: this is a temporary name
 \chapter{Lit review}
     \section{The UNIX filesystem}
+        \label{UFS}
 
         For the past 50 years the UNIX style operating system has been one of
         the most prevalent operating system architectures out there. The
@@ -234,3 +235,87 @@
             to be atomic \cite{???}, so updating the root an all or nothing
             operation, limiting the impact of a crash to only some data loss
             that hasn't had the time to be commited to disk.
+
+    \section{EXT4}
+
+        The most modern version of the ext filesystem, ext4, is native and
+        usually default on Linux. It integrates a lot of the improvements over
+        the years while maintaining the same general idea. Since it was
+        developed for (and by) Linux, which is a UNIX derivative, the ext
+        family follows closely the same principles present over 50 years ago in
+        UFS (section \ref{UFS}).
+
+        It is a good benchmark for modern filesystems as it is the default on
+        many (if not most) major Linux ditributions
+        \cite{https://wiki.debian.org/FileSystem},
+        \cite{https://access.redhat.com/documentation/en-us/red_hat_enterprise_linux/6/html/performance_tuning_guide/s-storage-fs}.
+        It is actively maintained
+        \cite{https://www.spinics.net/lists/linux-ext4/} and very mature, first
+        appearing in version 2.6.19 in 2006
+        \cite{http://www.h-online.com/open/features/Kernel-Log-Higher-and-Further-The-innovations-of-Linux-2-6-28-746805.html}.
+        Finally, unlike its most direct competitiors by the likes of Windows'
+        NTFS and MacOS' APFS, it is free and open source, so code and
+        documentation are readily available.
+    \section{Data integrity}
+
+        % TODO: validate from paper, becase most of this is my general
+        % knowledge (espcially parity calculation)
+        \subsection{RAID}
+
+            Non-volatile storage mediums have historically been orders of
+            magnitude slower than volatile memories like RAM which are
+            themselves much slower than CPUs and their caches \cite{raid has a
+            Frank87, Stevens81}. Disk arrays are an attempt to increase IO
+            performance and bridge that gap. However, drives are inherently
+            unreliable \cite{pls (backblaze is a killer source)}, so putting
+            many of them together exacerbates the problem \cite{maybe also
+            raid. he has an MTTF caluclation}.  RAID is one solution for the
+            problem of drive reliability \cite{RAID}. As its name suggests,
+            RIAD adds redundancy to disk arrays. Popular RAID arrangements are
+            RAID 1 and RAID 4/5.
+
+            RAID 1 is two drives acting as one, effectively a mirror. If one of
+            them fails the other is a perfect copy.
+
+            RAIDs 4 and 5 are very similar. Both calculate extra parity for
+            each block (by XORing the respective blocks on all disks together)
+            and store it on an extra disk. The major difference is how they lay
+            out parity across the disks. The result is that the array can lose
+            a disk any of the disks while keeping all of the data intact. It
+            has a benefit over RAID 1 in that it is cheaper.
+
+            Even though not part of the original paper, RAID 6 is also very
+            common. It is essentially RAID 5 but with more copies of the parity
+            data (equal to the number of parity disks).
+
+
+        \subsection{At scale}
+
+            A unique case for data reliability are datacenters for which data
+            loss is not an option. They also operate at massive scales, where
+            conventional approaches break down or become severe bottlenecks.
+            Hence many, if not most, of these companies have special bespoke
+            arrangements to fulfil their needs.
+
+            \subsubsection{Backblaze}
+
+                Conveniently, Backblaze, a cloud storage provider, has an open
+                approach to its infrastructure, frequently publishing in-depth
+                information and open sourcing parts of their infrastructure.
+
+                Their solution \cite{Backblaze_arch} to reliability is
+                conceptually distributed RAID 6 over 20 drives, 3 of which are
+                parity. However, they do not use conventional RAID. Instead,
+                they use custom software to split files into chunks they call
+                "shards" which are then stored on normal ext4 filesystems. The
+                choice is motivated by the good reliability and performance of
+                ext4 and that inverting the usual order of replication and
+                filesystem allows them to protect against filesystem
+                corruption.
+
+                Additionally, every shard is checksummed to protect against
+                data corruption. This is necessary because "once in a while
+                they return the wrong data, or are just unable to read a given
+                sector" \cite{Backblaze_arch} and software needs to be able to
+                identify the error and recompute the data from the parity.
+

@@ -675,32 +675,7 @@
         * try setting up a raid 1, flip a bit and see if FS corrects it
 
     \subsection{Reading list}
-        * Writing Linux File System for Fun: https://www.youtube.com/watch?v=sLR17lUjTpc
-        * glusterfs?
-        * apfs/ntfs case studies
-        * zfs/btrfs
-        * HFS
-        * original EXT (ext3 is ext2 + journaling)
-        * exFAT - optimised for flash
-        * FAT32 (or any size, the struct is important)
-        * the android FS was fairly recent
-        * drive caches
-        * EFS has extents. What are extents?
-        * "zfs borrows from cryptography and databases" - look into this too or declare out of scope?
-        * what's the difference between UFS and FFS (v2 for both)? FreeBSD uses UFS2 by default (chance they are the same!)
-        * tanenbaum os book (for reference)
-        * how does the OS see hard drive failure? How do we know to just write the drive off and use the other RAID copy?
-          How do they fail at all? What about SSDs?
-        * Linux Device drivers (by Greg KH) to debug my shit
-        * device mapper in linux (lvm building block)
-        * what's the SSD utilization? (HDD benchmarks are plentiful)
-        * SSD filesystems?
-        * Does the NVMe driver expose channels of the SSD to the FS (prob no)?
-
         * papers on FS testing (specifically Linux)
-
-        * partitioning/volume management?
-        * growing/shrinking
 
         Papers databases: https://library.leeds.ac.uk/subjects/1148/computing
         also: arxiv, library genesis
@@ -763,70 +738,32 @@
         do so)
 
     \section{Current plan}
-        % have this by end of Sem 1 i.e. a planning report
-        Suspend all non-resiliance reseach for now (exact structure can similar
-        to existing and I can see it later). Focus on ZFS, RAID, journaling
-        (not much), SSD reliability.
-
-        Discard RAID. Label it unreliable and roll your own.
-
-
         \paragraph{TODO} next meeting: aim for a concrete plan on how to implement that and
         test it. What workloads did they use? What metrics. Come up with important ones
 
-        Planning report for next meeting
-        start implementing, think about what arch will look like, how am i going to demonstrate the benefits of what i'm doing. Demonstrate in planning report
+        For the report: say how stupdendously difficult this is. I made a mistake
+        of trying to make it linear, impelentation was stupid hard
 
-        Read up on SSD performance. I think this will be a big benchmark (if I
-        was to do the virtual memory on a drive thing, I'd have to make sure
-        IOPS don't become a bottleneck vs synchronous read)
+        plan on how to demonstrate the quality of my report. Qualititavely and
+        quantitavely
 
+        DECLARE external code in report
+        Rip out kernel code. Mention and discuss in report
 
-    \section{risk (mitigation)}
-        Can I just say I'm making my own? I'm not setting out to make a
-        substantial improvement, I can do my own thing but my work won't be
-        particularly novel
+        consider: propose purpose of fs to be a teaching FS, with all modern
+        features. minimal Fs and say it could be taught to add redundancy as a
+        case study (i.e. add it in a basic way and show it)
 
-        FUSE instead of a kernel module. Userspace provides a lot of
-        abstractions that will greatly speed up development. I will probably
-        sacrifice performance, but I am not familiar enough with kernel
-        development (and the FS subsystem) to justify the risk.
+        Try to motivate why we need the FS.
+        overhead mesurements. (turn off checksums and test again) measure costs
+        of things
 
-    \section{Scope}
-        % you need to define the scope, eval methods, where and how I'm doing
-        % it (OS, fs features) I have to justify why I'm doing this. If I was to
-        % say ext4 is lacking, I have to prove it.  clearly define the project
-        % scope
-        SMP ready
+        success metrics: on par performance, correct silent errors
 
-        \paragraph{Maint topic: RAID+FS}
-        v: could be not overwriting, idk, but defo RAID aware to see if feesable. Anyone else done it?
-        "A raid aware overwriting filesystem" would be a good title. AFAIK,
-        normal FSs struggle with identifying which copy is not broken. Maybe
-        implement an overwriting FS on the ZFS foundation? So use its volume
-        management, block allocation but don't do the COW stuff? The zfs paper
-        goes into lots of detail how annoying/error prone it is to resize,
-        change, create file systems when partitions are set form the start
-        ALSO, data corruption too, since bit rot and drives just return false data sometimes
-
-        I really like the idea of virtual block numbers. Could I add this below
-        ext4? (Low chance but would be amazing)
-
-        definitely have corruption detection
-
-        what if I implemented the ARM page-tables as a FS? Hilariousity or dumb as fuck?
-
-        I'd like it fsck-less, easy to recover from
-
-        \subsection{out of scope}
-            % focus on last 5 years of research. It doesn't have to be
-            % exhaustive, just representative.
-
-            network/cluster filesystems
-
-            HDD fs. As far as I am conserned, it's a solved problem for what
-            I'm considering (ZFS)
-
+        Self-appraisal isn't a technical one. It's for the project. Any
+        technical remarks should be in the main body of the report. Things like
+        what i'd do differently, (if i had more time, knowledge etc) and ideas
+        for future work
 
     \section{Feedback}
         This is a very interesting project well suited for a CS degree.
@@ -855,73 +792,14 @@
         I look forward to seeing your demonstration and reading your final
         report.
 
-    \section{evaluation methods}
-        % by christmas I need metrics to evaluate the project
-        % I found a few eval methods, but not sure which I need, will prob decide
-        % later on
 
-    planning report: realistic plan, scope, everything I'm going to use, how to test, timelines. ALl features of FS, how to implement, how to test
-    Draft should be done 3 weeks before deadline. Have a prototype. Try to motivate why we need the FS. Risk assesment, backup if it fails. Ethics - none, I don't deal with humans?
+    \seciton{meeting}
 
-    Marking is on the report (mostly). Focus on that. Final, report has to be stellar
+        * can I describe an FS and they NOT implement it fully? As in say i
+          have btrees for free space, describe, analyse and everyhtin, but in
+          self appraisal say i never got the time?
 
-    overhead mesurements. (turn off checksums and test again) measure costs of things
-
-    TODO: extents are useful even on SSDs. See kernel.org ext4 (allowacion policy)
-
-        \subsection{Success metrics}
-            success metrics: on par performance, correct silent errors
-
-        Self-appraisal isn't a technical one. It's for the project. Any technical remarks should be in the main body of the report
-        Things like what i'd do differently, (if i had more time, knowledge etc) and ideas for future work
-
-    jabref?
-
-    For the report: say how stupdendously difficult this is. I made a mistake
-    of trying to make it linear, impelentation was stupid hard
-
-    % TODO:
-    error recovery, how many errors i can recover from
-    wait to wednesday, then send email for planning report
-    make a demo!!!!, check how to share screen on zoom
-
-
-    for meeting:
-    IMPLEMENTATION "complete" (it's working, but insanely buggy). Now I need these things:
-        * a tree struct for blocks
-        * a tree struct for files
-        * a tree struct for free list
-        * an allocator (and a way to mark what's used and what isn't)
-    % Need to see how modern ones do it and do it similarly.
-    Does supervisor know:
-        * what struct allocators use/ some tree struct that has quick arbitrary
-        lookup, but also good exhaustive search (in context of an allocator)
-        IDEA: use 2 self balancing trees. 1 for used and 1 for unused (havent
-        even looked at my notes to know if feasible)
-        NOTE: Btrees can be "linearly" searched fairly easily
-    Advice:
-        * I could go through NTFS and and apFS in detail and pick and choose
-            desirable features. For time, should I? Or do I just say, ext4 is "OK"
-            and I somewhat stick with it
-
-        * Btree implementations seem hard to come by. Most have some licences.
-            How do I deal with those? Do I need to respect them in a special
-            way? Also are usually meant for memory, so I'll need to modify them
-            A LOT. What do? Also, big one, it's in a file. => will be stored
-            linearly. How do I manage space allocation? Do I need to write an
-            allocator?
-
-            TODO: copy feedback from assessor here
-
-    propose purpose of fs to be a teaching FS, with all modern features. minimal Fs
-    and say it could be taught to add redundancy as a case study (i.e. add it in a basic way and show it)
-
-    DECLARE external code in report
-    Rip out kernel code. Mention and discuss in report
-
-    plan on how to demonstrate the quality of my report. Qualititavely and quantitavely
-
-    start writing the report (pls says superviosor)
-
+        * how to reference. As in, I need to describe the whole FS. Do i need
+          to cite the paper for the whole page? Or just specific quotes?
 
 \end{document}

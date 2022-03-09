@@ -1,0 +1,236 @@
+% You can cite chapters by using '\ref{chapter1}', where the label must
+% match that given in the 'label' command, as on the next line.
+\label{background}
+% Sections and sub-sections can be declared using \section and \subsection.
+% There is also a \subsubsection, but consider carefully if you really need
+% so many layers of section structure.
+\chapter{Introduction and Background Research}
+
+    \section{Introduction}
+
+    % <A brief introduction suitable for a non-specialist, {\em i.e.} without
+    % using technical terms or jargon, as far as possible. This may be
+    % similar/the same as that in the 'Outline and Plan' document. The
+    % remainder of this chapter will normally cover everything to be assessed
+    % under the `Background Research` criterion in the mark scheme.>
+
+    % Here is an example of how to cite a reference using the numeric system
+    % \cite{parikh1980adaptive}.
+
+
+    % Must provide evidence of a literature review. Use sections
+    % and subsections as they make sense for your project.
+
+% TODO: this is a temporary name
+\chapter{Lit review}
+    \section{The UNIX filesystem}
+
+        For the past 50 years the UNIX style operating system has been one of
+        the most prevalent operating system architectures out there. The
+        original UNIX brought about a simple and elegant template which is
+        still with us to this day. It brough forward many novel ideas: wide
+        hardware compatibility, simple and powerful system calls, a powerfull
+        shell and minimal design and most importantly a file system
+        \cite{UNIX}. All these features are still with us, largely unmodified,
+        to this day, although greatly expanded and improved upon.
+
+        The most important part, the filesystem, had an implementation akin to
+        its interface - simple and elegant. It introduced several important
+        concepts:
+
+        From a programming view, a file is a linear sequence of bytes and can
+        be controlled with just 4 system calls: \syscall{open} \syscall{read},
+        \syscall{write} and \syscall{close}. No structure is enforced on it
+        from the operating system. A file can be \syscall{open}ed by name to
+        get a handle to it. Programs can \syscall{read} all of its contents and
+        \syscall{write} back anything new. The operating system maintains an
+        offset showing the current location within the file, so sequential
+        calls to \syscall{read} and \syscall{write} begin operation from that
+        location and increment it by the amount they modified. No limit is
+        imposed on file size, so writing past the end of the file increases it.
+        A file must be \syscall{close}ed after use.
+
+        From an implementation view, every file has an i-number. This is a
+        number that uniquely identifies this file, regardless of its path or
+        location. It is essentially the pointer to the file in the table of
+        files, called an i-list (or i-table more recently).
+
+        Each entry in the i-list is an i-node (modernly shortened to just
+        inode). The inode is essentially the header for the file itself, it has
+        all metadata including pointers to the actual data.
+
+        To make this flat list of files into a usable tree, special files are
+        introduced, called directories, marked by a special bit in the inode.
+        The directory is a file whose contents have a special format: a list of
+        2-tuples (name, i-number), which denote that file number
+        \textit{i-number} can be found in this directory under name
+        \textit{name}. Directories are special in that they cannod be read and
+        written directly, rather special system calls must be used for the
+        operating system to report its contents. The exact method is slightly
+        involved and not relevant for this dissertation, but it is sufficent to
+        say that there are simple library functions roughly equvalent to those
+        for normal files.
+
+        File names are alphanumeric strings of any length. To denote that a
+        file is contained within a directory, a single forward slash ("/") is
+        used, meaning whatever is on the right of it is contained on the
+        directory named on the left. This can be repeated an unlimited number
+        of times. The root directory has no name \textit{per se}, hence any
+        path refering to it starts with a slash, for example
+        \textit{/file/in/root}.
+
+        File number 1 is defined to be the the root directory to bootrstrap the
+        search and inode 0 does not exist.
+
+        An important, but not user visible detail (in any way) is that the
+        filesystem has a list of free blocks (called the free list), to denote
+        which space is unused by the system, where a block is a fixed chunk of
+        space on disk.
+
+
+    \section{Evolution of implementation}
+
+        \subsection{UFS}
+
+            Initially, this model had a very simple implementation. The
+            original UNIX used a linear, fixed size i-list. An inode had 13
+            pointers to data blocks, 10 of which point directly to data blocks,
+            while the next 3 have 1, 2 and 3 levels of indirection
+            respectively. The free list was a simple linked list, where
+            each block had pointers to free blocks and a pointer to the
+            next block in the list \cite{UNIX_implementation},
+            \cite{UNIX_thompson}.
+
+            Over time, however, it turned out that this arrangement was very
+            inefficient. In particular, data blocks for a file lacked locality,
+            as did the i-numbers for files in the same directory. Additionally,
+            the free list would become very scrambled in that sequential
+            entries in the list may be wildly far apart on disk. All of these
+            problems got exacerbated after prologned use. On top of all that,
+            due to hard drives (the main storage medium) being a physical
+            spinning platter with a head that has to move to the track on drive
+            and wait for the block to come under it (operation knows as
+            "seek"), seek times for arbitrary blocks was large. As a result,
+            throughput could be as low as 4\% \cite{FFS}.
+
+
+        \subsection{FFS}
+
+            % maybe mention that increasing block size decreases the need for
+            % indirection
+            \citeauthor{FFS} proposed many improvements to improve performance.
+            For a start, block size was increased 8 fold from 512 bytes to 4096
+            (or even 8192), which improved locality and reduced seek times,
+            essentially for free, although extra complexity was introduced to
+            minimise wasted space from small files. Further, blocks were
+            grouped together into cylinder groups, where a cylinder is a
+            physical feature of a hard drive, blocks on which have very good
+            sequential performance.  Then, policies were introduced to keep
+            data blocks of a file and inodes in a directoy sequential and on
+            the same cylinder group where possible. Finally, the free list
+            became a bitmap of a fixed size, eliminating the scrambling of
+            supposedly sequential entries that further degrade performance.
+
+            The result was that \citeauthor{FFS} measured an increase in disk
+            bandwidth utilisation of about an order of magnitude without an
+            increase in wasted space.
+
+            % TODO: do i need this
+            % An important note is that cylinder groups include redundant copies
+            % of various metadata to increase resiliance to data loss from damage
+            % to the disk.
+
+            % Another important note is that filesystems which are near their
+            % capacity suffer greatly decreased performance.
+
+        \subsection{LFS}
+
+            With advances in software and hardware, by \citeyear{IO_bottleneck}
+            file access and reliability patterns became apparent. Especially
+            for office use, small reads and writes dominate the workload. The
+            physical nature of spinning hard drives make such operations costly
+            when performed in a random manner. To imporove performance, caching
+            is identified as a substantial improvement, which has been wildly
+            used since \cite{Linux_caching}, \cite{IO_bottleneck}.
+
+
+            However, \citeauthor{IO_bottleneck} points out some issues with
+            such an approach: a system crash or a power outage puts the
+            contents of such a cache in jeopardy. This is not a problem for a
+            read cache, but a write cache loss can be catastraphic. This brings
+            reliability into the picture and balancing performance for
+            reliability becomes a key factor.
+
+            Further, \citeauthor{IO_bottleneck} argues that such caching shifts
+            the IO pattern from mostly random reads to mostly writes in
+            occasional big bursts of relatively large amount of data.
+            Maintaining the usual layout of filesystems popular so far does not
+            make use of this fact, so the author suggests structuring the
+            filesystem as a log - an append-only structure which wraps around
+            once it fills up. This gives locality to files that are used
+            together, utilises the burst nature of writes and recovery is easy
+            - only the end may be corrupted \cite{IO_bottleneck}.
+
+            It must be noted that maintaining a fraction of the disk free is
+            once again emphasised as critical for good performance.
+
+            \citeauthor{LFS}, reiterates the necessity of asynchronous writes
+            (and therefore a cache). In LFS \cite{LFS}, based on
+            \cite{IO_bottleneck}, the inode structure is kept exactly the same
+            as in FFS (including the data block arrangement), but its layout
+            policy was redically different. First, the i-list is now a regular
+            file, but only contains addresses to where the actual inode can be
+            found. The inode itself and its data are laid our sequentially to
+            improve performance and the free list is done away with. Instead,
+            the disk is split into large chunks of free continuous space -
+            \textbf{extents} (called segments in LFS) - which contain a single
+            block of metadata that includes that information.  Special care is
+            taken to maintain these chunks large.  This is done to reduce
+            fragmentation and to allow a better likelyhood for sequential
+            accesses. It is important to note, that the idea for extents
+            remains present to this day.
+
+            New data is written in a log fashion. There are several fixed
+            places where a pointer to the i-list is stored and there is a
+            single fixed place that is dedicated to storing the last known good
+            head of the log. This ensures reliability.
+
+        \subsection{WAFL}
+
+            With time reliability becomes an ever growing concern, both from a
+            techincal and from a human perspective. The idea of snapshots
+            contributes to both of these.
+
+            Snapshots are read-only copies of the entire file system. Many of
+            them are kept, allowing for old versions of files to be viewed in
+            case of deletion. WAFL uses copy-on-write for disk blocks to avoid
+            duplicating data \cite{WAFL}. Snapshots are essentially pointers to
+            these blocks, hence a new snapshot consumes space only after data
+            is modified. Block are freeded after all references to them are
+            freed too.
+
+            Besides file versioning, snapshots are useful for backups on the
+            live system, since they are pretty much free on WAFL.
+
+
+            The way WAFL implemnts the copy-on-write is by creating a tree of
+            blocks, where the root is a known fixed block. Then it has all
+            metadata (like i-list and free list) be a file too. The inodes of
+            all of these files are stored in an inode file, whole inode itself
+            is stored in the root block. This way every single bit of info
+            required for the filesystems operation is connected in a rooted
+            tree and copying the root block makes a snapshot. Modifying any
+            other block requires copying to a new location with the
+            modificaiton only on the new copy and modifying the reference to
+            it. Modifying the reference requires the same operation, which
+            eventually bubbles up to the root block which can be modified in
+            place.
+
+            The benefit of this approach is that the filesystem is always
+            consistent. At no point is any data modified in place, meaning a
+            crash cannot cause corruption. Rather a new copy is built somewhere
+            in free space and only "added" to the filesystem when the whole
+            branch of the tree is complete. Writing a single block is assumed
+            to be atomic \cite{???}, so updating the root an all or nothing
+            operation, limiting the impact of a crash to only some data loss
+            that hasn't had the time to be commited to disk.

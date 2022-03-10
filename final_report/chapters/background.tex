@@ -288,6 +288,43 @@
             common. It is essentially RAID 5 but with more copies of the parity
             data (equal to the number of parity disks).
 
+        \subsection{drive reliability}
+
+            Drives are unreliable \cite{RAID}, \cite{Backblaze (idk which one)}.
+            Due to their mechanical nature they wear out and stop working. They
+            do this at an unpredictable rate for individual drives, but at
+            relatively constant rates over large arrays \cite{Backblaze_stats}.
+            Tools for monitoring drive health, like SMART, have been developed
+            to combat the issue and are in general a good indicator for the
+            likelyhood of loss of the drive.
+
+            However, drive failure is not binary. They do not work flawlessly
+            until such a time as to not work at all \cite{2D_RAID}. Individual
+            sectors develop errors over time, failing to be read or written to.
+            Drives try to combat the issue by keeping an array of spare sectors
+            that replace misbehvaing ones when detected. To determine if a
+            sector is misbehvaing in the first place, drives employ ECC codes
+            \cite{data_corruption_storage_stack, although maybe someone else}.
+
+            However, despite all the best efforts of drives and their
+            manufacturers, drives still cannot be relied upon to report correct
+            data all of the time \cite{data_corruption_storage_stack}.
+            Occasionally, they will report an unrecoverable error to the
+            operating system. Even more rarely, drives will return incorrect
+            data without indicating errors. As a consequence, individual drives
+            are never relied upon for the data to be present and intact and
+            other techniques are always employed to ensure both of these
+            independently \cite{LTT_data_loss?}.
+
+            SSDs and flash storage in general are a similar tale. As
+            \citeauthor{2D_RAID} puts it: "Flash is basically garbage. It
+            barely works. We tolerate it because its fast" \cite{2D_RAID}. They
+            employ similar techniques as spinning hard drives and suffer
+            similar problems as them \cite{flash_large_scale},
+            \cite{flash_reliability}. Their failure patterns are substantially
+            different but the end result is the same - unrecoverable errors
+            that would lead to data loss if not accounted for outside the
+            drive.
 
         \subsection{At scale}
 

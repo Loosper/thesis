@@ -356,3 +356,32 @@
                 sector" \cite{Backblaze_arch} and software needs to be able to
                 identify the error and recompute the data from the parity.
 
+        \subsection{Caching}
+
+            % TODO: you can't not cite this. LTT could be a source?
+            % TODO: soft-updates seems to be part of caching system. Explain
+            % modern caches and that they have been there since time immemorial
+
+            Caching is an integral part of modern operating systems
+            \cite{IO_bottleneck?}. All modern variants employ it in various
+            very visible ways. Reads are routinely cached and so are writes
+            although with extra care. This practice is so prevalent that
+            opening files/programs the first time is frequently orders of
+            magnitude slower than any subsequent access. In particular, it is
+            essential in obtaining good, almost sequential, performance out of
+            random small writes \cite{soft_updates}.
+
+            Caching, however, is tricky especially on the write side. Besides
+            the usual cache coherence issues, caching of writes for prologned
+            periods of time can easily lead to data loss. To avoid this
+            possibility while not diminishing the effectiveness of techniques
+            like soft updates \cite{soft_updates}, operating systems have to
+            perform a fine balancing act.
+
+            Linux in particular caches aggresively \cite{its docs?}. Luckily,
+            its VFS layer implements this in an abstract manner, so individual
+            filesystems do not need to implement it themselves. Nevertheless,
+            they frequently need to be aware of it and in rare cases, like ZFS
+            (\ref{ZFS}), they need special behaviour to implement some features
+            of the filesystem.
+

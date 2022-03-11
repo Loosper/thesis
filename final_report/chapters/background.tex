@@ -145,6 +145,7 @@
             % capacity suffer greatly decreased performance.
 
         \subsection{LFS}
+            \label{LFS}
 
             With advances in software and hardware, by \citeyear{IO_bottleneck}
             file access and reliability patterns became apparent. Especially
@@ -175,6 +176,7 @@
             It must be noted that maintaining a fraction of the disk free is
             once again emphasised as critical for good performance.
 
+            % TODO: consider explaining how this relates to the ZIL in ZFS
             \citeauthor{LFS}, reiterates the necessity of asynchronous writes
             (and therefore a cache). In LFS \cite{LFS}, based on
             \cite{IO_bottleneck}, the inode structure is kept exactly the same
@@ -197,6 +199,7 @@
             head of the log. This ensures reliability.
 
         \subsection{WAFL}
+            \label{WAFL}
 
             With time reliability becomes an ever growing concern, both from a
             techincal and from a human perspective. The idea of snapshots
@@ -385,3 +388,90 @@
             (\ref{ZFS}), they need special behaviour to implement some features
             of the filesystem.
 
+        \subsection{ZFS}
+            \label{ZFS}
+
+            Considered by many to be the most robust enterprise ready
+            filesystem \cite{pls you have to}, ZFS takes all necessary aspects
+            of a filesystem and tries to combine them into one as close to
+            bulletproof solution. It is widely recommended in place of almost
+            any other solution where possible. It integrates a very wide
+            variety of features to ensure data integrity while maintaining
+            performance.
+
+            % The data blocks contain objects. Each object contains different
+            % things: an inode, an inode's data, a directoy and so on.
+            In ZFS all blocks are checksummed. This checksum is stored on any
+            other block that saves a pointer to it. This way data and error
+            correction metadata are separated and the likelyhood of
+            simultaneous corruption of both is reduced. Blocks are chained in a
+            tree. The root of the tree is called the uberblock. Leaves of the
+            tree contain (arbitrary) data. The uberblock stores its own
+            checksum but is the only one to do so. To mitigate it getting
+            corrupted, several backup copies of it are stored.
+
+            Modifications to the tree of blocks is done in the same copy on
+            write manner as in WAFL (\ref{WALF}) so it is always consistent.
+            The only critical operation is the uberblock overwrite, but its
+            checksum allows for any failure to be detected and a backup read.
+
+            To pave the way for efficient multi-drive arrangements, ZFS
+            implements pools (effectively a volume manager). A pool is an array
+            of vdevs (virtual devices) which provide storage. Their space is
+            concatenated together and handed out to every different volume
+            (what ZFS calls an individual filesystem) on a per-reqest basis.
+
+            Vdevs exist to provide (completely optional) redundancy. A vdev is
+            a node with 1 or more children. Children can be either drives or
+            other vdevs. Vdevs come in different types to implement various
+            features: for example a mirroring vdev mirrors its IO to both
+            children. Alternatively a vdev can implement RAID 5, concatenation
+            or any other useful operation. Since children can be either drives
+            or other vdevs, vdevs allow for drive trees of arbitrary complexity
+            and depth. Since pools concatenate vdevs, different drives can be
+            grouped and different groups can have different redundancy
+            configurations, drive sizes and types.
+
+            Even though ZFS also goes to great lengths to allocate data blocks
+            in contiguous chunks of space, ZFS reads and writes tend to be
+            slower than those of other filesystem even when paired with RAID
+            functions \cite{i'm pretty sure someone somewhere said this}. To
+            counteract this ZFS caches extensively. So much so that TrueNAS (a
+            popular home file server operating system) has a dedicated guide on
+            how much memory a server should have
+            % \cite{https://www.truenas.com/docs/core/gettingstarted/corehardwareguide/\#memory-sizing}
+            and more memory is frequently recommended on forums. The caching is
+            such an important part of ZFS that it does not rely on the
+            operating system.
+
+            % You might want to rephrase the ARC citation to be more in line
+            % with the paper
+            ZFS caching has 2 important parts: The ARC and the ZIL.
+
+            As the name suggests, the ARC is a cache that dynamically adjusts
+            its caching policy to current usage patters to maximise cache hits
+            \cite{ARC}. It even allows a second level of caching (the L2ARC) on
+            high speed storage for data that is not top caching priority but is
+            accessed frequently enough to be kept around. The ARC is necessary
+            due to the tree nature of the filesystem. To verify the integrity
+            of blocks many indirect accesses are required which degrades
+            performance. To ensure that the same guarantees as data on disk are
+            extended to the contents of the ARC, use ECC memory is strongly
+            recommended too
+            % \cite{https://www.truenas.com/docs/core/gettingstarted/corehardwareguide/\#error-correcting-code-memory}
+
+            The ZFS Intent Log, ZIL, acts like and solves similar problems to
+            LFS (\ref{LFS}). ZFS is always consistent on disk but to due to its
+            copy on write nature, performing these updates frequently requires
+            many bubbling operations up to the uberblock degrades performance.
+            The ZIL acts as a stopgap for data that has been accepted, cached
+            and not flushed to disk yet. It is a log, similar to LFS, that
+            records all writes in sequence until they can be commit on disk. In
+            the event of system failure data uncommited writes can be
+            recovered.
+
+            In summary, ZFS tries to account for \textit{every} eventuality and
+            makes arrangements to mitigate them. In places where this affects
+            performance, further steps are taken to minimise the impact of
+            this, such as various caching. The result is a watertight design
+            which is infamous for reliability across the industry.

@@ -544,3 +544,27 @@
         reduces performance by up to 40\% and in the event of a loss of a
         (dirty) drive its behaviour is the same as unaltered RAID.
 
+    % TODO: incorporate the reliability analysis of ZFS here
+    % Does this go here?
+    \section{Scrubbing}
+
+        % \cite{https://www.truenas.com/docs/core/tasks/scrubtasks/}
+        Drive scrubbing is a necessary feature for both hardware (RAID) and
+        filesystem (ZFS) based solutions. It is essentially a regularly
+        scheduled automatic full filesystem read that is meant to detect and
+        repair silent errors (\ref{reliability}) such that in the event of a
+        loss of a drive data is still recoverable and does not cascade into
+        more data loss. It is a simple but critical part of reliable data
+        storage. The obvious drawback is that this induces significant wear on
+        drives, but the benefit greatly outweighs this. If scrubbing is not
+        regularly performed, loss of drives can mean data loss is inevitable no
+        matter the redundancy solution that is being used. Even a filesystem
+        like ZFS with incredible reliability characteristics
+        \cite{ZFS_reliability} is vulnerable to this. If scrubbing is omitted
+        data corruption may be silent in the case of RAID or more detectible in
+        the case of ZFS.
+
+        This technicality was recently demonstrated by a popular tech channel
+        \cite{LTT_data_loss}. Due to no scheduled scrubbing and no drive
+        failure notifications they experienced major and unrecoverable data
+        loss on a storage array of over a petabyte.

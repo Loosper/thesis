@@ -292,6 +292,7 @@
             data (equal to the number of parity disks).
 
         \subsection{drive reliability}
+            \label{reliability}
 
             Drives are unreliable \cite{RAID}, \cite{Backblaze (idk which one)}.
             Due to their mechanical nature they wear out and stop working. They
@@ -475,3 +476,71 @@
             performance, further steps are taken to minimise the impact of
             this, such as various caching. The result is a watertight design
             which is infamous for reliability across the industry.
+
+\chapter{Problem setting}
+
+    As we have seen, non-volatile storage devices are very error-prone and not
+    particularly reliable (\ref{reliability}). To account for this, modern
+    filesystems, like ext4 (\ref{EXT4}), perform metadata checksumming to avoid
+    filesystem corruption. However, this still leaves actual data in the
+    filesystem vulnerable. There exist various methods to combat the issue,
+    like disk based parity RAID (\ref{RAID}) or dedicated filesystems like ZFS
+    (\ref{ZFS}). These solutions are not perfect and suffer from some
+    unfortunate flaws. There are notable examples of data loss even when using
+    them \cite{LTT_data_loss}.
+
+    \section{The write hole}
+
+        RAID5 has a critical issue: writing data and experiencing a system
+        crash can (silently) corrupt unrelated data on the disk. This
+        phenomenon is known as the write hole \cite{LWN_md_journal}.
+
+        The problem arises from the fact that writing a single block or stripe
+        of data on a RAID5 array requires at least two writes to two
+        independent drives. The first is the actual block where the data is
+        stored and the second is its parity computed from it and all asociated
+        blocks on other drives. If the system were to experience any kind of
+        failure in between these two writes then the array is left in an
+        inconsistent state. The data on the non-parity disks is correct but
+        their parity is not. However, when the system detects the issue it
+        cannot repair it correctly. When parity is recalculated it will not
+        match the one on disk, which is an older version. Alternatively, the
+        system can recompute any of the associated blocks it might believe to
+        be the issue. That can either be the block written just before the
+        failure, resulting in reverting the write, or any of the related
+        blocks, resulting in overwriting correct data. Even worse, if any of
+        the drives in the array dies, then one of these will happen silently,
+        depending on which drive fialed.
+
+        The problem lies in the fact that the system cannot distinguish between
+        these three options and the second one leads to data loss. The maths
+        works in any of the three configurations, depending on which block we
+        choose to be unknown and the hardware will report all of them as
+        equally functional (in the general case). What is more, the dataloss is
+        completely unrelated to the file, so a filesystem journal cannot hope
+        to correct the issue.
+
+        To "close" the write hole, Linux implements two features: a journal for
+        RAID \cite{LWN_md_journal} (also called a cache occasionally) and a
+        partial parity log (PPL)
+        \cite{PPL: https://www.kernel.org/doc/html/latest/driver-api/md/raid5-ppl.html}.
+        The journal uses a separate drive to store a journal of writes, much
+        like the ZIL and ext4 (\ref{EXT4}, \ref{ZFS}) and then recover any
+        corruption on startup. Alternatively, the PPL stores extra (partial)
+        parity in the metadata area of parity drives, again allowing for
+        recovery on startup.
+
+        Both of theses are imperfect solutions though. The journal requires an
+        additional drive (however small) which is very cumbersome for small
+        systems like small form factor home servers and laptops (although the
+        advent of technologies like M.2 Intel Optane \cite{Optane_homepage} has
+        begun alleviating that concern too but it is expensive and an abundance
+        of M.2 slots, which tend to be used for boot drives, is not widepsread
+        yet). Regardless, the journal is susceptible to the same issues as the
+        drives it is trying to protect.  So inevitable errors in the log drive
+        (\ref{reliability}) can diminish its benefit.
+
+        The PPL is imperfect too: its documentation \cite{PPL} concedes it
+        reduces performance by up to 40\% and in the event of a loss of a
+        (dirty) drive its behaviour is the same as unaltered RAID.
+

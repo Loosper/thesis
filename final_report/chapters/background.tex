@@ -589,3 +589,19 @@
         dedicated or more specialist operating systems like TrueNAS or Linux
         which may be incompatible with home Windows based machines or less
         techincally savvy users.
+
+    \section{The problem to address (conclusion)}
+
+        Drives cannot be relied upon, no matter if mechanical or solid state.
+        It is evident that there exist a plethora of techniques to ensure data
+        integrity on a wide range of operating systems for all storage segments
+        despite these shortcomings. However, there exists a reliability gap for
+        small scale personal computers, workstations and home servers.
+        Filesystems that are intended for them, like EXT4, do not provide
+        sufficent data integrity guarantees. Those that do can, like ZFS, be
+        overkill or simply financially infeasible. Simple solutions, like RAID,
+        have significant flaws by default and addressing them presents similar
+        challenges as to ZFS. Therefore a minimal filesystem with EXT4 like
+        features and basic amounts of redundancy to provide small scale data
+        guarantees is missing while there could be significant benefits from
+        using one.

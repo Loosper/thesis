@@ -568,3 +568,24 @@
         \cite{LTT_data_loss}. Due to no scheduled scrubbing and no drive
         failure notifications they experienced major and unrecoverable data
         loss on a storage array of over a petabyte.
+
+    \section{ZFS resources}
+
+        The reliability of ZFS comes at a very steep price - system resources
+        \ref{ZFS}. Due to its caching policy, main memory requirements are very
+        high and not satisfying them can and will degrade performance.
+        Workstation class devices are not dedicated file servers and rely on
+        their memory for other tasks - 3D morelling, rendering, compillation
+        and so on. Increasing the memory requirement can be impossible for
+        laptops. At the same time, they do need the speed and reliability for
+        doing work effectively, as data loss can be catastrophic.
+
+        Alternatively, for small home servers the extra cost for memory may be
+        unjustifiable for a small box with a low-end CPU and a hadnful of
+        drives. Features like the ZIL may not be incorporated too, further
+        diminishing the benefit.
+
+        All of this is ignoring the fact that ZFS tends to run best on
+        dedicated or more specialist operating systems like TrueNAS or Linux
+        which may be incompatible with home Windows based machines or less
+        techincally savvy users.

@@ -2,8 +2,8 @@
 #ifndef BTREE_H
 #define BTREE_H
 
-#include <linux/kernel.h>
-#include <linux/mempool.h>
+#include <stddef.h>
+#include <stdint.h>
 
 /**
  * DOC: B+Tree basics
@@ -24,6 +24,25 @@
  * Each key here is an array of unsigned longs, geo->no_longs in total. The
  * number of keys and values (N) is geo->no_pairs.
  */
+
+typedef long gfp_t;
+typedef long mempool_t;
+typedef uint64_t u64;
+typedef uint32_t u32;
+/*
+ * gcc: https://gcc.gnu.org/onlinedocs/gcc/Common-Function-Attributes.html#index-warn_005funused_005fresult-function-attribute
+ * clang: https://clang.llvm.org/docs/AttributeReference.html#nodiscard-warn-unused-result
+ */
+#define __must_check __attribute__((__warn_unused_result__))
+// I don't use
+#define __init
+#define __exit
+
+// can't have sizeof in #define for some reason??
+#define BITS_PER_LONG 64
+#define likely(a) a
+#define BUG_ON(a) abort()
+
 
 /**
  * struct btree_head - btree head
@@ -204,14 +223,14 @@ size_t btree_grim_visitor(struct btree_head *head, struct btree_geo *geo,
 			  void *func2);
 
 
-#include <linux/btree-128.h>
+#include "btree-128.h"
 
 extern struct btree_geo btree_geo32;
 #define BTREE_TYPE_SUFFIX l
 #define BTREE_TYPE_BITS BITS_PER_LONG
 #define BTREE_TYPE_GEO &btree_geo32
 #define BTREE_KEYTYPE unsigned long
-#include <linux/btree-type.h>
+#include "btree-type.h"
 
 #define btree_for_each_safel(head, key, val)	\
 	for (val = btree_lastl(head, &key);	\
@@ -222,7 +241,7 @@ extern struct btree_geo btree_geo32;
 #define BTREE_TYPE_BITS 32
 #define BTREE_TYPE_GEO &btree_geo32
 #define BTREE_KEYTYPE u32
-#include <linux/btree-type.h>
+#include "btree-type.h"
 
 #define btree_for_each_safe32(head, key, val)	\
 	for (val = btree_last32(head, &key);	\
@@ -234,7 +253,7 @@ extern struct btree_geo btree_geo64;
 #define BTREE_TYPE_BITS 64
 #define BTREE_TYPE_GEO &btree_geo64
 #define BTREE_KEYTYPE u64
-#include <linux/btree-type.h>
+#include "btree-type.h"
 
 #define btree_for_each_safe64(head, key, val)	\
 	for (val = btree_last64(head, &key);	\

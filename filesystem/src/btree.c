@@ -37,10 +37,15 @@
  * simply loop once over all slots and terminate on the first NUL.
  */
 
+#include <errno.h>
+#include <stdlib.h>
+#include <string.h>
+
+#include "fs_helpers.h"
+#include "fs_types.h"
 #include "btree.h"
 
 #define MAX(a, b) ((a) > (b) ? (a) : (b))
-#define NODESIZE MAX(L1_CACHE_BYTES, 128)
 
 struct btree_geo {
 	int keylen;
@@ -69,16 +74,25 @@ struct btree_geo btree_geo128 = {
 
 #define MAX_KEYLEN	(2 * LONG_PER_U64)
 
-static struct kmem_cache *btree_cachep;
+// kernel provides these, but we don't need them
+static void *mempool_alloc(mempool_t *pool, gfp_t gfp_mask)
+{
+	return btree_alloc(gfp_mask, NULL);
+}
+
+static void mempool_free(void *element, mempool_t *pool)
+{
+	btree_free(element, pool);
+}
 
 void *btree_alloc(gfp_t gfp_mask, void *pool_data)
 {
-	return kmem_cache_alloc(btree_cachep, gfp_mask);
+	return malloc(NODESIZE);
 }
 
 void btree_free(void *element, void *pool_data)
 {
-	kmem_cache_free(btree_cachep, element);
+	free(element);
 }
 
 static unsigned long *btree_node_alloc(struct btree_head *head, gfp_t gfp)
@@ -170,25 +184,16 @@ static inline void __btree_init(struct btree_head *head)
 	head->height = 0;
 }
 
-void btree_init_mempool(struct btree_head *head, mempool_t *mempool)
-{
-	__btree_init(head);
-	head->mempool = mempool;
-}
-
 int btree_init(struct btree_head *head)
 {
 	__btree_init(head);
-	head->mempool = mempool_create(0, btree_alloc, btree_free, NULL);
-	if (!head->mempool)
-		return -ENOMEM;
+	head->mempool = NULL;
 	return 0;
 }
 
+// TODO: mempool would free all memory. I removed it so I need another mechanism
 void btree_destroy(struct btree_head *head)
 {
-	mempool_free(head->node, head->mempool);
-	mempool_destroy(head->mempool);
 	head->mempool = NULL;
 }
 
@@ -753,16 +758,4 @@ size_t btree_grim_visitor(struct btree_head *head, struct btree_geo *geo,
 				func2, 1, head->height, 0);
 	__btree_init(head);
 	return count;
-}
-
-static int __init btree_module_init(void)
-{
-	btree_cachep = kmem_cache_create("btree_node", NODESIZE, 0,
-			SLAB_HWCACHE_ALIGN, NULL);
-	return 0;
-}
-
-static void __exit btree_module_exit(void)
-{
-	kmem_cache_destroy(btree_cachep);
 }

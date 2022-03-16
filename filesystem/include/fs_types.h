@@ -8,6 +8,7 @@
 #define FS_SECTOR_SIZE 512
 // TODO: make dynamic
 #define FS_BLOCK_SIZE FS_SECTOR_SIZE
+#define NODESIZE FS_BLOCK_SIZE
 // #define FS_BLOCK_SIZE (1 * FS_SECTOR_SIZE)
 #define SUPERBLOCK_BLK		1
 

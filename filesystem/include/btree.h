@@ -4,6 +4,7 @@
 
 #include <stddef.h>
 #include <stdint.h>
+#include "kernel.h"
 
 /**
  * DOC: B+Tree basics
@@ -24,25 +25,6 @@
  * Each key here is an array of unsigned longs, geo->no_longs in total. The
  * number of keys and values (N) is geo->no_pairs.
  */
-
-typedef long gfp_t;
-typedef long mempool_t;
-typedef uint64_t u64;
-typedef uint32_t u32;
-/*
- * gcc: https://gcc.gnu.org/onlinedocs/gcc/Common-Function-Attributes.html#index-warn_005funused_005fresult-function-attribute
- * clang: https://clang.llvm.org/docs/AttributeReference.html#nodiscard-warn-unused-result
- */
-#define __must_check __attribute__((__warn_unused_result__))
-// I don't use
-#define __init
-#define __exit
-
-// can't have sizeof in #define for some reason??
-#define BITS_PER_LONG 64
-#define likely(a) a
-#define BUG_ON(a) abort()
-
 
 /**
  * struct btree_head - btree head
@@ -73,17 +55,6 @@ void *btree_alloc(gfp_t gfp_mask, void *pool_data);
  * @pool_data: unused
  */
 void btree_free(void *element, void *pool_data);
-
-/**
- * btree_init_mempool - initialise a btree with given mempool
- *
- * @head: the btree head to initialise
- * @mempool: the mempool to use
- *
- * When this function is used, there is no need to destroy
- * the mempool.
- */
-void btree_init_mempool(struct btree_head *head, mempool_t *mempool);
 
 /**
  * btree_init - initialise a btree

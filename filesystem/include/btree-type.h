@@ -11,12 +11,6 @@ BTREE_TYPE_HEAD {
 	struct btree_head h;
 };
 
-static inline void BTREE_FN(init_mempool)(BTREE_TYPE_HEAD *head,
-					  mempool_t *mempool)
-{
-	btree_init_mempool(&head->h, mempool);
-}
-
 static inline int BTREE_FN(init)(BTREE_TYPE_HEAD *head)
 {
 	return btree_init(&head->h);

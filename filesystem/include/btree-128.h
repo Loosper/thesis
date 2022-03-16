@@ -3,12 +3,6 @@ extern struct btree_geo btree_geo128;
 
 struct btree_head128 { struct btree_head h; };
 
-static inline void btree_init_mempool128(struct btree_head128 *head,
-					 mempool_t *mempool)
-{
-	btree_init_mempool(&head->h, mempool);
-}
-
 static inline int btree_init128(struct btree_head128 *head)
 {
 	return btree_init(&head->h);

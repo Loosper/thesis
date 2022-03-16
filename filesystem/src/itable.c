@@ -1,6 +1,7 @@
 #include <assert.h>
 #include <stdbool.h>
 #include <stdlib.h>
+#include <string.h>
 #include <errno.h>
 
 #include "flist.h"
@@ -30,7 +31,14 @@ static size_t get_num_files()
 static void write_num_files(size_t num)
 {
 	struct inode itable = get_itable_inode();
-	pwrite_ino(&itable, &num, sizeof(num), 0);
+
+	// TODO: this is currently a workaround becuase I don't have an fseek
+	// for files.  hopefully I can eventually just leave space blank
+	uint8_t *ptr = malloc(FS_BLOCK_SIZE);
+	memset(ptr, 0, FS_BLOCK_SIZE);
+	memcpy(ptr, &num, sizeof(num));
+
+	pwrite_ino(&itable, ptr, FS_BLOCK_SIZE, 0);
 }
 
 int read_inode(size_t num, struct inode *inode)

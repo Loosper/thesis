@@ -43,6 +43,7 @@
 
 #include "fs_helpers.h"
 #include "fs_types.h"
+#include "io.h"
 #include "btree.h"
 
 #define MAX(a, b) ((a) > (b) ? (a) : (b))
@@ -53,12 +54,6 @@ struct btree_geo {
 	int no_longs;
 };
 
-struct btree_geo btree_geo32 = {
-	.keylen = 1,
-	.no_pairs = NODESIZE / sizeof(long) / 2,
-	.no_longs = NODESIZE / sizeof(long) / 2,
-};
-
 #define LONG_PER_U64 (64 / BITS_PER_LONG)
 struct btree_geo btree_geo64 = {
 	.keylen = LONG_PER_U64,
@@ -66,32 +61,18 @@ struct btree_geo btree_geo64 = {
 	.no_longs = LONG_PER_U64 * (NODESIZE / sizeof(long) / (1 + LONG_PER_U64)),
 };
 
-struct btree_geo btree_geo128 = {
-	.keylen = 2 * LONG_PER_U64,
-	.no_pairs = NODESIZE / sizeof(long) / (1 + 2 * LONG_PER_U64),
-	.no_longs = 2 * LONG_PER_U64 * (NODESIZE / sizeof(long) / (1 + 2 * LONG_PER_U64)),
-};
-
 #define MAX_KEYLEN	(2 * LONG_PER_U64)
 
-// kernel provides these, but we don't need them
+// TODO: have external global allocator
 static void *mempool_alloc(mempool_t *pool, gfp_t gfp_mask)
 {
-	return btree_alloc(gfp_mask, NULL);
+	BUG_ON(!blk_allocator);
+	return (void *) blk_allocator();
 }
 
 static void mempool_free(void *element, mempool_t *pool)
 {
-	btree_free(element, pool);
-}
-
-void *btree_alloc(gfp_t gfp_mask, void *pool_data)
-{
-	return malloc(NODESIZE);
-}
-
-void btree_free(void *element, void *pool_data)
-{
+	BUG_ON(!blk_deallocator);
 	free(element);
 }
 
@@ -100,10 +81,27 @@ static unsigned long *btree_node_alloc(struct btree_head *head, gfp_t gfp)
 	unsigned long *node;
 
 	node = mempool_alloc(head->mempool, gfp);
-	if (likely(node))
-		memset(node, 0, NODESIZE);
 	return node;
 }
+
+// hoho this is how I butcher the linux kernel:
+// from a userapi perspective, the key is a long, the value is pointer
+// from an implementation perspective, both are pointers.
+//   key - pointer to the long (can be 2 longs but I don't use)
+//   val - the pointer we started with
+// additionally, nodes are pointers to a chunk of memory.
+
+// idea:
+// node - keep pointers as is, store "address" in the pointer. Requires special
+//   loading to actually get the memory but that's fine
+// val - remains the pointer, we store the "address" in it just the same
+// these two are not a problem. They get passed around as if they were longs
+// key - problematic - since it's a pointer to the long, when its read from the
+//   node it becomes a pointer to memory (that I want to free)
+
+// solution i go for: malloc two bytes whenever necessary, don't bother about
+// free, project won't suffer
+// solution i should go for: convert the key type to straight up long
 
 static int longcmp(const unsigned long *l1, const unsigned long *l2, size_t n)
 {
@@ -150,14 +148,34 @@ static void dec_key(struct btree_geo *geo, unsigned long *key)
 	}
 }
 
+static unsigned long *pnode(void *node)
+{
+	void *node_store = malloc(NODESIZE);
+
+	read_block(node_store, (long)node);
+
+	return node_store;
+}
+
 static unsigned long *bkey(struct btree_geo *geo, unsigned long *node, int n)
 {
-	return &node[n * geo->keylen];
+	long *nodep = pnode(node);
+	long *key = malloc(BITS_PER_LONG / 8);
+
+	*key = nodep[n * geo->keylen];
+
+	free(nodep);
+	return key;
 }
 
 static void *bval(struct btree_geo *geo, unsigned long *node, int n)
 {
-	return (void *)node[geo->no_longs + n];
+	long *nodep = pnode(node);
+
+	long val = nodep[geo->no_longs + n];
+
+	free(nodep);
+	return (void *)val;
 }
 
 static void setkey(struct btree_geo *geo, unsigned long *node, int n,
@@ -169,13 +187,23 @@ static void setkey(struct btree_geo *geo, unsigned long *node, int n,
 static void setval(struct btree_geo *geo, unsigned long *node, int n,
 		   void *val)
 {
-	node[geo->no_longs + n] = (unsigned long) val;
+	long *nodep = pnode(node);
+
+	nodep[geo->no_longs + n] = (unsigned long) val;
+
+	write_block(nodep, (long) node);
+	free(nodep);
 }
 
 static void clearpair(struct btree_geo *geo, unsigned long *node, int n)
 {
+	long *nodep = pnode(node);
+
 	longset(bkey(geo, node, n), 0, geo->keylen);
-	node[geo->no_longs + n] = 0;
+	nodep[geo->no_longs + n] = 0;
+
+	write_block(nodep, (long) node);
+	free(nodep);
 }
 
 static inline void __btree_init(struct btree_head *head)
@@ -194,7 +222,8 @@ int btree_init(struct btree_head *head)
 // TODO: mempool would free all memory. I removed it so I need another mechanism
 void btree_destroy(struct btree_head *head)
 {
-	head->mempool = NULL;
+	// I don't use it, so it having changed is bad
+	BUG_ON(head->mempool);
 }
 
 void *btree_last(struct btree_head *head, struct btree_geo *geo,

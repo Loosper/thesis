@@ -43,20 +43,6 @@ struct btree_head {
 struct btree_geo;
 
 /**
- * btree_alloc - allocate function for the mempool
- * @gfp_mask: gfp mask for the allocation
- * @pool_data: unused
- */
-void *btree_alloc(gfp_t gfp_mask, void *pool_data);
-
-/**
- * btree_free - free function for the mempool
- * @element: the element to free
- * @pool_data: unused
- */
-void btree_free(void *element, void *pool_data);
-
-/**
  * btree_init - initialise a btree
  *
  * @head: the btree head to initialise

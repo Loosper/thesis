@@ -67,7 +67,7 @@ size_t gen_flist()
 	// this will allocate only the blocks the free list itself uses. We
 	// expect everyone else to use the allocation utilities
 	// round up bits to nearest mutliple of 8 and convert to bytes
-	size_t bits_len = ((blk_cur_num | 0x8) & ~0x7) / 8;
+	size_t bits_len = (((blk_cur_num / 8 + 1) * 8) & ~0x7) / 8;
 	uint8_t *bits = malloc(bits_len);
 	uint8_t last_byte = 0;
 

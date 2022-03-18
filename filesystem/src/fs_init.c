@@ -15,10 +15,8 @@ struct superblock superblock;
 static void write_root_dir()
 {
 	struct inode root_dir;
-	// TODO: it's double on purpose. Simplest way to get rid of inode 0.
-	// Do I need to store something there?
-	make_empty_inode(&root_dir, S_IFDIR | 0777, allocate_block());
 
+	make_empty_inode(&root_dir, S_IFDIR | 0777);
 	add_dir(&root_dir);
 }
 

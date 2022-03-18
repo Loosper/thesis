@@ -23,14 +23,15 @@
 // 	return req_userdata(req)->backing_store;
 // }
 
-void make_empty_inode(struct inode *inode, mode_t mode, size_t scnd)
+void make_empty_inode(struct inode *inode, mode_t mode)
 {
 	inode->size = 0;
 	inode->refs = 1;
 	// TODO: I don't actually know who called?
 	inode->uid = 0;
 	inode->gid = 0;
-	inode->data_block = scnd;
+	// inode->data_block = scnd;
+	btree_init64(&inode->data_tree);
 	inode->mode = mode;
 	inode->atime = time(NULL);
 	inode->mtime = time(NULL);

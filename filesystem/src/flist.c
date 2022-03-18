@@ -52,11 +52,15 @@ size_t gen_flist()
 
 	fuse_log(FUSE_LOG_INFO, "free list size %ld\n", list_size);
 	fuse_log(FUSE_LOG_INFO, "free list blks %ld\n", blk_req);
-	make_empty_inode(&free_list, S_IFREG, dummy_allocate());
-	write_data(&free_list, sizeof(free_list), location);
-	write_data(&scnd, sizeof(scnd), free_list.data_block);
 
-	blk_cur_num = file_add_space(&free_list, blk_req, &dummy_allocate);
+	blk_allocator = dummy_allocate;
+	make_empty_inode(&free_list, S_IFREG);
+
+	blk_cur_num = file_add_space(&free_list, blk_req);
+	write_data(&free_list, sizeof(free_list), location);
+
+	blk_allocator = allocate_block;
+
 	// ++ becuase above returns last one in use. We now want a count now
 	blk_cur_num++;
 

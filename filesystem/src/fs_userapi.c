@@ -66,7 +66,7 @@ void fs_create(fuse_req_t req, fuse_ino_t parent, const char *name, mode_t mode,
 	struct inode parent_ino;
 	int ret;
 
-	make_empty_inode(&inode, mode, allocate_block());
+	make_empty_inode(&inode, mode);
 	entry.inode = add_file(&inode);
 
 	strncpy(entry.name, name, MAX_NAME_LEN);
@@ -201,7 +201,7 @@ void fs_mkdir(fuse_req_t req, fuse_ino_t parent, const char *name, mode_t mode)
 	struct inode dir_inode;
 	int ret;
 
-	make_empty_inode(&new_inode, mode | S_IFDIR, allocate_block());
+	make_empty_inode(&new_inode, mode | S_IFDIR);
 	entry.inode = add_dir(&new_inode);
 	strncpy(entry.name, name, MAX_NAME_LEN);
 

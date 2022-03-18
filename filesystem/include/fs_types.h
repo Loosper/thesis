@@ -4,6 +4,7 @@
 #include <time.h>
 #include <sys/types.h>
 
+#include "btree.h"
 
 #define FS_SECTOR_SIZE 512
 // TODO: make dynamic
@@ -17,6 +18,9 @@ extern struct superblock superblock;
 // this is for debug, but it's nice to have access anywhere
 extern int debug;
 
+extern size_t (*blk_allocator)();
+extern size_t (*blk_deallocator)();
+extern gfp_t dummy_gfp;
 
 struct fs_opts {
 	char *mountpoint;
@@ -42,6 +46,7 @@ struct inode {
 	size_t size;
 	size_t refs;
 	size_t data_block;
+	struct btree_head64 data_tree;
 	uid_t uid;
 	gid_t gid;
 	mode_t mode;

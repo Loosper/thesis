@@ -70,10 +70,10 @@ void write_inode(size_t num, struct inode *inode)
 // must not depend on the superblock as we are initialising it
 size_t gen_itable()
 {
-	size_t location = allocate_block();
+	size_t location = blk_allocator();
 	struct inode root;
 
-	make_empty_inode(&root, S_IFREG, allocate_block());
+	make_empty_inode(&root, S_IFREG);
 	write_data(&root, sizeof(root), location);
 
 	return location;

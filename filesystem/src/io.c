@@ -14,6 +14,11 @@
 #include "itable.h"
 #include "io.h"
 
+
+size_t (*blk_allocator)() = NULL;
+size_t (*blk_deallocator)() = NULL;
+gfp_t dummy_gfp;
+
 // all this because write() can be interrupted by signals and partially
 // complete. We assume the file has good dimensions and don't prevent infinite
 // spin
@@ -81,123 +86,51 @@ ssize_t read_data(void *data, size_t len, size_t block_no)
 	return ret;
 }
 
-// assumes secondary_blk is valid;
-// returns last accessible block
-// TODO: I think the return is off by 1
-size_t file_add_space(struct inode *inode, size_t blk_req, size_t (*allocator)())
+// TODO: this has to overwrite the inode. Otherwise, keep the data_tree in a
+// separate block. Better yet, leave the responsibility to the parent
+size_t file_add_space(struct inode *inode, size_t blk_req)
 {
-	struct secondary_block data_ptr;
-	size_t blk_written = 0;
-	size_t blk_ptr_loc = inode->data_block;
-	bool first = true;
-	size_t new_block;
+	// TODO: key of 0 is legal. Fiddle with counting to include it
+	size_t last_blk = 0;
+	size_t blk;
+	int ret;
 
-	read_data(&data_ptr, sizeof(data_ptr), inode->data_block);
+	btree_last64(&inode->data_tree, &last_blk);
 
-	while (blk_written < blk_req) {
-		if (!first) {
-			data_ptr.used = 0;
-			blk_ptr_loc = allocator();
-		}
-		first = false;
+	for (int i = 1; i <= blk_req; i++) {
+		blk = blk_allocator();
 
-		// fill in the ptr struct ("allocate" blocks in a sense)
-		while (data_ptr.used < SCND_CAPACITY) {
-			new_block = allocator();
-			// TODO: see add_file comment. This is bad.
-			// Keep it for sanity for now
-			init_blk_zero(new_block);
-			data_ptr.blocks[data_ptr.used++] = new_block;
-			init_blk_zero(new_block);
-
-			// last block is bookkeeping, so it doesn't count
-			if (data_ptr.used != SCND_CAPACITY - 1)
-				blk_written++;
-			if (blk_written == blk_req)
-				break;
-		}
-
-		// write the intermediary block as filled in
-		write_data(&data_ptr, sizeof(data_ptr), blk_ptr_loc);
+		ret = btree_insert64(
+			&inode->data_tree, last_blk + i,
+			(void *)blk, dummy_gfp
+		);
+		assert(ret == 0);
 	}
 
-	return new_block;
-}
-
-// THE READ/WRITE ROUTINE. EVERYTHING AFTER DEPENDS ON THIS
-// above this point it is not usable. After, it's free for all and assumed "set up"
-
-// returns the block number where this byte will be located in. Checks if
-// reading after end of file. If writing, will extend the file
-// NOTE: Let vblock be virtual address of block, pblock be the actual address
-// of a block
-static size_t get_pblock_of_byte(struct inode *inode, size_t byte_n, bool write)
-{
-	// virtual/physical
-	// +1 to make it a count instead of an index
-	// if (byte_n > 1000)
-	size_t vblocks_needed = byte_n / FS_BLOCK_SIZE + 1;
-	size_t pblock;
-	struct secondary_block *blk_ptr = malloc(FS_BLOCK_SIZE);
-	size_t vblocks_found = 0;
-
-	pblock = inode->data_block;
-	// TODO: can probably be MUCH prettier, but works for now and i'm deep fried
-	while (1) {
-		size_t new_found;
-
-		read_block(blk_ptr, pblock);
-		// last one is internal so drop it if it's there
-		new_found = MIN(blk_ptr->used, SCND_CAPACITY - 1);
-
-		// FOUND!
-		if (vblocks_found + new_found >= vblocks_needed) {
-			// we know it is there and we're on the right one set so just get it
-			pblock = blk_ptr->blocks[(vblocks_needed - 1) % SCND_CAPACITY];
-			vblocks_found = ((vblocks_needed - 1) % SCND_CAPACITY) + 1;
-			break;
-		}
-
-		vblocks_found += new_found;
-
-		// means we reached the last one
-		if (blk_ptr->used != SCND_CAPACITY) {
-			// error
-			if (!write) {
-				pblock = 0;
-				goto cleanup;
-			}
-
-			pblock = file_add_space(inode, vblocks_needed - vblocks_found, &allocate_block);
-			goto cleanup;
-		}
-		pblock = blk_ptr->blocks[SCND_CAPACITY - 1];
-	}
-
-	assert(vblocks_found == vblocks_needed);
-
-cleanup:
-	free(blk_ptr);
-	return pblock;
+	return blk;
 }
 
 // TODO: idea: have the 0th inode in the inode file be the inode for the file
 // itself. It can be at a fixed location and will drop special handling and
 // kinda short circuit bootstrap
 
+// TODO: this should NOT hande file enlargement. It should be in the read/write
+// wrappers who can do it more carefully
+
 // NOTE: currently only writes up to FS_BLOCK_SIZE
-static ssize_t do_read_write_block(struct inode *inode, void *buf, size_t count, off_t offset, bool write, bool internal)
+static ssize_t do_read_write_block(struct inode *inode, void *buf,
+		size_t count, off_t offset, bool write, bool internal)
 {
 	uint8_t data[FS_BLOCK_SIZE];
 	size_t block_n;
+
 	// offset is %-ed because we only want offset within the block
 	size_t blk_offset = offset % FS_BLOCK_SIZE;
 	// don't try to copy beyond the end of the block TODO: for now
 	count = MIN(blk_offset + count, FS_BLOCK_SIZE) - blk_offset;
 
-	// TODO: ideally, this won't extend the space itself, but rather will
-	// let us know.  When it does, we'd set the file size
-	block_n = get_pblock_of_byte(inode, offset, write);
+	// TODO: we need to check for space and extend it if needed
+	block_n = (size_t) btree_lookup64(&inode->data_tree, offset / FS_BLOCK_SIZE);
 
 	if (block_n == 0)
 		return -EINVAL;

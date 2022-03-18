@@ -26,51 +26,6 @@ static inline int BTREE_FN(merge)(BTREE_TYPE_HEAD *target,
 	return btree_merge(&target->h, &victim->h, BTREE_TYPE_GEO, gfp);
 }
 
-#if (BITS_PER_LONG > BTREE_TYPE_BITS)
-static inline void *BTREE_FN(lookup)(BTREE_TYPE_HEAD *head, BTREE_KEYTYPE key)
-{
-	unsigned long _key = key;
-	return btree_lookup(&head->h, BTREE_TYPE_GEO, &_key);
-}
-
-static inline int BTREE_FN(insert)(BTREE_TYPE_HEAD *head, BTREE_KEYTYPE key,
-				   void *val, gfp_t gfp)
-{
-	unsigned long _key = key;
-	return btree_insert(&head->h, BTREE_TYPE_GEO, &_key, val, gfp);
-}
-
-static inline int BTREE_FN(update)(BTREE_TYPE_HEAD *head, BTREE_KEYTYPE key,
-		void *val)
-{
-	unsigned long _key = key;
-	return btree_update(&head->h, BTREE_TYPE_GEO, &_key, val);
-}
-
-static inline void *BTREE_FN(remove)(BTREE_TYPE_HEAD *head, BTREE_KEYTYPE key)
-{
-	unsigned long _key = key;
-	return btree_remove(&head->h, BTREE_TYPE_GEO, &_key);
-}
-
-static inline void *BTREE_FN(last)(BTREE_TYPE_HEAD *head, BTREE_KEYTYPE *key)
-{
-	unsigned long _key;
-	void *val = btree_last(&head->h, BTREE_TYPE_GEO, &_key);
-	if (val)
-		*key = _key;
-	return val;
-}
-
-static inline void *BTREE_FN(get_prev)(BTREE_TYPE_HEAD *head, BTREE_KEYTYPE *key)
-{
-	unsigned long _key = *key;
-	void *val = btree_get_prev(&head->h, BTREE_TYPE_GEO, &_key);
-	if (val)
-		*key = _key;
-	return val;
-}
-#else
 static inline void *BTREE_FN(lookup)(BTREE_TYPE_HEAD *head, BTREE_KEYTYPE key)
 {
 	return btree_lookup(&head->h, BTREE_TYPE_GEO, (unsigned long *)&key);
@@ -103,7 +58,6 @@ static inline void *BTREE_FN(get_prev)(BTREE_TYPE_HEAD *head, BTREE_KEYTYPE *key
 {
 	return btree_get_prev(&head->h, BTREE_TYPE_GEO, (unsigned long *)key);
 }
-#endif
 
 #undef __BTREE_TP
 #undef _BTREE_TP

@@ -116,8 +116,7 @@ size_t file_add_space(struct inode *inode, size_t blk_req)
 		assert(ret == 0);
 	}
 
-	// this is so the tree is saved
-	write_data(inode, sizeof(*inode), inode->blk);
+	update_file_inode(inode);
 	return blk;
 }
 
@@ -163,9 +162,11 @@ static ssize_t do_read_write_block(struct inode *inode, void *buf,
 		memcpy(data + off_in_blk, buf, count);
 		write_block(data, block_n);
 
-		// and update file size
-		inode->size += count;
-		write_data(inode, sizeof(*inode), inode->blk);
+		// writing can update file size. Do it the naive way
+		if (inode->size < offset + count) {
+			inode->size = offset + count;
+			update_file_inode(inode);
+		}
 	} else {
 		memcpy(buf, data + off_in_blk, count);
 	}

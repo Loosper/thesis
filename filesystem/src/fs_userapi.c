@@ -17,6 +17,15 @@
 #include "itable.h"
 
 #define ASSERT_GOOD(reply) assert(reply == 0)
+#define READ_INODE(ino, inode)					\
+	do {							\
+		int ret = read_inode(ino, inode);		\
+		if (ret < 0) {					\
+			ASSERT_GOOD(fuse_reply_err(req, -ret));	\
+			return;					\
+		}						\
+	} while(0)
+
 
 // TODO: malloc()ed buffers need to be freed by ME after the reply. Function
 // doesn't end on reply (if you rememeber)
@@ -40,8 +49,7 @@ void fs_lookup(fuse_req_t req, fuse_ino_t parent, const char *name)
 	struct inode parent_ino;
 	int ret;
 
-	ret = read_inode(parent, &parent_ino);
-	assert(ret == 0);
+	READ_INODE(parent, &parent_ino);
 
 	ino_num = get_direntry(&parent_ino, name);
 	ret = read_inode(ino_num, &inode);
@@ -57,10 +65,8 @@ void fs_lookup(fuse_req_t req, fuse_ino_t parent, const char *name)
 	ASSERT_GOOD(fuse_reply_entry(req, &reply));
 }
 
-// TODO: this increments lookup count. What does that mean?
-void fs_create(fuse_req_t req, fuse_ino_t parent, const char *name, mode_t mode, struct fuse_file_info *fi)
+static int create(struct fuse_entry_param *reply, fuse_ino_t parent, const char *name, mode_t mode)
 {
-	struct fuse_entry_param reply;
 	struct dirent entry;
 	struct inode inode;
 	struct inode parent_ino;
@@ -75,14 +81,27 @@ void fs_create(fuse_req_t req, fuse_ino_t parent, const char *name, mode_t mode,
 	assert(ret == 0);
 
 	ret = add_direntry(&parent_ino, &entry);
+
+	if (ret == 0) {
+		*reply = make_reply_entry(entry.inode, &inode);
+
+		logprintf("create: '%s' (%ld), at: %ld\n", name, entry.inode, parent);
+	}
+
+	return ret;
+}
+
+// TODO: this increments lookup count. What does that mean?
+void fs_create(fuse_req_t req, fuse_ino_t parent, const char *name, mode_t mode, struct fuse_file_info *fi)
+{
+	struct fuse_entry_param reply;
+	int ret = create(&reply, parent, name, mode);
+
 	if (ret < 0) {
 		ASSERT_GOOD(fuse_reply_err(req, -ret));
 		return;
 	}
 
-	logprintf("create: '%s' (%ld), at: %ld\n", name, entry.inode, parent);
-
-	reply = make_reply_entry(entry.inode, &inode);
 	ASSERT_GOOD(fuse_reply_create(req, &reply, fi));
 }
 
@@ -114,10 +133,13 @@ void fs_setattr(fuse_req_t req, fuse_ino_t ino, struct stat *attr, int to_set, s
 	if (
 		to_set & FUSE_SET_ATTR_MODE ||
 		to_set & FUSE_SET_ATTR_UID ||
-		to_set & FUSE_SET_ATTR_GID ||
-		to_set & FUSE_SET_ATTR_SIZE
+		to_set & FUSE_SET_ATTR_GID
 	)
 		logprintf("bad to_set for now\n");
+
+	if (to_set & FUSE_SET_ATTR_SIZE) {
+		truncate_file(&inode, attr->st_size);
+	}
 
 	if (to_set & FUSE_SET_ATTR_MTIME) {
 		inode.mtime = attr->st_mtime;
@@ -138,13 +160,29 @@ void fs_setattr(fuse_req_t req, fuse_ino_t ino, struct stat *attr, int to_set, s
 	ASSERT_GOOD(fuse_reply_attr(req, &reply, 1));
 }
 
+void fs_open(fuse_req_t req, fuse_ino_t ino, struct fuse_file_info *fi)
+{
+	if (fi->flags | O_CREAT) {
+		logprintf("IGNORING: O_CREAT\n");
+	}
+
+	if (fi->flags | O_TRUNC) {
+		struct inode inode;
+		READ_INODE(ino, &inode);
+		truncate_file(&inode, 0);
+	}
+
+	ASSERT_GOOD(fuse_reply_open(req, fi));
+}
+
+
 // TODO: these are extremely buggy. They only work on single blocks of data
 // (and should work on any length) and will probably break massively on EOF
 void fs_write(fuse_req_t req, fuse_ino_t ino, const char *buf,
 	size_t size, off_t off, struct fuse_file_info *fi)
 {
 	struct inode inode;
-	read_inode(ino, &inode);
+	READ_INODE(ino, &inode);
 
 	logprintf("write %ld at %ld for %ld bytes\n", ino, off, size);
 	ssize_t ret = pwrite_ino(&inode, buf, size, off);
@@ -155,7 +193,7 @@ void fs_read(fuse_req_t req, fuse_ino_t ino, size_t size, off_t off, struct fuse
 {
 	struct inode inode;
 	char *buf = malloc(size);
-	read_inode(ino, &inode);
+	READ_INODE(ino, &inode);
 
 	logprintf("read %ld at %ld for %ld bytes\n", ino, off, size);
 	ssize_t ret = pread_ino(&inode, buf, size, off);
@@ -167,7 +205,7 @@ void fs_read(fuse_req_t req, fuse_ino_t ino, size_t size, off_t off, struct fuse
 void fs_unlink(fuse_req_t req, fuse_ino_t parent, const char *name)
 {
 	struct inode inode;
-	read_inode(parent, &inode);
+	READ_INODE(parent, &inode);
 
 	int ret = rm_direntry(&inode, name);
 
@@ -207,7 +245,7 @@ void fs_mkdir(fuse_req_t req, fuse_ino_t parent, const char *name, mode_t mode)
 	entry.inode = add_dir(&new_inode);
 	strncpy(entry.name, name, MAX_NAME_LEN);
 
-	read_inode(parent, &dir_inode);
+	READ_INODE(parent, &dir_inode);
 
 	ret = add_direntry(&dir_inode, &entry);
 	if (ret < 0) {
@@ -238,7 +276,7 @@ void fs_readdir(fuse_req_t req, fuse_ino_t ino, size_t size, off_t off, struct f
 
 	logprintf("list %ld, step %ld\n", ino, off);
 
-	read_inode(ino, &inode);
+	READ_INODE(ino, &inode);
 
 	entry = list_dir(&inode, off);
 	// we're done
@@ -247,7 +285,7 @@ void fs_readdir(fuse_req_t req, fuse_ino_t ino, size_t size, off_t off, struct f
 		return;
 	}
 
-	read_inode(entry.inode, &inode);
+	READ_INODE(entry.inode, &inode);
 	statbuf = stat_from_inode(&inode, entry.inode);
 
 	// get the size we need for the reply

@@ -123,3 +123,14 @@ size_t add_file(struct inode *inode)
 
 	return count;
 }
+
+void update_file_inode(struct inode *inode)
+{
+	write_data(inode, sizeof(*inode), inode->blk);
+}
+
+void truncate_file(struct inode *inode, size_t size)
+{
+	inode->size = size;
+	update_file_inode(inode);
+}

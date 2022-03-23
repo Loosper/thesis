@@ -181,7 +181,12 @@ static void *bval(struct btree_geo *geo, unsigned long *node, int n)
 static void setkey(struct btree_geo *geo, unsigned long *node, int n,
 		   unsigned long *key)
 {
-	longcpy(bkey(geo, node, n), key, geo->keylen);
+	long *nodep = pnode(node);
+
+	nodep[n * geo->keylen] = *key;
+
+	write_block(nodep, (long) node);
+	free(nodep);
 }
 
 static void setval(struct btree_geo *geo, unsigned long *node, int n,

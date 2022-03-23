@@ -153,6 +153,7 @@ static ssize_t do_read_write_block(struct inode *inode, void *buf,
 		return -EINVAL;
 	}
 
+	// TODO: add a read past EOF check
 	assert(inode->blk != 0);
 	assert(block_n != 0);
 
@@ -161,6 +162,10 @@ static ssize_t do_read_write_block(struct inode *inode, void *buf,
 	if (write) {
 		memcpy(data + off_in_blk, buf, count);
 		write_block(data, block_n);
+
+		// and update file size
+		inode->size += count;
+		write_data(inode, sizeof(*inode), inode->blk);
 	} else {
 		memcpy(buf, data + off_in_blk, count);
 	}

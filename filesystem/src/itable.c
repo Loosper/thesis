@@ -41,6 +41,13 @@ static void write_num_files(size_t num)
 	pwrite_ino(&itable, ptr, FS_BLOCK_SIZE, 0);
 }
 
+static size_t filenum_offset(size_t num)
+{
+	// don't forget to add the initial counter!!!
+	return num * FS_BLOCK_SIZE + FS_BLOCK_SIZE;
+}
+
+
 int read_inode(size_t num, struct inode *inode)
 {
 	struct inode itable = get_itable_inode();
@@ -50,20 +57,23 @@ int read_inode(size_t num, struct inode *inode)
 
 	pread_ino(
 		&itable, inode, sizeof(*inode),
-		// don't forget to add the initial counter!!!
-		num * FS_BLOCK_SIZE + sizeof(size_t)
+		filenum_offset(num)
 	);
 	return 0;
 }
 
 void write_inode(size_t num, struct inode *inode)
 {
+	uint8_t buf[FS_BLOCK_SIZE];
 	struct inode itable = get_itable_inode();
 
+	memcpy(buf, inode, sizeof(*inode));
+	// zero the rest of the block
+	memset(buf + sizeof(*inode), 0, sizeof(buf) - sizeof(*inode));
+
 	pwrite_ino(
-		&itable, inode, sizeof(*inode),
-		// don't forget to add the initial counter!!!
-		num * FS_BLOCK_SIZE + sizeof(size_t)
+		&itable, buf, sizeof(buf),
+		filenum_offset(num)
 	);
 }
 

@@ -127,32 +127,27 @@ size_t get_pblock_of_byte(struct inode *inode, size_t byte)
 	return (size_t) btree_lookup64(&inode->data_tree, byte / FS_BLOCK_SIZE);
 }
 
-// TODO: idea: have the 0th inode in the inode file be the inode for the file
-// itself. It can be at a fixed location and will drop special handling and
-// kinda short circuit bootstrap
-
-// TODO: this should NOT hande file enlargement. It should be in the read/write
-// wrappers who can do it more carefully
-
 // NOTE: currently only writes up to FS_BLOCK_SIZE
 static ssize_t do_read_write_block(struct inode *inode, void *buf,
 		size_t count, off_t offset, bool write, bool internal)
 {
 	uint8_t data[FS_BLOCK_SIZE];
 	size_t block_n;
-
-	// offset is %-ed because we only want offset within the block
-	size_t blk_offset = offset % FS_BLOCK_SIZE;
-	// don't try to copy beyond the end of the block TODO: for now
-	count = MIN(blk_offset + count, FS_BLOCK_SIZE) - blk_offset;
+	size_t off_in_blk = offset % FS_BLOCK_SIZE;
+	// don't try to copy beyond the end of the block
+	count = MIN(off_in_blk + count, FS_BLOCK_SIZE) - off_in_blk;
 
 	block_n = get_pblock_of_byte(inode, offset);
 
-	// we don't use block 0, and btree uses it for error
+	// we don't use block 0, and btree uses it for error (not found in this case)
 	if (block_n == 0 && write) {
 		size_t avail_keys = avail_keys = get_blk_count(&inode->data_tree);
-		// TODO: add enough space OR the minimum, whichever is greater
-		file_add_space(inode, PREALLOC_AMOUNT);
+		size_t blk_needed = offset / FS_BLOCK_SIZE;
+
+		if (blk_needed < PREALLOC_AMOUNT)
+			blk_needed = PREALLOC_AMOUNT;
+
+		file_add_space(inode, blk_needed);
 		block_n = get_pblock_of_byte(inode, offset);
 	} else if (block_n == 0 && !write) {
 		return -EINVAL;
@@ -164,10 +159,10 @@ static ssize_t do_read_write_block(struct inode *inode, void *buf,
 	read_block(data, block_n);
 
 	if (write) {
-		memcpy(data + blk_offset, buf, count);
+		memcpy(data + off_in_blk, buf, count);
 		write_block(data, block_n);
 	} else {
-		memcpy(buf, data + blk_offset, count);
+		memcpy(buf, data + off_in_blk, count);
 	}
 
 	return count;

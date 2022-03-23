@@ -43,7 +43,6 @@ size_t gen_flist()
 	// we use 1 bit per block, a byte has 8
 	list_size /= sizeof(uint8_t);
 
-	struct secondary_block scnd = {0};
 	// put the inode here (no allocator yet)
 	size_t location = dummy_allocate();
 	struct inode free_list;
@@ -55,10 +54,10 @@ size_t gen_flist()
 
 	blk_allocator = dummy_allocate;
 	make_empty_inode(&free_list, S_IFREG);
+	free_list.blk = location;
+	write_data(&free_list, sizeof(free_list), free_list.blk);
 
 	blk_cur_num = file_add_space(&free_list, blk_req);
-	write_data(&free_list, sizeof(free_list), location);
-
 	blk_allocator = allocate_block;
 
 	// ++ becuase above returns last one in use. We now want a count now

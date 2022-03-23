@@ -12,6 +12,7 @@
 #define NODESIZE FS_BLOCK_SIZE
 // #define FS_BLOCK_SIZE (1 * FS_SECTOR_SIZE)
 #define SUPERBLOCK_BLK		1
+#define PREALLOC_AMOUNT 20
 
 extern int backing_store;
 extern struct superblock superblock;
@@ -30,23 +31,15 @@ struct fs_opts {
 	int foreground;
 };
 
-// simplest way to use this: first 7 point to direct data. 8th points to
-// another one of these. Ad infinitum.
-// FIXME: ^ is FAT style (i.e EXTREMELY slow)
-#define SCND_CAPACITY 8
-struct secondary_block {
-	int used;
-	// TODO: ???
-	size_t blocks[FS_SECTOR_SIZE / sizeof(size_t)];
-};
 
 // TODO: types are bad
 // TODO: checksum this separately of the block?
 struct inode {
 	size_t size;
 	size_t refs;
-	size_t data_block;
 	struct btree_head64 data_tree;
+	// we reserve blk 0 to mean "uninitialised"
+	size_t blk; // blk where this is stored (short circuit the itable)
 	uid_t uid;
 	gid_t gid;
 	mode_t mode;

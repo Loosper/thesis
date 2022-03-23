@@ -84,6 +84,8 @@ size_t gen_itable()
 	struct inode root;
 
 	make_empty_inode(&root, S_IFREG);
+	root.blk = location;
+
 	write_data(&root, sizeof(root), location);
 
 	return location;
@@ -108,9 +110,16 @@ bool file_exists(size_t filenum)
 size_t add_file(struct inode *inode)
 {
 	size_t count = get_num_files();
+	struct inode itable = get_itable_inode();
 
+	// this is the inode handle being given a number
 	write_inode(count, inode);
 	write_num_files(count + 1);
+
+	// save the block num to the inode for short circuiting wherever needed
+	size_t location = get_pblock_of_byte(&itable, filenum_offset(count));
+	inode->blk = location;
+	write_data(inode, sizeof(*inode), location);
 
 	return count;
 }

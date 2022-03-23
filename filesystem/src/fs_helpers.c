@@ -10,18 +10,6 @@
 #include "io.h"
 #include "fs_helpers.h"
 
-// extern int backing_store;
-
-
-// struct filesystem *req_userdata(fuse_req_t req)
-// {
-// 	return fuse_req_userdata(req);
-// }
-
-// int req_fd(fuse_req_t req)
-// {
-// 	return req_userdata(req)->backing_store;
-// }
 
 void make_empty_inode(struct inode *inode, mode_t mode)
 {
@@ -30,12 +18,13 @@ void make_empty_inode(struct inode *inode, mode_t mode)
 	// TODO: I don't actually know who called?
 	inode->uid = 0;
 	inode->gid = 0;
-	// inode->data_block = scnd;
-	btree_init64(&inode->data_tree);
+	inode->blk = 0;
 	inode->mode = mode;
 	inode->atime = time(NULL);
 	inode->mtime = time(NULL);
 	inode->ctime = time(NULL);
+
+	btree_init64(&inode->data_tree);
 }
 
 struct stat stat_from_inode(struct inode *inode, size_t num)
@@ -69,8 +58,8 @@ void print_inode(struct inode *ino, size_t num)
 	fuse_log(FUSE_LOG_INFO,
 		"inode (%d):\n"
 		"\tsize: %ld\n"
-		"\tscnd: %ld\n"
 		"\trefs: %ld\n"
+		"\tnum: %ld\n"
 		"\tuid/gid: %d/%d\n"
 		"\tmode: %x\n"
 		"\tatime: %ld\n"
@@ -78,7 +67,7 @@ void print_inode(struct inode *ino, size_t num)
 		"\tctime: %ld\n",
 		num,
 		// ino->name,
-		ino->size, ino->data_block, ino->refs, ino->uid, ino->gid,
+		ino->size, ino->refs, ino->blk, ino->uid, ino->gid,
 		ino->mode, ino->atime, ino->mtime, ino->ctime
 	);
 }

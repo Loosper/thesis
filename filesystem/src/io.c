@@ -86,28 +86,45 @@ ssize_t read_data(void *data, size_t len, size_t block_no)
 	return ret;
 }
 
+static long get_blk_count(struct btree_head64 *head)
+{
+	long last_blk = 0;
+	void *ret = btree_last64(head, &last_blk);
+	if (ret != NULL)
+		last_blk += 1;
+
+	return last_blk;
+}
+
 // TODO: this has to overwrite the inode. Otherwise, keep the data_tree in a
 // separate block. Better yet, leave the responsibility to the parent
 size_t file_add_space(struct inode *inode, size_t blk_req)
 {
-	// TODO: key of 0 is legal. Fiddle with counting to include it
-	size_t last_blk = 0;
+	size_t start_blk = 0;
 	size_t blk;
-	int ret;
+	long ret;
 
-	btree_last64(&inode->data_tree, &last_blk);
+	start_blk = get_blk_count(&inode->data_tree);
 
-	for (int i = 1; i <= blk_req; i++) {
+	for (size_t i = start_blk; i < start_blk + blk_req; i++) {
 		blk = blk_allocator();
 
 		ret = btree_insert64(
-			&inode->data_tree, last_blk + i,
+			&inode->data_tree, i,
 			(void *)blk, dummy_gfp
 		);
 		assert(ret == 0);
 	}
 
+	// this is so the tree is saved
+	write_data(inode, sizeof(*inode), inode->blk);
 	return blk;
+}
+
+
+size_t get_pblock_of_byte(struct inode *inode, size_t byte)
+{
+	return (size_t) btree_lookup64(&inode->data_tree, byte / FS_BLOCK_SIZE);
 }
 
 // TODO: idea: have the 0th inode in the inode file be the inode for the file
@@ -129,22 +146,26 @@ static ssize_t do_read_write_block(struct inode *inode, void *buf,
 	// don't try to copy beyond the end of the block TODO: for now
 	count = MIN(blk_offset + count, FS_BLOCK_SIZE) - blk_offset;
 
-	// TODO: we need to check for space and extend it if needed
-	block_n = (size_t) btree_lookup64(&inode->data_tree, offset / FS_BLOCK_SIZE);
+	block_n = get_pblock_of_byte(inode, offset);
 
-	if (block_n == 0)
+	// we don't use block 0, and btree uses it for error
+	if (block_n == 0 && write) {
+		size_t avail_keys = avail_keys = get_blk_count(&inode->data_tree);
+		// TODO: add enough space OR the minimum, whichever is greater
+		file_add_space(inode, PREALLOC_AMOUNT);
+		block_n = get_pblock_of_byte(inode, offset);
+	} else if (block_n == 0 && !write) {
 		return -EINVAL;
+	}
+
+	assert(inode->blk != 0);
+	assert(block_n != 0);
 
 	read_block(data, block_n);
 
 	if (write) {
 		memcpy(data + blk_offset, buf, count);
 		write_block(data, block_n);
-
-		if (inode->size < offset + count) {
-			// TODO: how to write it back with updated value
-			inode->size = offset + count;
-		}
 	} else {
 		memcpy(buf, data + blk_offset, count);
 	}
@@ -153,7 +174,8 @@ static ssize_t do_read_write_block(struct inode *inode, void *buf,
 }
 
 // TODO: this is a very temporary and very ugly HACK
-static ssize_t do_read_write_full(struct inode *inode, void *buf, size_t count, off_t offset, bool write, bool internal)
+static ssize_t do_read_write_full(struct inode *inode, void *buf, size_t count,
+		off_t offset, bool write, bool internal)
 {
 	size_t done = 0;
 	while (done < count) {

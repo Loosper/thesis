@@ -146,6 +146,7 @@ void fs_write(fuse_req_t req, fuse_ino_t ino, const char *buf,
 	struct inode inode;
 	read_inode(ino, &inode);
 
+	logprintf("write %ld at %ld for %ld bytes\n", ino, off, size);
 	ssize_t ret = pwrite_ino(&inode, buf, size, off);
 	ASSERT_GOOD(fuse_reply_write(req, ret));
 }
@@ -156,6 +157,7 @@ void fs_read(fuse_req_t req, fuse_ino_t ino, size_t size, off_t off, struct fuse
 	char *buf = malloc(size);
 	read_inode(ino, &inode);
 
+	logprintf("read %ld at %ld for %ld bytes\n", ino, off, size);
 	ssize_t ret = pread_ino(&inode, buf, size, off);
 
 	ASSERT_GOOD(fuse_reply_buf(req, buf, ret));

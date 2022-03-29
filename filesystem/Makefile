@@ -25,9 +25,12 @@ filesystem: $(COBJS)
 clean:
 	rm -f filesystem $(COBJS)
 
+LOOP_NUM := 0
+
 .PHONY: loop_dev
 loop_dev:
-	 dd if=/dev/zero of=./fs_data count=12k
-	 losetup -f --show ./fs_data
-	 chmod 666 /dev/loop0
+	losetup -d /dev/loop$(LOOP_NUM) || true
+	dd if=/dev/zero of=./loop$(LOOP_NUM)_data count=1M
+	losetup /dev/loop$(LOOP_NUM) ./loop$(LOOP_NUM)_data
+	chmod 666 /dev/loop$(LOOP_NUM)
 

@@ -4,3 +4,4 @@
 *.pdf
 */libfuse
 */filesystem
+mount_other

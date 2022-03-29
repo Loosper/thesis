@@ -25,11 +25,16 @@ static inline void dir_write_num_files(struct inode *dir, size_t num)
 	pwrite_ino(dir, &num, sizeof(num), 0);
 }
 
+static inline size_t direntry_offset(size_t num)
+{
+	return num * sizeof(struct dirent) + sizeof(num);
+}
+
 static inline void dir_read_entry(struct inode *dir, struct dirent *entry, size_t num)
 {
 	pread_ino(
 		dir, entry, sizeof(*entry),
-		num * sizeof(*entry) + sizeof(num)
+		direntry_offset(num)
 	);
 }
 
@@ -37,7 +42,7 @@ static inline void dir_write_entry(struct inode *dir, struct dirent *entry, size
 {
 	pwrite_ino(
 		dir, entry, sizeof(*entry),
-		num * sizeof(*entry) + sizeof(num)
+		direntry_offset(num)
 	);
 }
 
@@ -95,16 +100,19 @@ static int unlink_inode(size_t num)
 int rm_direntry(struct inode *dir_ino, const char *filename)
 {
 	struct dirent dirent;
+	size_t total = dir_get_num_files(dir_ino);
 	size_t idx = get_direntry_idx(&dirent, dir_ino, filename);
 	// conscious choice to not check it. I assume the kernel will only
 	// feed me valid stuff for now
 	assert(dirent.inode != 0);
-
 	unlink_inode(dirent.inode);
 
-	dirent.name[0] = '\0';
-	dirent.inode = 0;
-	dir_write_entry(dir_ino, &dirent, idx);
+	for (size_t i = idx; i < total - 1; i++) {
+		dir_read_entry(dir_ino, &dirent, i + 1);
+		dir_write_entry(dir_ino, &dirent, i);
+	}
+
+	dir_write_num_files(dir_ino, total - 1);
 
 	return 0;
 }

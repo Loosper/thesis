@@ -209,6 +209,8 @@ void fs_unlink(fuse_req_t req, fuse_ino_t parent, const char *name)
 
 	int ret = rm_direntry(&inode, name);
 
+	logprintf("removing %s from %ld\n", name, parent);
+
 	fuse_reply_err(req, ret);
 }
 

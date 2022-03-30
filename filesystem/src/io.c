@@ -20,16 +20,10 @@ size_t (*blk_allocator)() = NULL;
 size_t (*blk_deallocator)() = NULL;
 gfp_t dummy_gfp;
 
-// all this because write() can be interrupted by signals and partially
-// complete. We assume the file has good dimensions and don't prevent infinite
-// spin
-
 // FIXME: change names of all of the below to something consistent. read_inode
 // is high level and read_data isn't. This has to be communicated. You could do
 // the _name things here too for static and genrally internal things
 
-// TODO: now that files extend themselves, we don't need to write whole blocks
-// to them, can be just like normal files. I.E. the bookkeeping data for dirs
 #define BLOCK_COMPUTE_CHECKSUM(block, checksum)				\
 	do {								\
 		int ret;						\
@@ -39,37 +33,57 @@ gfp_t dummy_gfp;
 		assert(ret == CHECKSUM_LEN);				\
 	} while (0)
 
+
+// no braces on purpose. This is so it expands as actual parameters
+#define BLOCK_PARAMS(buf)						\
+	backing_store, (uint8_t *) buf + progress,			\
+	FS_BLOCK_SIZE - progress, block_no * FS_SECTOR_SIZE + progress
+#define CHECK_PARAMS(buf)						\
+	backing_store, buf,						\
+	CHECKSUM_LEN, block_no * FS_SECTOR_SIZE + FS_BLOCK_SIZE
+
+#define IO_FUNC(func, params) func(params)
+
+// all this because write() can be interrupted by signals and partially
+// complete. We assume the file has good dimensions and don't prevent infinite
+// spin
+#define IO_FULL(func, buf)						\
+	do {								\
+		size_t progress = 0;					\
+		ssize_t ret;						\
+		while (progress < FS_BLOCK_SIZE) {			\
+			ret = IO_FUNC(func, BLOCK_PARAMS(buf));		\
+			CHECK_ERRNO(ret);				\
+			progress += ret;				\
+		}							\
+	} while (0)
+
+#define CHECKSUM_IO(func, buf)						\
+	do {								\
+		ssize_t ret;						\
+		ret = IO_FUNC(func, CHECK_PARAMS(buf));			\
+		assert(ret == CHECKSUM_LEN);				\
+	} while (0)
+
 void write_block(void *data, size_t block_no)
 {
-	size_t written = 0;
-	ssize_t ret;
+	uint8_t checksum[CHECKSUM_LEN];
 
-	while (written < FS_BLOCK_SIZE) {
-		ret = pwrite(
-			backing_store, (uint8_t *) data + written, FS_BLOCK_SIZE - written,
-			block_no * FS_BLOCK_SIZE + written
-		);
-		CHECK_ERRNO(ret);
-		written += ret;
-	}
-
+	BLOCK_COMPUTE_CHECKSUM(data, checksum);
+	IO_FULL(pwrite, data);
+	CHECKSUM_IO(pwrite, checksum);
 }
 
-// see write_block() comment
 void read_block(void *buf, size_t block_no)
 {
-	size_t rread = 0;
-	ssize_t ret;
+	uint8_t checksum[CHECKSUM_LEN];
+	uint8_t stored_checksum[CHECKSUM_LEN];
 
-	while (rread < FS_BLOCK_SIZE) {
-		ret = pread(
-			backing_store, (uint8_t *) buf + rread, FS_BLOCK_SIZE - rread,
-			block_no * FS_BLOCK_SIZE + rread
-		);
-		CHECK_ERRNO(ret);
-		rread += ret;
-	}
+	IO_FULL(pread, buf);
+	CHECKSUM_IO(pread, stored_checksum);
+	BLOCK_COMPUTE_CHECKSUM(buf, checksum);
 
+	assert(memcmp(checksum, stored_checksum, CHECKSUM_LEN) == 0);
 }
 
 // any data, of any size up to a block. Will be padded and written

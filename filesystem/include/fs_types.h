@@ -6,13 +6,15 @@
 
 #include "btree.h"
 
-#define FS_SECTOR_SIZE 512
+#define FS_SECTOR_SIZE		4096
+#define CHECKSUM_LEN		4
 // TODO: make dynamic
-#define FS_BLOCK_SIZE FS_SECTOR_SIZE
-#define NODESIZE FS_BLOCK_SIZE
-// #define FS_BLOCK_SIZE (1 * FS_SECTOR_SIZE)
+// this is the operational unit
+#define FS_BLOCK_SIZE		(FS_SECTOR_SIZE - CHECKSUM_LEN)
+
+#define NODESIZE		FS_BLOCK_SIZE
 #define SUPERBLOCK_BLK		1
-#define PREALLOC_AMOUNT 20
+#define PREALLOC_AMOUNT		20
 
 extern int backing_store;
 extern int checksum_fd;

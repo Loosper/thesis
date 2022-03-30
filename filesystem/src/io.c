@@ -31,7 +31,7 @@ gfp_t dummy_gfp;
 // to them, can be just like normal files. I.E. the bookkeeping data for dirs
 // and such could be small
 
-ssize_t write_block(void *data, size_t block_no)
+void write_block(void *data, size_t block_no)
 {
 	size_t written = 0;
 	ssize_t ret;
@@ -45,11 +45,10 @@ ssize_t write_block(void *data, size_t block_no)
 		written += ret;
 	}
 
-	return written;
 }
 
 // see write_block() comment
-ssize_t read_block(void *buf, size_t block_no)
+void read_block(void *buf, size_t block_no)
 {
 	size_t rread = 0;
 	ssize_t ret;
@@ -63,27 +62,23 @@ ssize_t read_block(void *buf, size_t block_no)
 		rread += ret;
 	}
 
-	return rread;
 }
 
 // any data, of any size up to a block. Will be padded and written
-ssize_t write_data(void *data, size_t len, size_t block_no)
+void write_data(void *data, size_t len, size_t block_no)
 {
 	uint8_t block[FS_BLOCK_SIZE] = {0};
 	memcpy(block, data, len);
 
-	return write_block(block, block_no);
+	write_block(block, block_no);
 }
 
-ssize_t read_data(void *data, size_t len, size_t block_no)
+void read_data(void *data, size_t len, size_t block_no)
 {
 	uint8_t block[FS_BLOCK_SIZE];
-	ssize_t ret;
 
-	ret = read_block(block, block_no);
+	read_block(block, block_no);
 	memcpy(data, block, len);
-
-	return ret;
 }
 
 static long get_blk_count(struct btree_head64 *head)

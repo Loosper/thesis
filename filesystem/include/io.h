@@ -8,10 +8,10 @@
 #include "fs_types.h"
 
 
-ssize_t write_block(void *data, size_t block_no);
-ssize_t read_block(void *buf, size_t block_no);
-ssize_t write_data(void *data, size_t len, size_t block_no);
-ssize_t read_data(void *data, size_t len, size_t block_no);
+void write_block(void *data, size_t block_no);
+void read_block(void *buf, size_t block_no);
+void write_data(void *data, size_t len, size_t block_no);
+void read_data(void *data, size_t len, size_t block_no);
 
 size_t get_pblock_of_byte(struct inode *inode, size_t byte);
 size_t file_add_space(struct inode *inode, size_t blk_req);

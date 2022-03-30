@@ -38,10 +38,10 @@ static size_t dummy_allocate()
 size_t gen_flist()
 {
 	size_t list_size;
-	// TODO: I shall assume a sector size of 512. This probably isn't true
-	ioctl(backing_store, BLKGETSIZE, &list_size);
+	int ret = ioctl(backing_store, BLKGETSIZE, &list_size);
 	// we use 1 bit per block, a byte has 8
-	list_size /= sizeof(uint8_t);
+	// TODO: I shall assume a sector size of 512. This probably isn't true
+	list_size /= sizeof(uint8_t) * (FS_SECTOR_SIZE / 512);
 
 	// put the inode here (no allocator yet)
 	size_t location = dummy_allocate();

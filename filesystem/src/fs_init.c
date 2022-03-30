@@ -25,7 +25,7 @@ static void write_root_dir()
 	add_dir(&root_dir);
 }
 
-void fs_init(struct fs_metadata *fs)
+void fs_init()
 {
 	int tfm_soc;
 	struct sockaddr_alg sa = {
@@ -38,7 +38,6 @@ void fs_init(struct fs_metadata *fs)
 	bind(tfm_soc, (struct sockaddr *)&sa, sizeof(sa));
 	checksum_fd = accept(tfm_soc, NULL, 0);
 
-	backing_store = fs->backing_store;
 	for (int i = 0; i <= SUPERBLOCK_BLK; i++) {
 		init_blk_zero(i);
 	}

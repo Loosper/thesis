@@ -38,7 +38,8 @@ static size_t dummy_allocate()
 size_t gen_flist()
 {
 	size_t list_size;
-	int ret = ioctl(backing_store, BLKGETSIZE, &list_size);
+	// TODO: check devies are identical
+	int ret = ioctl(fs_settings->deva, BLKGETSIZE, &list_size);
 	// we use 1 bit per block, a byte has 8
 	// TODO: I shall assume a sector size of 512. This probably isn't true
 	list_size /= sizeof(uint8_t) * (FS_SECTOR_SIZE / 512);

@@ -66,8 +66,10 @@ static int opt_proc(void *data, const char *arg, int key, struct fuse_args *outa
 	struct fs_opts *fs = data;
 
 	if (key == FUSE_OPT_KEY_NONOPT) {
-		if (!fs->backing_store) {
-			return check_path(arg, &fs->backing_store);
+		if (!fs->deva) {
+			return check_path(arg, &fs->deva);
+		} else if (!fs->devb) {
+			return check_path(arg, &fs->devb);
 		} else if (!fs->mountpoint) {
 			return check_path(arg, &fs->mountpoint);
 		}
@@ -94,6 +96,7 @@ static void log_to_file(enum fuse_log_level level, const char *fmt, va_list ap)
 
 	fflush(file);
 }
+struct fs_metadata *fs_settings = NULL;
 
 int main(int argc, char *argv[])
 {
@@ -101,7 +104,6 @@ int main(int argc, char *argv[])
 	// struct fuse_cmdline_opts opts;
 	struct fuse_session *sess;
 	struct fs_opts opts = {0};
-	struct fs_metadata *fs = NULL;
 	int ret;
 
 	// it will print its error, we just need to exit
@@ -113,23 +115,24 @@ int main(int argc, char *argv[])
 		return 0;
 	}
 
-	if (opts.mountpoint == NULL || opts.backing_store == NULL) {
-		printf("usage: %s [options] <mountpoint> <storage>\n", argv[0]);
+	if (opts.mountpoint == NULL || opts.deva == NULL || opts.devb == NULL) {
+		printf("usage: %s [options] <mountpoint> <storage> <storage mirror>\n", argv[0]);
 		return 1;
 	}
 
 	fuse_set_log_func(log_to_file);
 
-	fs = malloc(sizeof(*fs));
-	fs->backing_store = open(opts.backing_store, O_RDWR);
-	if (fs->backing_store == -1) {
+	fs_settings = malloc(sizeof(*fs_settings));
+	fs_settings->deva = open(opts.deva, O_RDWR);
+	fs_settings->devb = open(opts.devb, O_RDWR);
+	if (fs_settings->deva == -1 || fs_settings->devb == -1) {
 		perror("fs: couldn't open file");
 		return 1;
 	}
 
-	fs_init(fs);
+	fs_init();
 
-	sess = fuse_session_new(&args, &fs_ops, sizeof(fs_ops), fs);
+	sess = fuse_session_new(&args, &fs_ops, sizeof(fs_ops), fs_settings);
 	if (sess == NULL)
 		return 1;
 	if (fuse_set_signal_handlers(sess) != 0)
@@ -145,8 +148,9 @@ int main(int argc, char *argv[])
 	fuse_session_unmount(sess);
 	fuse_session_destroy(sess);
 	free(opts.mountpoint);
-	free(opts.backing_store);
-	free(fs);
+	free(opts.deva);
+	free(opts.devb);
+	free(fs_settings);
 	fuse_opt_free_args(&args);
 
 	fflush(file);

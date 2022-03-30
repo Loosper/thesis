@@ -16,7 +16,6 @@
 #define SUPERBLOCK_BLK		1
 #define PREALLOC_AMOUNT		20
 
-extern int backing_store;
 extern int checksum_fd;
 extern struct superblock superblock;
 // this is for debug, but it's nice to have access anywhere
@@ -28,7 +27,8 @@ extern gfp_t dummy_gfp;
 
 struct fs_opts {
 	char *mountpoint;
-	char *backing_store;
+	char *deva;
+	char *devb;
 	int debug;
 	int to_help;
 	int foreground;
@@ -59,8 +59,10 @@ struct dirent {
 
 // NOTE: not a superblock
 struct fs_metadata {
-	int backing_store;
+	int deva;
+	int devb;
 };
+extern struct fs_metadata *fs_settings;
 
 // TODO: HFS+ has a field here saying which is the next free inode num
 struct superblock {

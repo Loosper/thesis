@@ -36,10 +36,10 @@ gfp_t dummy_gfp;
 
 // no braces on purpose. This is so it expands as actual parameters
 #define BLOCK_PARAMS(buf)						\
-	backing_store, (uint8_t *) buf + progress,			\
+	fs_settings->deva, (uint8_t *) buf + progress,			\
 	FS_BLOCK_SIZE - progress, block_no * FS_SECTOR_SIZE + progress
 #define CHECK_PARAMS(buf)						\
-	backing_store, buf,						\
+	fs_settings->deva, buf,						\
 	CHECKSUM_LEN, block_no * FS_SECTOR_SIZE + FS_BLOCK_SIZE
 
 #define IO_FUNC(func, params) func(params)

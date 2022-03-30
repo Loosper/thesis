@@ -15,6 +15,7 @@
 #define PREALLOC_AMOUNT 20
 
 extern int backing_store;
+extern int checksum_fd;
 extern struct superblock superblock;
 // this is for debug, but it's nice to have access anywhere
 extern int debug;

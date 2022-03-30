@@ -7,6 +7,7 @@
 #include <unistd.h>
 
 #include <sys/param.h>
+#include <sys/socket.h>
 
 #include "flist.h"
 #include "fs_helpers.h"
@@ -29,7 +30,14 @@ gfp_t dummy_gfp;
 
 // TODO: now that files extend themselves, we don't need to write whole blocks
 // to them, can be just like normal files. I.E. the bookkeeping data for dirs
-// and such could be small
+#define BLOCK_COMPUTE_CHECKSUM(block, checksum)				\
+	do {								\
+		int ret;						\
+		ret = send(checksum_fd, block, FS_BLOCK_SIZE, 0);	\
+		assert(ret == FS_BLOCK_SIZE);				\
+		ret = recv(checksum_fd, checksum, CHECKSUM_LEN, 0);	\
+		assert(ret == CHECKSUM_LEN);				\
+	} while (0)
 
 void write_block(void *data, size_t block_no)
 {

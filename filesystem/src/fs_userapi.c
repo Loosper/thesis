@@ -162,11 +162,11 @@ void fs_setattr(fuse_req_t req, fuse_ino_t ino, struct stat *attr, int to_set, s
 
 void fs_open(fuse_req_t req, fuse_ino_t ino, struct fuse_file_info *fi)
 {
-	if (fi->flags | O_CREAT) {
+	if (fi->flags & O_CREAT) {
 		logprintf("IGNORING: O_CREAT\n");
 	}
 
-	if (fi->flags | O_TRUNC) {
+	if (fi->flags & O_TRUNC) {
 		struct inode inode;
 		READ_INODE(ino, &inode);
 		truncate_file(&inode, 0);

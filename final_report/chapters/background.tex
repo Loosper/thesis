@@ -239,6 +239,54 @@
             operation, limiting the impact of a crash to only some data loss
             that hasn't had the time to be commited to disk.
 
+
+    % TODO: very unnatural explanation I think
+    \section{The B-tree}
+
+        B-trees are a de facto standard for file organisation
+        \cite{btree_ubiquitous}. Most modern filesystems incorporate them in
+        some way, like EXT4 (section \ref{ext4}), XFS \cite{xfs_scalability},
+        HFS+ \cite{see notes} and, probably most notably, BTRFS which stands
+        for "B-tree File System" \cite{the wiki?}. They are very well suited to
+        secondary storage based applications and their use is only natural.
+
+        % TODO: prime candidate for graphics
+        As explained by \citeauthor{btree_ubiquitous}, B-tree are a
+        generalisation of binary search trees. Essentailly, each node contains
+        any number of keys, instead of one, and that many plus one children
+        leave a node. Keys in a node are ordered and child nodes are placed
+        between any two adjacent keys. Additionally, the keys of each child are
+        selected such that they fall between the two keys where the node is
+        placed. % middle of the sequence of the parents? idk how to say
+
+        B-tree nodes do not have to be full. Indeed, keeping only a single key
+        and two children in each devolves in a generic binary truee. However,
+        they are usually kept at least $1/2$ full, splitting and combining them
+        as necessary to maintain the constraint, a process called balancing.
+
+        Since B-trees are frequently used on secondary storage measuring the
+        cost of operations by number of nodes accessed is a typical metric
+        \cite{btree_ubiquitous}[ch.2] as this is the slowest part of the
+        operation. In that case, all operations are logarithmic in the size of
+        the tree (times a different constant depending on the operation).
+
+        A particular variant, the \bplustree only stores keys in leaf nodes and
+        inner nodes are only used for path finding. Adjacent leaf nodes are
+        also linked together to enable constant time sequential access, as is
+        common with files.
+
+        B-tree variants are particularly well suited for secondary storage for
+        a variety of reasons.
+
+        As secondary storage is accessed in blocks of fixed size, aligning the
+        B-tree node size with it reduces the need for bookkeeping information
+        and fragmentation. The relatively large block sizes also allow many
+        keys to be stored in a node, allowing for the tree to be much
+        shallower, leading to very few random block accesses, an operation
+        which is particularly slow on hard drives. Finally, the minimum usage
+        requirement for nodes prevents sparse trees from forming, increasing
+        space utilisation and further reducing depth.
+
     \section{EXT4}
 
         The most modern version of the ext filesystem, ext4, is native and

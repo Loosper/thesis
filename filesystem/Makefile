@@ -4,7 +4,7 @@ override CFLAGS += $(FUSE_FLAGS) -Iinclude -g
 CC := gcc
 
 # DEBUG helpers
-CFLAGS += -Wno-unused-parameter
+CFLAGS += -Wno-unused-parameter -O2
 # CFLAGS += -Wno-unused-variable
 
 COBJS  := $(patsubst %.c, %.o, $(wildcard src/*.c))

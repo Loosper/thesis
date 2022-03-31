@@ -1,6 +1,3 @@
-% You can cite chapters by using '\ref{chapter1}', where the label must
-% match that given in the 'label' command, as on the next line.
-\label{background}
 % Sections and sub-sections can be declared using \section and \subsection.
 % There is also a \subsubsection, but consider carefully if you really need
 % so many layers of section structure.
@@ -24,7 +21,7 @@
 % TODO: this is a temporary name
 \chapter{Lit review}
     \section{The UNIX filesystem}
-        \label{UFS}
+        \label{sec_UFS}
 
         For the past 50 years the UNIX style operating system has been one of
         the most prevalent operating system architectures out there. The
@@ -145,7 +142,7 @@
             % capacity suffer greatly decreased performance.
 
         \subsection{LFS}
-            \label{LFS}
+            \label{sec_LFS}
 
             With advances in software and hardware, by \citeyear{IO_bottleneck}
             file access and reliability patterns became apparent. Especially
@@ -199,7 +196,7 @@
             head of the log. This ensures reliability.
 
         \subsection{WAFL}
-            \label{WAFL}
+            \label{sec_WAFL}
 
             With time reliability becomes an ever growing concern, both from a
             techincal and from a human perspective. The idea of snapshots
@@ -245,10 +242,11 @@
 
         B-trees are a de facto standard for file organisation
         \cite{btree_ubiquitous}. Most modern filesystems incorporate them in
-        some way, like EXT4 (section \ref{ext4}), XFS \cite{xfs_scalability},
-        HFS+ \cite{see notes} and, probably most notably, BTRFS which stands
-        for "B-tree File System" \cite{the wiki?}. They are very well suited to
-        secondary storage based applications and their use is only natural.
+        some way, like EXT4 (section \ref{sec_ext4}), XFS
+        \cite{xfs_scalability}, HFS+ \cite{see notes} and, probably most
+        notably, BTRFS which stands for "B-tree File System" \cite{the wiki?}.
+        They are very well suited to secondary storage based applications and
+        their use is only natural.
 
         % TODO: prime candidate for graphics
         As explained by \citeauthor{btree_ubiquitous}, B-tree are a
@@ -288,17 +286,18 @@
         space utilisation and further reducing depth.
 
     \section{EXT4}
+        \label{sec_ext4}
 
         The most modern version of the ext filesystem, ext4, is native and
         usually default on Linux. It integrates a lot of the improvements over
         the years while maintaining the same general idea. Since it was
         developed for (and by) Linux, which is a UNIX derivative, the ext
         family follows closely the same principles present over 50 years ago in
-        UFS (section \ref{UFS}).
+        UFS (section \ref{sec_UFS}).
 
         It is a good benchmark for modern filesystems as it is the default on
-        many (if not most) major Linux ditributions
-        \cite{https://wiki.debian.org/FileSystem},
+        many (if not most) major Linux distributions like Debian
+        \cite{https://wiki.debian.org/FileSystem} and Red Hat
         \cite{https://access.redhat.com/documentation/en-us/red_hat_enterprise_linux/6/html/performance_tuning_guide/s-storage-fs}.
         It is actively maintained
         \cite{https://www.spinics.net/lists/linux-ext4/} and very mature, first
@@ -340,7 +339,7 @@
             data (equal to the number of parity disks).
 
         \subsection{drive reliability}
-            \label{reliability}
+            \label{sec_reliability}
 
             Drives are unreliable \cite{RAID}, \cite{Backblaze (idk which one)}.
             Due to their mechanical nature they wear out and stop working. They
@@ -434,11 +433,12 @@
             its VFS layer implements this in an abstract manner, so individual
             filesystems do not need to implement it themselves. Nevertheless,
             they frequently need to be aware of it and in rare cases, like ZFS
-            (\ref{ZFS}), they need special behaviour to implement some features
-            of the filesystem.
+            (\ref{sec_ZFS}), they need special behaviour to implement some
+            features of the filesystem.
 
+        % TODO: incorporate the reliability analysis of ZFS here
         \subsection{ZFS}
-            \label{ZFS}
+            \label{sec_ZFS}
 
             Considered by many to be the most robust enterprise ready
             filesystem \cite{pls you have to}, ZFS takes all necessary aspects
@@ -460,9 +460,10 @@
             corrupted, several backup copies of it are stored.
 
             Modifications to the tree of blocks is done in the same copy on
-            write manner as in WAFL (\ref{WALF}) so it is always consistent.
-            The only critical operation is the uberblock overwrite, but its
-            checksum allows for any failure to be detected and a backup read.
+            write manner as in WAFL (\ref{sec_WALF}) so it is always
+            consistent.  The only critical operation is the uberblock
+            overwrite, but its checksum allows for any failure to be detected
+            and a backup read.
 
             To pave the way for efficient multi-drive arrangements, ZFS
             implements pools (effectively a volume manager). A pool is an array
@@ -510,14 +511,14 @@
             % \cite{https://www.truenas.com/docs/core/gettingstarted/corehardwareguide/\#error-correcting-code-memory}
 
             The ZFS Intent Log, ZIL, acts like and solves similar problems to
-            LFS (\ref{LFS}). ZFS is always consistent on disk but to due to its
-            copy on write nature, performing these updates frequently requires
-            many bubbling operations up to the uberblock degrades performance.
-            The ZIL acts as a stopgap for data that has been accepted, cached
-            and not flushed to disk yet. It is a log, similar to LFS, that
-            records all writes in sequence until they can be commit on disk. In
-            the event of system failure data uncommited writes can be
-            recovered.
+            LFS (\ref{sec_LFS}). ZFS is always consistent on disk but to due to
+            its copy on write nature, performing these updates frequently
+            requires many bubbling operations up to the uberblock degrades
+            performance.  The ZIL acts as a stopgap for data that has been
+            accepted, cached and not flushed to disk yet. It is a log, similar
+            to LFS, that records all writes in sequence until they can be
+            commit on disk. In the event of system failure data uncommited
+            writes can be recovered.
 
             In summary, ZFS tries to account for \textit{every} eventuality and
             makes arrangements to mitigate them. In places where this affects
@@ -525,15 +526,17 @@
             this, such as various caching. The result is a watertight design
             which is infamous for reliability across the industry.
 
+TODO: where linus ECC rant
+
 \chapter{Problem setting}
 
     As we have seen, non-volatile storage devices are very error-prone and not
-    particularly reliable (\ref{reliability}). To account for this, modern
-    filesystems, like ext4 (\ref{EXT4}), perform metadata checksumming to avoid
-    filesystem corruption. However, this still leaves actual data in the
+    particularly reliable (\ref{sec_reliability}). To account for this, modern
+    filesystems, like ext4 (\ref{sec_EXT4}), perform metadata checksumming to
+    avoid filesystem corruption. However, this still leaves actual data in the
     filesystem vulnerable. There exist various methods to combat the issue,
-    like disk based parity RAID (\ref{RAID}) or dedicated filesystems like ZFS
-    (\ref{ZFS}). These solutions are not perfect and suffer from some
+    like disk based parity RAID (\ref{sec_RAID}) or dedicated filesystems like
+    ZFS (\ref{sec_ZFS}). These solutions are not perfect and suffer from some
     unfortunate flaws. There are notable examples of data loss even when using
     them \cite{LTT_data_loss}.
 
@@ -560,6 +563,10 @@
         the drives in the array dies, then one of these will happen silently,
         depending on which drive fialed.
 
+        TODO:
+        Explain the extreme case: a RIAD 1 mirror. If one is (silently) wrong,
+        which one can be trusted? Neither.
+
         The problem lies in the fact that the system cannot distinguish between
         these three options and the second one leads to data loss. The maths
         works in any of the three configurations, depending on which block we
@@ -570,13 +577,13 @@
 
         To "close" the write hole, Linux implements two features: a journal for
         RAID \cite{LWN_md_journal} (also called a cache occasionally) and a
-        partial parity log (PPL)
-        \cite{PPL: https://www.kernel.org/doc/html/latest/driver-api/md/raid5-ppl.html}.
+        partial parity log (PPL) \cite{PPL:
+        https://www.kernel.org/doc/html/latest/driver-api/md/raid5-ppl.html}.
         The journal uses a separate drive to store a journal of writes, much
-        like the ZIL and ext4 (\ref{EXT4}, \ref{ZFS}) and then recover any
-        corruption on startup. Alternatively, the PPL stores extra (partial)
-        parity in the metadata area of parity drives, again allowing for
-        recovery on startup.
+        like the ZIL and ext4 (\ref{sec_EXT4}, \ref{sec_ZFS}) and then recover
+        any corruption on startup. Alternatively, the PPL stores extra
+        (partial) parity in the metadata area of parity drives, again allowing
+        for recovery on startup.
 
         Both of theses are imperfect solutions though. The journal requires an
         additional drive (however small) which is very cumbersome for small
@@ -586,7 +593,7 @@
         of M.2 slots, which tend to be used for boot drives, is not widepsread
         yet). Regardless, the journal is susceptible to the same issues as the
         drives it is trying to protect.  So inevitable errors in the log drive
-        (\ref{reliability}) can diminish its benefit.
+        (\ref{sec_reliability}) can diminish its benefit.
 
         The PPL is imperfect too: its documentation \cite{PPL} concedes it
         reduces performance by up to 40\% and in the event of a loss of a
@@ -600,8 +607,8 @@
         Drive scrubbing is a necessary feature for both hardware (RAID) and
         filesystem (ZFS) based solutions. It is essentially a regularly
         scheduled automatic full filesystem read that is meant to detect and
-        repair silent errors (\ref{reliability}) such that in the event of a
-        loss of a drive data is still recoverable and does not cascade into
+        repair silent errors (\ref{sec_reliability}) such that in the event of
+        a loss of a drive data is still recoverable and does not cascade into
         more data loss. It is a simple but critical part of reliable data
         storage. The obvious drawback is that this induces significant wear on
         drives, but the benefit greatly outweighs this. If scrubbing is not
@@ -620,8 +627,8 @@
     \section{ZFS resources}
 
         The reliability of ZFS comes at a very steep price - system resources
-        \ref{ZFS}. Due to its caching policy, main memory requirements are very
-        high and not satisfying them can and will degrade performance.
+        \ref{sec_ZFS}. Due to its caching policy, main memory requirements are
+        very high and not satisfying them can and will degrade performance.
         Workstation class devices are not dedicated file servers and rely on
         their memory for other tasks - 3D morelling, rendering, compillation
         and so on. Increasing the memory requirement can be impossible for

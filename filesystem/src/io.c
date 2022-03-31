@@ -35,11 +35,11 @@ gfp_t dummy_gfp;
 
 
 // no braces on purpose. This is so it expands as actual parameters
-#define BLOCK_PARAMS(buf)						\
-	fs_settings->deva, (uint8_t *) buf + progress,			\
+#define BLOCK_PARAMS(buf, dev)						\
+	fs_settings->dev, (uint8_t *) buf + progress,			\
 	FS_BLOCK_SIZE - progress, block_no * FS_SECTOR_SIZE + progress
-#define CHECK_PARAMS(buf)						\
-	fs_settings->deva, buf,						\
+#define CHECK_PARAMS(buf, dev)						\
+	fs_settings->dev, buf,						\
 	CHECKSUM_LEN, block_no * FS_SECTOR_SIZE + FS_BLOCK_SIZE
 
 #define IO_FUNC(func, params) func(params)
@@ -47,21 +47,21 @@ gfp_t dummy_gfp;
 // all this because write() can be interrupted by signals and partially
 // complete. We assume the file has good dimensions and don't prevent infinite
 // spin
-#define IO_FULL(func, buf)						\
+#define IO_FULL(func, buf, dev)						\
 	do {								\
 		size_t progress = 0;					\
 		ssize_t ret;						\
 		while (progress < FS_BLOCK_SIZE) {			\
-			ret = IO_FUNC(func, BLOCK_PARAMS(buf));		\
+			ret = IO_FUNC(func, BLOCK_PARAMS(buf, dev));	\
 			CHECK_ERRNO(ret);				\
 			progress += ret;				\
 		}							\
 	} while (0)
 
-#define CHECKSUM_IO(func, buf)						\
+#define CHECKSUM_IO(func, buf, dev)					\
 	do {								\
 		ssize_t ret;						\
-		ret = IO_FUNC(func, CHECK_PARAMS(buf));			\
+		ret = IO_FUNC(func, CHECK_PARAMS(buf, dev));		\
 		assert(ret == CHECKSUM_LEN);				\
 	} while (0)
 
@@ -70,8 +70,10 @@ void write_block(void *data, size_t block_no)
 	uint8_t checksum[CHECKSUM_LEN];
 
 	BLOCK_COMPUTE_CHECKSUM(data, checksum);
-	IO_FULL(pwrite, data);
-	CHECKSUM_IO(pwrite, checksum);
+	IO_FULL(pwrite, data, deva);
+	IO_FULL(pwrite, data, devb);
+	CHECKSUM_IO(pwrite, checksum, deva);
+	CHECKSUM_IO(pwrite, checksum, devb);
 }
 
 void read_block(void *buf, size_t block_no)
@@ -79,11 +81,23 @@ void read_block(void *buf, size_t block_no)
 	uint8_t checksum[CHECKSUM_LEN];
 	uint8_t stored_checksum[CHECKSUM_LEN];
 
-	IO_FULL(pread, buf);
-	CHECKSUM_IO(pread, stored_checksum);
+	IO_FULL(pread, buf, deva);
+	CHECKSUM_IO(pread, stored_checksum, deva);
 	BLOCK_COMPUTE_CHECKSUM(buf, checksum);
 
-	assert(memcmp(checksum, stored_checksum, CHECKSUM_LEN) == 0);
+	if (memcmp(checksum, stored_checksum, CHECKSUM_LEN) != 0) {
+		logprintf("block %ld corrupted, retrying from devb\n", block_no);
+
+		IO_FULL(pread, buf, devb);
+		CHECKSUM_IO(pread, stored_checksum, devb);
+		BLOCK_COMPUTE_CHECKSUM(buf, checksum);
+
+		assert(memcmp(checksum, stored_checksum, CHECKSUM_LEN) == 0);
+
+		// attempt a repair
+		IO_FULL(pwrite, buf, deva);
+		CHECKSUM_IO(pwrite, checksum, deva);
+	}
 }
 
 // any data, of any size up to a block. Will be padded and written

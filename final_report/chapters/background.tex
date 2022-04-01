@@ -237,6 +237,9 @@
             that hasn't had the time to be commited to disk.
 
 
+    % TODO: look at my notes from algorithms. Adjust as necessary (I think
+    % btrees tend to have values too, so B+trees would have the tree as keys
+    % and then values in the leaves?). This would also apply to the htree
     % TODO: very unnatural explanation I think
     \section{The B-tree}
 
@@ -306,6 +309,29 @@
         Finally, unlike its most direct competitiors by the likes of Windows'
         NTFS and MacOS' APFS, it is free and open source, so code and
         documentation are readily available.
+
+        \subsection{The Htree}
+
+            The best data structure for indexing a list of names, such as a
+            directory, would be hash table, due to its very fast lookup times
+            of arbitrary length strings. However a major drawback is that their
+            size is fixed and extending a hash table cannot be done
+            incrementally, but rather has to happen in large chunks. However,
+            due to the dynamic nature of filesystem directories having fixed
+            sized indexes will not satisfy sizes much different than whatever
+            the general case might be set. On the other hand rebalancing,
+            called rehashing, may lead to large spikes in file creation time, a
+            feature that is undesiriable in filesystems. \citeauthor{Htree}
+            also presents some implementation difficulties.
+
+            Instead, EXT4 uses a modified form of the B-tree known as an Htree
+            (meaning Hash tree) \cite{Htree}. The major difference is that keys
+            in the tree are hashes of directory entry names instead of the
+            names themselves. This way the tree can implement ranges of hashes
+            (buckets in the hash table) in its leaves. This solves the problem
+            of rehashing the table, by allowing incremental changes.
+            Additionally, leaves are kept at a uniform depth to remove the
+            impact of rebalancing the tree and maintaining good performance.
     \section{Data integrity}
 
         % TODO: validate from paper, becase most of this is my general

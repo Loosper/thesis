@@ -113,6 +113,7 @@
 
 
         \subsection{FFS}
+            \ref{sec_FFS}
 
             % maybe mention that increasing block size decreases the need for
             % indirection
@@ -356,6 +357,44 @@
             groups in which the above rules apply. A major exception to them is
             that root directoy entries are spread out as much as possible to
             encourage them to grow independent and reduce fragmentation.
+
+        \subsection{Metadata integrity}
+
+            System crashes are a consistent issue. Causes include dormant bugs
+            in the kernel, applications misbehvaing at critical moements or
+            even an improper shutdown. Even the best code can be brought down
+            by completely unexpectable events like bit flips due to a stray
+            gamma ray and many machines lack the hardware capabilities to
+            detect or correct them, as evidenced by a recent rant by Linus
+            Torvalds \cite{Linus_rant}.
+
+            To that effect, system crashes are assumed to be inevitable and
+            steps are taken to address them. This is especially true for
+            filesystems as data loss is one of the most critical, annoying and
+            time consuming failures possible. There are various ways to
+            minimise the chances of that happening but two major ones are Soft
+            updates, where metadata is only written in a very specific order to
+            ensure consistency \cite{Soft_updates} and journaling where
+            metadata is written to a small LFS style log before entering the
+            filesystem proper \cite{journaling}.
+            \citeauthor{journaling_vs_soft_updates} presents a thorough
+            comparison but in the EXT familiy journaling is used.
+
+            Another reliability feature is that all EXT4 data structures are
+            checksummed wherever possible (due to backwards compatibility).
+            This greatly helps with combating silent filesystem corruption and
+            can help the kernel limit damage.
+
+            It is important to note that despite the reliability features of
+            EXT4, only metadata enjoys their guarantees. Data itself (like file
+            contents) have no guarantees whatsoever. It is impossible to enable
+            journaling for data too, however, the performance impact is sever
+            \cite{ext4_docs}[journaling]. Adding other guarantees for it
+            requires backwards incompatible changes to the filesystem, which
+            the Linux kernel is famously unfavourable towards with the "Never
+            break userspace" motto
+            \cite{https://www.lkml.org/lkml/2012/12/23/75}
+
     \section{Data integrity}
 
         % TODO: validate from paper, becase most of this is my general

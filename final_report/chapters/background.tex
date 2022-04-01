@@ -332,6 +332,30 @@
             of rehashing the table, by allowing incremental changes.
             Additionally, leaves are kept at a uniform depth to remove the
             impact of rebalancing the tree and maintaining good performance.
+
+        \subsection{Data locality}
+
+            EXT4 employs a range of tricks to maximise locality of data of
+            various types. This has the obvious benefit of reducing seek times
+            on spinning hard drives, but can also help solid state drives too
+            as locality "can increase the size of each transfer request while
+            reducing the total number of requests" \cite{EXT documentation}.
+
+            % TODO: i haven't checked the references
+            First, it uses blocks of at least 4KB, as discussed in chapter
+            \ref{sec_FFS}, but even larger (powers of 2) are supported. Then,
+            on file creation allocation is speculative and large to give space
+            for the file to grow inmake sure that's where it was
+            discusseditially. Additionally, allocation is delayed as long as
+            possible, to ensure unwritten chunks can be coalesced into larger
+            ones and laid out better. It also tries to keep the inode close to
+            its data and its parent directoy with the presumption that they are
+            related and accessing them sequentially is likely.
+
+            A second trick is that the filesystem is split into large block
+            groups in which the above rules apply. A major exception to them is
+            that root directoy entries are spread out as much as possible to
+            encourage them to grow independent and reduce fragmentation.
     \section{Data integrity}
 
         % TODO: validate from paper, becase most of this is my general

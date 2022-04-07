@@ -1,9 +1,185 @@
 \chapter{Design}
 
-    \section{B-tree}
+    \section{Methodology}
 
-    \section{Bookkeeping information}
+        Designing a filesystem is difficult and implemneting it even more so.
+        For example, EXT4's documentation
+        \cite{https://www.kernel.org/doc/html/latest/filesystems/ext4/index.html}
+        is roughly 20000 words of mostly major design features, and around
+        60000 lines of Linux kernel code. For this reason designing and
+        implemneting this filesystem followed a peculiar process to reduce the
+        risk of having an incomplete prototype by the submission deadline due
+        to comlextiy.
+
+        The process boils down a single principle: always have a working
+        prototype. The idea is to start with the smallest and simplest
+        implementation that works and then add individual features
+        incrementally in a manner that always ends up with a working prototype.
+        The plan was to initially complete the large amount of work to have
+        \textit{any} filesystem and add geatures until time allowed. This way,
+        no matter the unexpected obstacles in writing a filesystem and
+        underestimation of effort turn out to be, there is always a submittable
+        project to get some (even if lower) marks.
+
+    % TODO: is this necessary
+    \section{Design goals}
+
+        The backdrop for the design that follows are two goals: demonstrating
+        integrity guarantees in a complete filesystem and maintaining
+        simplicity of the design. The main reason behind them is the limited
+        time and large potential scope of the project. It is intended that this
+        project only be a prototype and not production ready infrastructure.
+        This means avoiding special purpose data structures and sticking to the
+        most basic solution that gives satisfactory results.
+
+    \section{Metadata as files}
+
+        The first design choice was that all metadata in the filesystem would
+        be kept as a regular file instead of having special data structures for
+        each, heavily inspired by WAFL (\ref{sec_WAFL}), although EXT4
+        (\ref{sec_EXT4} also stores a substantial amount of metadata (but not
+        all) as regular files too. This way they can all benefit from the
+        underlying indexing method and substantially reduce implementation
+        complexity. Further, this automatically solves the problem of how to
+        allocate space for them.  For example, since the inode table is a file,
+        there is no need make any special consideration for its initial size.
+        It can grow as necessary, get spread throughput the filesystem as
+        available and this approach will accommodate both edge cases equally
+        well. On one end, where the filesystem has to store very few very large
+        files, no space will be wasted towards an unused i-list. On the other
+        end, where it has to store a very large amount of minuscule files, the
+        ilist can grow to a substantial fraction of all storage, without
+        running into an arbitrary limit.
+
+    \section{Block size}
+        \label{sec_block_size}
+
+        % TODO: cite the all claim?
+        As \citeauthor{FFS} explains (see \ref{sec_FFS}), larger block sizes
+        improve throughput and reduce overhead, even on SSDs (see
+        \ref{sec_hardware}). As a sensible default blocks are set to 4KiB in
+        size, as viertually all filesystems do. It offers a good tradeoff
+        between maximising IO performance and minimising overhead for things
+        like free lists while still being small enough to not waste space if
+        unused in small files.
+
+        Extents (\ref{sec_LFS}) are a popular feature to increase throughput.
+        This filesystem does not include them as they significantly increase
+        complexity and their benefits only become apparent when combined with
+        other features such as tree based free space tracking (described in
+        \ref{sec_free_list}), more involved allocation algorithms like those in
+        EXT4 (\ref{sec_EXT4}) or those that \citeauthor{ext4_space_maps}
+        describes.
+
+    \section{The free list}
+        \label{sec_free_list}
+
+        A popular way keep track of available free space is block bitmaps.
+        Historically, many filesystems have frequently used it like FFS
+        \cite{FFS}, WAFL \cite{WALF} and more recently, EXT4
+        \cite{ext4_space_maps} and HFS+
+        \cite{https://developer.apple.com/library/archive/technotes/tn/tn1150.html}.
+        They are very space efficient, using only 256 KB per GB with 4KB blocks
+        or about 0.02\%. Their small size allows them to be easily cached and
+        kept up to date. A major drawback is that traversing these bitmaps is
+        not particularly efficient as it usually devolves to some form of
+        linear search, although some techniques can help mitigate this (for
+        example storing extra bits of information about the closest free
+        block).
+
+        There are other techniques available, such as tracking free extents in
+        a \bplustree like XFS \cite{XFS} or a proposed space map for EXT4 which
+        relies on RB-trees \cite{ext4_space_maps}. Both of these approaches
+        rely on space being managed in extents (see \ref{sec_block_size}).
+        Their major drawback of these approaches is their significantly
+        increased complexity.
+
+        In the end the classic bitmaps were selected. They work well enough,
+        their implemntation is simple and a variety of allocation policies are
+        possible with them. Alternative approaches depend on extents which are
+        not supported and would introduce far too much extra complexity to the
+        project for a limited benefit considering the generally basic design
+        and time constraint. Time is well spend developing other features.
+
+    \section{The inode table}
+
+        Similarly to the free list, the inode table is a linear array of inodes
+        but with a single entry at the start to signify the number of used
+        inodes. This enjoys the same benefits and suffers the same drawbacks as
+        the free list.
+
+    \section{inode}
+
+        Once again, to maintain simplicity, the inode contains only essentail
+        information. This includes metadata like the owner's user and group
+        IDs, the access permissions and creation/modifiaction timestamps.
+        Non-metadata fields are the file's size and the head to the tree of
+        data nodes, stored as a B-tree (see \ref{sec_design_btree}).
+
+        The metadata is required to make a file understandable to Linux. It is
+        also very simple to store as it has a known size and layout, is only
+        stored in one place, and never referenced elsewehre. It could be
+        reported as a fixed value (for example root as owner with full
+        permissions for everything and the UNIX epoch as a creation timestamp)
+        but omitting this information makes the filesystem unpleasant to debug,
+        as it can be hard to tell if files with the exact same metadata are
+        actually different or there is a bug.
+
+        % TODO: should I include an strace trace of cat?
+        The size and data fields are critical to implementing an inode and
+        cannot be done away with. The data is obvious, since the file itself
+        must be stored somewhere and the inode is the only place that
+        references this. The need for the size is less apparent, since all
+        systemcalls for manipulating a file, like \syscall{open},
+        \syscall{read}, \syscall{write}, \syscall{lseek} and \syscall{close},
+        do not reference it in any way. The data tree contains enough
+        information for this value to not be stored explicitly.  For example,
+        the tree will not contain a block for reading past the end of the file
+        which will result in an error. However, basic programs like
+        \monospace{cat} (which are one of the simplest way to access files
+        \cite{https://tldp.org/HOWTO/Linux+IPv6-HOWTO/ch11s01.html}) read the
+        size of the file before making a request for its size (with
+        \syscall{stat}) before reading it. This presents a challenge as,
+        although it is possible to find out the size on each such call, it
+        requires a nontrivial amount of code to do so. Needless to say, it is
+        also unnecessarily inefficient. For the purpose of less code and a
+        speed increase, it was deemed that storing this information and taking
+        the slight complexity with it is worth it overall.
+
+    \section{B-tree}
+        \label{sec_design_btree}
+
+        % TODO: chapter for FAT32 in backgroun? and double check exactly how it
+        % did things to see if I said things right or if i'm subtly wrong
+        Despite its ubiquity, the B-tree is not the only choice for storing
+        data blocks for an inode. Simpler techniques have historically been
+        used. Originally, UFS and FFS used a generic tree of staggered
+        indirection (\ref{sec_UFS} and \ref{sec_FFS}). Another was FAT32 which
+        used a linked list to describe all data blocks \cite{needed}.
+
+        The FAT32 scheme was experimented with, as it is quite a lot simpler
+        than a full B-tree implementation. However, it proved very difficult to
+        reason with on random accesses and performance was also abysmall
+        (something FAT32 has always struggled with). Because of this it was
+        decided to use a \bplustree from an external implementation. The B-tree
+        is much more suited for this task (\ref{sec_btree}) and supports
+        standard operations like insert, delete and lookup natively and
+        performanlty.
 
     \section{Hardware considerations}
+        \label{sec_hardware}
 
-    \section{Methodology}
+        % TODO: can reference ext4 data locality chapter to save on words
+        A major focus for this filesystem was SSD instead of spinning
+        mechanical hard drives. As a result, there are no major provisions for
+        locality. This is because SSD random IO performance is almost in line
+        with their sequential capabilities \cite{something}. As a result,
+        things are laid out in an arbitrary best fit fashion along the disk
+        instead of considering future growth or access patterns.
+
+        There is a single provision for increasing data locality. It is to have
+        a minimum allocation size. This is because greater data locality "can
+        increase the size of each transfer request while reducing the total
+        number of requests" \cite{EXT documentation}. That minimum is set to 20
+        blocks for a balance between high preallocation but not wasting much
+        space.

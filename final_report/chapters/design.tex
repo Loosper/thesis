@@ -108,6 +108,19 @@
         inodes. This enjoys the same benefits and suffers the same drawbacks as
         the free list.
 
+    \section{Directory}
+
+        Directories are normal files with a specified format and uneditable by
+        direct file manipulation system calls like \syscall{write} as in any
+        UNIX filesystem (\ref{sec_UFS}). Their format is like an inode table -
+        a liner list of entries with only the number of entries at the start.
+        Each entry is a 2-tuple of the inode number and the name that this
+        inode appears as in the directory. As the free list and the inode
+        table, the directory structure suffers from the same linearity
+        drawbacks but also enjoys the simplicity.  It is also conceptually
+        extremely close to the inode table, allowing the two to share
+        implemntation code, futher reducing complexity.
+
     \section{inode}
 
         Once again, to maintain simplicity, the inode contains only essentail
@@ -183,3 +196,74 @@
         number of requests" \cite{EXT documentation}. That minimum is set to 20
         blocks for a balance between high preallocation but not wasting much
         space.
+
+    % TODO: incomplete
+    \section{Redundancy}
+
+        The aim for the redundancy is "RAID with checksums", since RAID alone
+        cannot be relied upon for data integrity (\ref{sec_RAID_problems}).
+
+        First, to combat silent drive unreliability (see \ref{sec_reliability})
+        all data must be checksummed. There are two choices for where this can
+        happen: at the data structure level or at the block level. If done at
+        the data structure level (i.e. every "pointer" would also include a
+        checksum of its data), like EXT4 (\ref{sec_EXT4}, then there is a
+        benefit that the data and its checksum are spatially separate (a
+        provision ZFS has \ref{sec_ZFS}). However, this approach adds
+        significant complexity for checks at all places. If done at the block
+        level, then the rest of the filesystem can be ignorant about the
+        existance of checksums and carry on as normal, reducing complexity and
+        size requirements.  Since this filesystem does not implement a tree of
+        blocks, like ZFS (\ref{sec_ZFS}) does, this has the drawback that
+        checksums are local to the data they protect. However, implemneting
+        this is very trivial as it only needs to extend the block level
+        interface and the entirity of the rest of the design can remain the
+        same. This second approach is chosen for primarily this reason.
+
+        % TODO:!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+        % explain choice of checksum
+        Now, since checksums and data will be local to each other, the checksum
+        algorithm must be as resiliant as possible to minimise the chance that
+        a data corruption results in a checksum collision and the data is
+        reported as unaltered. Currently, this is SHA-1.
+
+        For the question of where to store the checksum, there is only one
+        solution that is not particularly involved. Storing the checksum within
+        the block makes a corruption of the block extremely likely to corrupt
+        the checksum too making it a very bad idea. The next best thing is
+        having separate aggregate blocks that contain the checksums for as many
+        blocks as possible just after them. In the case of SHA-1 this is every
+        128th block contains the checksums for the previous 127 and a checksum
+        of itself.
+
+        % TODO: have the checksum be outside the block. Modify the allocator
+        % somehow. OOOOO you can even checksum the checksum blocks too (might
+        % be a good idea as it might not be too much memory?)
+
+        Then, for the choice of RAID level, there are many options, from the
+        classic RAID levels 1 thorough 6, to some nonstandard and exotic
+        versions like RAID-Z (\ref{sec_RAID}). All have various performance
+        profiles and offer protection against various number of drive failures
+        However, for all intents and purposes they are interchangable - no
+        matter the level, the result is a contiguous pool of redundant storage.
+        For this reason, as a proof of concept, RAID 1 is selected. A basic
+        mirror provides just enough redundancy while being simple to implement.
+        There are no fancy stripe or parity calculations. One of the two disks
+        can fail outright and all data will still be intact.  In line with the
+        home user target, two drives is the smallest possible redundant number
+        of drives and most likely for the reason of cost and space. Any more
+        guarantees are not strictly necessary and if required can be added at
+        little cost.
+
+        % TODO: test these scenarios, add checks for them Also, do some mathys
+        % analysis of the likelyhood: say 10^-5 of a block corupt, 4 blocks
+        % need to corrupt and then a collision too should be like 10^-20 or
+        % some shit
+        Now, even though data and checksums are relatively local, this is
+        compensated for by the RIAD arrangement. In the unlikely event that a
+        block gets currupted and its associated checksum block gets corrupted
+        too in such a way as to cause a collision and appear to be correct,
+        both of these blocks have a mirrored copy. Their checksums can be
+        compared to see if they are identical. The odds of two independent
+        blocks corrupting in such a way as to cause a hash collision and doing
+        so twice on two independent drives is extremely low.

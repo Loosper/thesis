@@ -1,8 +1,76 @@
 \chapter{Implementation}
 
-    Intertwined with design, but a few things are impl only. Here they are
+    For this project the design and implementation were very closely related
+    and the implementation frequently affected design choices and vice versa.
+    Despite this, there were a few details that did not affect the overall
+    design. This chapter explores those bits.
+
 
     \section{FUSE module}
+
+        Linux Kernel development is a notoriously difficult and time consuming
+        process, as evidenced by the many guides on the topic
+        \cite{https://kernelnewbies.org/KernelDevViewpoint},
+        \cite{https://www.kernel.org/doc/html/v4.16/process/howto.html}. Even
+        trivial changes to it frequently take days to implement and big
+        projects, such as a filesystem, cover a very wide range of topics that
+        \textit{must} be considered for the end result to be functional. Things
+        such as concurrency, memory limitations, kernel API intricacies,
+        caching and so on. To avoid the risk of getting bogged down with them
+        and running out of time to implement the project, the decision to stay
+        in userspace was made.
+
+        The advantage is that most of these details are either handled for the
+        programmer by either the kernel or the standard library or can be
+        safely ignored. For example, memory is managed by the simple
+        \syscall{malloc} and \syscall{free} in the standard library while
+        concurrency can be ignored because by defualt the environment is single
+        threaded. Further, a userspace implementation allows the product to be
+        packaged and distributed for a much wider selection of kernels. It is
+        widely known that the kernel does not maintain a stable API between
+        versions
+        \cite{https://elixir.bootlin.com/linux/v5.18-rc1/source/Documentation/process/stable-api-nonsense.rst}.
+        This means that for compatibility with more than one version of the
+        kernel the module has to be rebuilt (and potentially edited) upon each
+        release. The alternative to this, of course, is upstreaming the module
+        as a driver in the Linux kernel itself. However, this is vastly out of
+        scope for this project, ignoring the likelyhood of such a major feature
+        being ever accepted. Building this project in userspace solves this, as
+        all userspace APIs are guaranteed stability \cite{we do not break
+        userspace} and standard libraries follow this rule.
+
+        The disadadvantage of this approach is a loss of efficiency. There are
+        two factors at play: the kernel-userspace transitions and the lack of
+        integration with the kernel. The kernel-userspace transitions are an
+        overhead (so much so that there are specific features to minimise their
+        occurances such as vDSO
+        \cite{https://man7.org/linux/man-pages/man7/vdso.7.html}) that however
+        small is measurable and adds up
+        \cite{https://eli.thegreenplace.net/2018/measuring-context-switching-and-memory-overheads-for-linux-threads/}.
+        The lack of integration is primarily in caching and memory allocation.
+        As a consequence, computations will take longer because they will not
+        be explicitly cached, instead realying only on what the kernel's
+        caching policy might be for arbitrary data, potentially being
+        suboptimal. Binaries will be larger and allocate more memory at runtime
+        because they will share less code with the kernel (although this will
+        be partially mitigated by shared libraries
+        \cite{https://tldp.org/HOWTO/Program-Library-HOWTO/shared-libraries.html})
+        and will use a separate memory address space and allocator which
+        prevents from optimising memory usage with the kernel and making memory
+        fragmentation more likely.
+
+        All things considered, opting for a userspace implementation for this
+        project is the best option. Especially since a minimal implementation
+        is desired and this choice drastically simplifies the code and reduces
+        development time which reduces risk.
+
+        The particular mechanism of implementing the filesystem in userspace is
+        the aptly named FUSE (Filesystems in USErspace) framework
+        \cite{https://www.kernel.org/doc/html/latest/filesystems/fuse.html}. It
+        provides a kernel interface specifically for implementing filesystems
+        as well as a userspace library to connect to it with very little code.
+        This is the only native Linux kernel framework for this and since this
+        is a Linux project the choice is made fur us.
 
     \section{Filesystem}
 

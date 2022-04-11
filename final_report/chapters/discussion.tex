@@ -1,14 +1,99 @@
-\chapter{Discussion}
+\chapter{Discussion and Conclusion}
 
     \section{Did this solve the problem? (Outcome)}
 
+    % TODO: i need to figure out what my point with this is
     \section{Difficulties in modern operating system implementation}
 
-    \section{thank fuck for the Methodology cos I would have failed if it was any bigger}
+        Modern operating systems are enromous projects. Just the latest release
+        of Linux, 5.17, included over 13000 patchsets by about 2000 developers
+        \cite{http://www.remword.com/kps_result/5.17_whole.html}.  Specifically
+        for EXT4, there were almost 4000 lines of insertions and deletions by
+        22 people over 74 commits (command: \monospace{git log --numstat
+        v5.16..v5.17 fs/ext4}) just for its maintanence. Considering that
+        releases are spaced 2 to 3 months apart
+        \cite{https://www.kernel.org/doc/html/latest/process/2.Process.html},
+        EXT4 has existed since 2006 and that it is about 60000 lines of code
+        (cmd: \monospace{cloc fs/ext4}, EXT4 represents many person-decades of
+        work. As a comparison, this project is about 2500 lines of code
+        spanning the time of about two releases by a single author. That is to
+        say, any sizeable developments in operating systems these days are big
+        efforts by teams of multiple teams over large timespans frequently
+        backed by big organisations.
+
+        Despite this project's small size and apparent uphill battle, it is
+        still a notable development. Modern tools, like FUSE (\ref{sec_FUSE}),
+        have gone a long way to simplify development and take it out of the
+        kernel whenever it is not necessary. One notable example is SSHFS
+        \cite{https://github.com/libfuse/sshfs} which is particularly useful
+        tool largely maintaned by 2 developers.
+
+        Even though this project is far from a full kernel driver, which a
+        truly successful implementation would be, it is notprevented from
+        becoming a fully functional filesystem.
+
+    \section{Unexpected benefits of the methodology}
+
+        The methodology (\ref{sec_methodology}) greatly benefited this project.
+        The aim for an always working prototype lead for many issues to be
+        timely discovered and desgin altered before too much momentum had been
+        built up. There were two notable examples for this: the everything is a
+        file phylosophy (\ref{sec_files}) and the linked list method for
+        storing file data (\ref{sec_btree}??????????).
+
+        Storing all metadata as a file presented an interesting circular
+        problem: the routine to write a file depended on a routine to extend a
+        file when writing past its end, but to allocate space for a file the
+        free list (another file) needed to be written by the same routine.
+        Small bugs frequently resulted in infinite recursion which is slow to
+        debug. Catching this flaw early allowed for design to be modified to
+        reduce the problem.  Some of the changes were keeping the free list out
+        of the inode table, making its access direct instead of thorugh another
+        level of recursion.  Another change was storing the block number on
+        which an inode is stored in the inode itself to allow for updating its
+        size to happen directly.
+
+        The linked list method of storing data blocks was particulary
+        troublesome. Although, the reason for this is still not entirely clear,
+        reasoning with its block layout and performing calculations was very
+        difficult and error prone. Seemingly simple operations like calculating
+        which sequential block an arbitrary byte would reside in was a big
+        routine with small edge cases that lead to duplicate code. Luckily,
+        this prompted this approach to be abandoned and replaced with a B-tree
+        (\ref{sec_btree}). Perhaps largely owing to the complete
+        implementation, the project's complexity dropped substantially and
+        progress was much quicker.
 
     \section{Conclusions}
 
     \section{Ideas for future work}
 
-        have dir + itable share code (they are practically the smae)
-        dir/itable could also have their size represent fullnes
+        This project is far from a production ready filesystem. There are many
+        features that have been left out and some things that can be considered
+        as they may be suitable for this project.
+
+        The most apparent one is full coverage of all operations that FUSE
+        exposes. For a truly general purpose and user friendly implementation,
+        it must support any use case thrown at it.
+
+        Then, in the interest of time, some code is not in a desirable state.
+        Examples include some duplication between the directory and inode table
+        code, block "pointers" use a generic type where they should ideally
+        have one of their own even if just for semantics and general
+        optimisation improvements as fixed data structures are repeatedly read
+        where this isn't strictly necessary. Memory management could also be
+        much better to reduce the programs' memory footprint. While on the
+        topic of code, the B-tree implementation's use of pointer has been
+        hijacked to carry non-memory related values. Converting the types to a
+        new descriptive one would be a great improvement to the code.
+
+        ZFS's tree of blocks (\ref{sec_ZFS}) is also a prime candidate for
+        inclusion. The current impelementation has checksums of all blocks,
+        however it does not have checksums of checksums. ZFS does this in a
+        manner very similar to a blockchain and is a very elegant solution to
+        the integrity problem. It has some performance implications, but
+        adapting it here may lead to big integrity guarantee improvements.
+
+        Notable omissions from the project are concurrent access and caching
+        support. Finding a way to include them would greatly improve
+        performance and is practically a must for a real filesystem.

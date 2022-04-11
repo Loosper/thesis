@@ -78,6 +78,50 @@
 
     \section{Bootstrap}
 
-        Need to init the free list first and allocate it fully. It's small tho and easy to setup
+        Bootrstrapping a filesystem is usually done by a separate command like
+        mkfs \cite{man mkfs}, leaving the filesystem in an always initialised
+        state. For this project the distinction was done away with, choosing
+        instead for the filesystem to do it itself. This was once again done
+        for simplicity, as maintaining a separate binary takes extra makefile
+        rules and a more meticulous file heirarchy. Nevertheless, all of the
+        same funcionality is present and the initialion routine is very clearly
+        separate from the rest of the filesystem so that there is still
+        possibility of separating it without requiring major code reworks.
+
+        To initialise the filesystem is a bit tricky as the problem is
+        partially dependent on itself as writing the filesystem datastructures
+        relies on having some of them present. Having a linear and static
+        initialiser proved to be very difficult to maintain as it produced a
+        lot of duplicate special purpose code that is, of course, prone to
+        bugs. The static arrangement itself was problematic as hard coding
+        block numbers to data structures was very fragile as they tended to
+        change frequently as the general design evolved.
+
+        Instead a dynamic approach was selected. To do this we (ab)use the fact
+        that everything is a file (\ref{sec_files}), so normal file operation
+        routines can be used at initialisation, particulary file creation and
+        writing. For them to work, however, the free list needs to be present.
+        Assuming a valid free list, all other bootstrap operations can be done
+        with code used throughput the filesystem with clever ordering. In
+        particular, the inode list must be allocated first, filled in, after
+        which the root directory (\monospace{/}) can be allocated. Only caveat is
+        that the block at which the inode of the inode list is stored must be
+        fed back to the superblock so that its location is known to the
+        filesystem, since it is th e only file that is not referenced by
+        another.
+
+        % TODO: maybe put the convention bit in the superblock chapter
+        Writing the free list while done statically is done in a clever way to
+        reuse as much code as possible. First, a convention is assumed: the
+        superblock is stored on block 1 and the free list can immediately
+        follow. So an alternate bootrstrap only allocator is put in the place
+        of the filesystem allocator which returns block sequentailly starting
+        from block 2. Then the free list inode and body are allocated as
+        regular files. They end up fully sequential with the inode on block 2
+        and the file data on blocks 3 and onward. Once this is done, the file
+        is written with 1's for as many blocks as the volume on which the
+        filesystem is being formatted on has with normal IO routines. After
+        this is done, the free list is complete and the normmal allocator is
+        put back in place.
 
     \section{version control and good practices?}

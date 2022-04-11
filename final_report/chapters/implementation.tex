@@ -5,7 +5,6 @@
     Despite this, there were a few details that did not affect the overall
     design. This chapter explores those bits.
 
-
     \section{FUSE module}
 
         Linux Kernel development is a notoriously difficult and time consuming
@@ -72,9 +71,71 @@
         This is the only native Linux kernel framework for this and since this
         is a Linux project the choice is made fur us.
 
-    \section{Filesystem}
+    \section{Supported operations}
+
+        There are 44 operations that FUSE exposes to filesystems to implement.
+        These include the simple operations like \syscall{open},
+        \syscall{read}, \syscall{write}, etc., but also advanced features like
+        asynchronous operations like \syscall{poll}, extended attribute
+        operations like \syscall{getxattr} or POSIX compliance features such as
+        locks with \syscall{getlk}. However, none are strictly necessary and
+        may be left out and the FUSE driver will return ENOSYS (function not
+        implemented) if it is invoked. Addtionally, some programs will ignore
+        errors with particular functions such as \syscall{getxattr} and
+        \syscall{fsync} in the case of vim. For this reason a subset of 15
+        operations is implemented. These are  \syscall{lookup},
+        \syscall{create}, \syscall{flush}, \syscall{release}, \syscall{access},
+        \syscall{getattr}, \syscall{setattr}, \syscall{open}, \syscall{write},
+        \syscall{read}, \syscall{mkdir}, \syscall{unlink}, \syscall{rmdir},
+        \syscall{opendir} and \syscall{readdir}. They were chosen as a minimal
+        subset of all operations that would yield a working and usable
+        filesystem. They are the operations that almost every program that
+        interacts with files will use and major commands a user might type in
+        the shell. Nice to haves like \syscall{fseek} are done away with as
+        their functionality can be obtained via other (even if slightly more
+        verbose) means.
 
     \section{Redundancy}
+
+    \section{B-tree}
+
+        % TODO: move to research?
+        The B-tree implementation is perhaps the single most important and
+        biggest piece of code in the whole project. For this reason using a
+        custom "roll your own" implementation was avoided at all costs. An off
+        the shelf solution was much preferred but turned out to be unsuitable
+        as they would require major reworks that would creep up in scope to a
+        full custom implementation. Examples include an implementation on
+        GitHub \cite{https://github.com/tidwall/btree.c} but this makes the
+        assumption that the B-tree will be in memory and as a consequence uses
+        pointer arithmetic across the board. The on-disk representation of the
+        B-tree means the logical "pointers" are in fact just block numbers,
+        which are very separate to memory addresses. An option was to map the
+        disk in memory as a stopgap, however this presents further challenges
+        with making sure \syscall{malloc} and such work in that address range.
+        SQLite's interface \cite{https://sqlite.org/btreemodule.html} was
+        unsutable as this assumes a database context. Other implementations,
+        such as this one \cite{http://fallabs.com/tokyocabinet/spex-en.html}
+        were discarded for similar reasons.
+
+        In the end, unsurpisingly, an implementation from the Linux kernel
+        (\monospace{lib/btree.c}) was chosen. It is a general purpose
+        \bplustree implemntation that is fairly freestanding, as in the bulk of
+        the logic does not depend on the kernel's internals and the few bits
+        that do are abstracted away in a way that is easy to change and only
+        requires about 30 lines of kernel header to be copied over. Further,
+        even though it assumes to be stored in memory, every single access to
+        the tree is abstracted away in a handful of getter and setter routines
+        which perform the pointer arithmetic. This allowed for the whole thing
+        to be stored on disk with the via those functions without chagning any
+        internals. Further, despite the code being over a decade old
+        (originally submitted in 2009) it has received several bugfixes over
+        the years, indicating that it is actively used and maintaned. Adding to
+        that, because it is kernel code, it is of extraordinary quality, making
+        it a pleasure to work with. There is only one issue that is do with the
+        kernel's relatively restrictive GPLv2 licence, which this code is
+        licenced under. To resolve this the project adopts thr GPLv2, discussed
+        in appendix \ref{app_licence}.
 
     \section{Bootstrap}
 

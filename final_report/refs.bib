@@ -1,10 +1,511 @@
-@article{parikh1980adaptive,
-  title={An adaptive lattice algorithm for recursive filters},
-  author={Parikh, D and Ahmed, N and Stearns, SDSD},
-  journal={Acoustics, Speech and Signal Processing, IEEE Transactions on},
-  volume={28},
-  number={1},
-  pages={110--111},
-  year={1980},
-  publisher={IEEE}
+@article{UFS,
+	title        = {The UNIX Time- Sharing System},
+	author       = {Ritchie, Dennis M and Thompson, Ken and Laboratories, Bell},
+	year         = 1974,
+	volume       = 17,
+	number       = 7,
+	pages        = 11
+}
+@article{FFS,
+	title        = {A fast file system for UNIX},
+	author       = {McKusick, Marshall K. and Joy, William N. and Leffler, Samuel J. and Fabry, Robert S.},
+	year         = 1984,
+	month        = {Aug},
+	journal      = {ACM Transactions on Computer Systems},
+	volume       = 2,
+	number       = 3,
+	pages        = {181–197},
+	doi          = {10.1145/989.990},
+	issn         = {0734-2071, 1557-7333},
+}
+@article{LFS,
+	title        = {The Design and Implementation of a Log-Structured File System},
+	author       = {Rosenblum, Mendel and Ousterhout, John K},
+	year         = 1991,
+	pages        = 15,
+}
+@article{WAFL,
+    title        = {File System Design for an NFS File Server Appliance},
+    author       = {Hitz, Dave and Lau, James and Malcolm, Michael},
+    year         = 1994,
+    pages        = 23
+}
+@article{ZFS,
+	title        = {The Zettabyte File System},
+	author       = {Bonwick, Jeﬀ and Ahrens, Matt and Henson, Val and Maybee, Mark and Shellenbaum, Mark},
+	year         = 2003,
+	pages        = 13,
+}
+@article{BTRFS,
+	title        = {BTRFS: The Linux B-Tree Filesystem},
+	author       = {Rodeh, Ohad and Bacik, Josef and Mason, Chris},
+	year         = 2013,
+	month        = {Aug},
+	journal      = {ACM Transactions on Storage},
+	volume       = 9,
+	number       = 3,
+	pages        = {1–32},
+	doi          = {10.1145/2501620.2501623},
+	issn         = {1553-3077, 1553-3093},
+}
+@article{XFS_scalability,
+	title        = {(XFS?) Scalability in the XFS File System},
+	author       = {Sweeney, Adam},
+	year         = 1996,
+	pages        = 15,
+}
+@article{ZFS_reliability,
+	title        = {Reliability Analysis of ZFS},
+	author       = {Kadav, Asim and Rajimwale, Abhishek},
+	pages        = 10,
+}
+@inproceedings{RAID,
+	title        = {A case for redundant arrays of inexpensive disks (RAID)},
+	author       = {Patterson, David A. and Gibson, Garth and Katz, Randy H.},
+	year         = 1988,
+	booktitle    = {Proceedings of the 1988 ACM SIGMOD international conference on Management of data  - SIGMOD ’88},
+	publisher    = {ACM Press},
+	pages        = {109–116},
+	doi          = {10.1145/50202.50214},
+	isbn         = {978-0-89791-268-6},
+	url          = {http://portal.acm.org/citation.cfm?doid=50202.50214},
+	place        = {Chicago, Illinois, United States},
+}
+@article{soft_updates,
+    title        = {Metadata Update Performance in File Systems},
+    author       = {Ganger, Gregory R and Patt, Yale N},
+    year         = 1994,
+    pages        = 12,
+}
+@misc{UNIX_implementation,
+	title        = {UNIX implementation},
+	author       = {Thompson, Ken},
+	year         = 1978,
+	url          = {https://users.soe.ucsc.edu/~sbrandt/221/Papers/History/thompson-bstj78.pdf}
+}
+@misc{UNIX_source_commentary,
+    title        = {A COMMENTARY ON THE SIXTH EDITION UNIX OPERATING SYSTEM},
+	year         = 1977,
+	url          = {https://cs3210.cc.gatech.edu/r/unix6.pdf}
+}
+@misc{IO_bottleneck,
+	year         = 1988,
+	url          = {https://www2.eecs.berkeley.edu/Pubs/TechRpts/1988/CSD-88-467.pdf}
+}
+@misc{btree_ubiquitous,
+	year         = 1979,
+	url          = {http://carlosproal.com/ir/papers/p121-comer.pdf}
+}
+@article{journaling_vs_soft_updates,
+	title        = {JOURNALING VERSUS SOFT UPDATES: ASYNCHRONOUS META-DATA PROTECTION IN FILE SYSTEMS},
+    author       = {Seltzer, Margo I and Ganger, Gregory R and McKusick, M Kirk
+        and Smith, Keith A and Soules, Craig A N and Stein, Christopher A
+    },
+	year         = 2000,
+	pages        = 15
+}
+@article{data_corruption_storage_stack,
+	title        = {An analysis of data corruption in the storage stack},
+	author       = {Bairavasundaram, Lakshmi N. and Arpaci-Dusseau, Andrea C.
+		and Arpaci-Dusseau, Remzi H. and Goodson, Garth R. and Schroeder, Bianca
+	},
+	year         = 2008,
+	month        = {Nov},
+	journal      = {ACM Transactions on Storage},
+	volume       = 4,
+	number       = 3,
+	pages        = {1–28},
+	doi          = {10.1145/1416944.1416947},
+	issn         = {1553-3077, 1553-3093},
+}
+@inproceedings{flash_large_scale,
+	title        = {A Large-Scale Study of Flash Memory Failures in the Field},
+	author       = {Meza, Justin and Wu, Qiang and Kumar, Sanjev and Mutlu, Onur},
+	year         = 2015,
+	month        = {Jun},
+	booktitle    = {Proceedings of the 2015 ACM SIGMETRICS International Conference on Measurement and Modeling of Computer Systems},
+	publisher    = {ACM},
+	pages        = {177–190},
+	doi          = {10.1145/2745844.2745848},
+	isbn         = {978-1-4503-3486-0},
+	url          = {https://dl.acm.org/doi/10.1145/2745844.2745848},
+	place        = {Portland Oregon USA}
+}
+@article{flash_reliability,
+	title        = {Flash Reliability in Production: The Expected and the Unexpected},
+	author       = {Schroeder, Bianca and Lagisetty, Raghav and Merchant, Arif},
+	year         = 2016,
+	pages        = 15,
+}
+@article{ARC,
+	title        = {ARC: A SELF-TUNING, LOW OVERHEAD REPLACEMENT CACHE},
+	author       = {Francisco, San},
+	pages        = 17,
+}
+@book{2D_RAID,
+	title        = {DSSD: Scalable High Performance FLASH Systems},
+	author       = {InsideHPC Report},
+	year         = 2016,
+	month        = {May},
+	url          = {https://www.youtube.com/watch?v=1xurec_UO60},
+}
+@article{HTree,
+	title        = {A Directory Index for Ext2},
+	author       = {Phillips, Daniel},
+	year         = 2002,
+	pages        = 16
+}
+@misc{Backblaze_arch,
+	year         = 2019,
+	month        = {Jun},
+	journal      = {Backblaze Blog | Cloud Storage & Cloud Backup},
+	url          = {https://www.backblaze.com/blog/vault-cloud-storage-architecture/},
+}
+
+@article{ext4_space_maps,
+        title        = {(EXT4 spacemaps) Taking Linux Filesystems to the Space Age: Space Maps in Ext4},
+        author       = {Kadekodi, Saurabh and Jain, Shweta},
+        pages        = 14,
+}
+
+
+@misc{Debian_filesystem,
+	url			= https://wiki.debian.org/FileSystem
+}
+@misc{RedHat_filesystem,
+    url         = https://access.redhat.com/documentation/en-us/red_hat_enterprise_linux/6/html/performance_tuning_guide/s-storage-fs
+}
+@misc{ext4_mailing_list,
+    url         = https://www.spinics.net/lists/linux-ext4/
+}
+@misc{ext4_origin,
+    url         = http://www.h-online.com/open/features/Kernel-Log-Higher-and-Further-The-innovations-of-Linux-2-6-28-746805.html
+}
+@misc{Linus_ECC_rant,
+    url         = {https://www.realworldtech.com/forum/?threadid=198497&curpostid=198647}
+}
+@misc{never_break_userspace,
+    url         = https://www.lkml.org/lkml/2012/12/23/75
+}
+@misc{TrueNAS_hardware_guide,
+    url         = https://www.truenas.com/docs/core/gettingstarted/corehardwareguide/
+}
+@misc{LTT_data_loss,
+    url         = {https://www.youtube.com/watch?v=Npu7jkJk5nM}
+}
+@misc{LWN_md_journal,
+    url         = https://lwn.net/Articles/665299/
+}
+@misc{partial_parity_log,
+    url         = https://www.kernel.org/doc/html/latest/driver-api/md/raid5-ppl.html
+}
+@misc{ext4_docs,
+    url         = https://www.kernel.org/doc/html/latest/filesystems/ext4/index.html
+}
+@misc{TLDP_proc_access,
+    url         = https://tldp.org/HOWTO/Linux+IPv6-HOWTO/ch11s01.html
+}
+@misc{kernelnewbies_developer,
+    url         = https://kernelnewbies.org/KernelDevViewpoint
+}
+@misc{Linux_howto,
+    url         = https://www.kernel.org/doc/html/v4.16/process/howto.html
+}
+@misc{Linux_source,
+    url         = https://elixir.bootlin.com/linux/v5.18-rc1
+}
+@misc{man_vDSO,
+    url         = https://man7.org/linux/man-pages/man7/vdso.7.html
+}
+@misc{Linux_context_switch_overhead,
+    url         = https://eli.thegreenplace.net/2018/measuring-context-switching-and-memory-overheads-for-linux-threads/
+}
+@misc{shared_libraries,
+    url         = https://tldp.org/HOWTO/Program-Library-HOWTO/shared-libraries.html
+}
+@misc{FUSE,
+    url         = https://www.kernel.org/doc/html/latest/filesystems/fuse.html
+}
+@misc{GitHub_btree,
+    url         = https://github.com/tidwall/btree.c
+}
+@misc{SQLite_btree,
+    url         = https://sqlite.org/btreemodule.html
+}
+@misc{random_btree,
+    url         = http://fallabs.com/tokyocabinet/spex-en.html
+}
+@misc{man_mkfs,
+    url         = https://linux.die.net/man/8/mkfs
+}
+@misc{Linux_dev_count,
+    url         = http://www.remword.com/kps_result/5.17_whole.html
+}
+@misc{Linux_dev_process,
+    url         = https://www.kernel.org/doc/html/latest/process/2.Process.html
+}
+@misc{SSHFS,
+    url         = https://github.com/libfuse/sshfs
+}
+@misc{HFSplus,
+    url         = https://developer.apple.com/library/archive/technotes/tn/tn1150.html
+}
+@misc{Backblaze_stats,
+    url         = https://www.backblaze.com/b2/hard-drive-test-data.html
+}
+@misc{Linux_VFS_cache,
+    url         = https://www.usenix.org/legacy/publications/library/proceedings/usenix01/full_papers/kroeger/kroeger_html/node8.html
+}
+@misc{TrueNAS_enterprise,
+    url         = https://www.truenas.com/truenas-enterprise/
+}
+@misc{Intel_Optane,
+    url         = https://www.intel.com/content/www/us/en/products/details/memory-storage/optane-memory.html
+}
+@misc{drive_atomicity,
+    url         = {https://www.youtube.com/watch?v=FmF9VNEhUrg&t=374s}
+}
+
+
+inproceedings{Amdahl_law,
+	title        = {Validity of the single processor approach to achieving large scale computing capabilities},
+	author       = {Amdahl, Gene M.},
+	year         = 1967,
+	booktitle    = {Proceedings of the April 18-20, 1967, spring joint computer conference on - AFIPS ’67 (Spring)},
+	publisher    = {ACM Press},
+	pages        = 483,
+	doi          = {10.1145/1465482.1465560},
+	url          = {http://portal.acm.org/citation.cfm?doid=1465482.1465560},
+	place        = {Atlantic City, New Jersey}
+}
+article{Patterson_Brown_Broadwell_Candea_Chen_Cutler_Enriquez_Fox_Kıcıman_Merzbacher_etal._2002,
+	title        = {Recovery Oriented Computing (ROC): Motivation, Definition, Techniques, and Case Studies},
+	author       = {Patterson, David and Brown, Aaron and Broadwell, Pete and
+		Candea, George and Chen, Mike and Cutler, James and Enriquez, Patricia and Fox,
+		Armando and Kıcıman, Emre and Merzbacher, Matthew and Oppenheimer, David and
+		Sastry, Naveen and Tetzlaff, William and Traupman, Jonathan and Treuhaft,
+		Noah
+	},
+	year         = 2002,
+	pages        = 16,
+}
+misc{AdreamofanultimateOS_1995,
+	year         = 1995,
+	url          = {https://okmij.org/ftp/papers/DreamOSPaper.html}
+}
+misc{Ext4DiskLayout-Ext4,
+	url          = {https://ext4.wiki.kernel.org/index.php/Ext4_Disk_Layout#Inode_Table}
+}
+inproceedings{Alter_Xue_Dimnaku_Smirni_2019,
+	title        = {SSD failures in the field: symptoms, causes, and prediction models},
+	author       = {Alter, Jacob and Xue, Ji and Dimnaku, Alma and Smirni, Evgenia},
+	year         = 2019,
+	month        = {Nov},
+	booktitle    = {Proceedings of the International Conference for High Performance Computing, Networking, Storage and Analysis},
+	publisher    = {ACM},
+	pages        = {1–14},
+	doi          = {10.1145/3295500.3356172},
+	isbn         = {978-1-4503-6229-0},
+	url          = {https://dl.acm.org/doi/10.1145/3295500.3356172},
+	place        = {Denver Colorado},
+}
+article{Bairavasundaram_Goodson_Pasupathy_Schindler_2007,
+	title        = {An Analysis of Latent Sector Errors in Disk Drives},
+	author       = {Bairavasundaram, Lakshmi N and Goodson, Garth R and Pasupathy, Shankar and Schindler, Jiri},
+	year         = 2007,
+	pages        = 12,
+}
+article{Bonwick_Microsystems_1992,
+	title        = {(!) The Slab Allocator: An Object-Caching Kernel Memory Allocator},
+	author       = {Bonwick, Jeff and Microsystems, Sun},
+	year         = 1992,
+	pages        = 12,
+}
+article{Chao_English_Jacobson_Stepanov_Wilkes_1992,
+	title        = {Mime: a high performance parallel storage device with strong recovery guarantees},
+	author       = {Chao, Chia and English, Robert and Jacobson, David and Stepanov, Alexander and Wilkes, John},
+	year         = 1992,
+	pages        = 20,
+}
+article{Cole_2000,
+	title        = {Estimating Drive Reliability in Desktop Computers and Consumer Electronics Systems},
+	author       = {Cole, Gerry},
+	year         = 2000,
+	pages        = 8
+}
+article{Hagmann_1987,
+	title        = {(!) Reimplementingthe CedarFile System Using Loggingand GroupCommit},
+	author       = {Hagmann, Robert},
+	year         = 1987,
+	pages        = 8,
+}
+article{Hilgert_Lambertz_Plohmann_2017,
+	title        = {Extending The Sleuth Kit and its underlying model for pooled storage file system forensic analysis},
+	author       = {Hilgert, Jan-Niclas and Lambertz, Martin and Plohmann, Daniel},
+	year         = 2017,
+	month        = {Aug},
+	journal      = {Digital Investigation},
+	volume       = 22,
+	pages        = {S76–S85},
+	doi          = {10.1016/j.diin.2017.06.003},
+}
+article{Kadav_Balakrishnan_2010,
+	title        = {Differential RAID: Rethinking RAID for SSD Reliability},
+	author       = {Kadav, Asim and Balakrishnan, Mahesh},
+	year         = 2010,
+	pages        = 5,
+}
+article{Kazar_Leverett_Anderson_Apostolides_Bottos_Chutani_Everhart_Mason_Tu_Zayas_1990,
+	title        = {DEcorum File System Architectural Overview},
+    author       = {Kazar, Michael L and Leverett, Bruce W and Anderson, Owen T
+        and Apostolides, Vasilis and Bottos, Beth A and Chutani, Sailesh and
+            Everhart, Craig F and Mason, W Anthony and Tu, Shu-Tsui and Zayas,
+        Edward R
+    },
+	year         = 1990,
+	pages        = 14,
+}
+article{Mckusick_2007,
+	title        = {a brief history of the BSD Fast File System},
+	author       = {Mckusick, Marshall Kirk},
+	year         = 2007,
+	volume       = 32,
+	number       = 3,
+	pages        = 10
+}
+article{McKusick_Karels_Bostic_1990,
+	title        = {A Pageable Memory Based Filesystem},
+	author       = {McKusick, Marshall Kirk and Karels, Michael J and Bostic, Keith},
+	year         = 1990,
+	pages        = 8,
+}
+book{McKusick_Neville-Neil_Watson_2015,
+	title        = {The design and implementation of the FreeBSD operating system},
+	author       = {McKusick, Marshall Kirk and Neville-Neil, George V. and Watson, Robert N. M.},
+	year         = 2015,
+	publisher    = {Addison Wesley},
+	isbn         = {978-0-321-96897-5},
+	place        = {Upper Saddle River, NJ},
+	edition      = {Second edition}
+}
+inproceedings{Narayanan_Wang_Jeon_Sharma_Caulfield_Sivasubramaniam_Cutler_Liu_Khessib_Vaid_2016,
+	title        = {SSD Failures in Datacenters: What? When? and Why?},
+    author       = {Narayanan, Iyswarya and Wang, Di and Jeon, Myeongjae and
+        Sharma, Bikash and Caulfield, Laura and Sivasubramaniam, Anand and
+            Cutler, Ben and Liu, Jie and Khessib, Badriddine and Vaid,
+        Kushagra
+    },
+	year         = 2016,
+	month        = {Jun},
+	booktitle    = {Proceedings of the 9th ACM International on Systems and Storage Conference},
+	publisher    = {ACM},
+	pages        = {1–11},
+	doi          = {10.1145/2928275.2928278},
+	isbn         = {978-1-4503-4381-7},
+	url          = {https://dl.acm.org/doi/10.1145/2928275.2928278},
+	place        = {Haifa Israel},
+}
+article{Pinheiro_Weber_Barroso_2007,
+	title        = {Failure Trends in a Large Disk Drive Population},
+	author       = {Pinheiro, Eduardo and Weber, Wolf-Dietrich and Barroso, Luiz Andre},
+	year         = 2007,
+	pages        = 13,
+}
+article{Schroeder_Gibson_2007,
+	title        = {Disk failures in the real world: What does an MTTF of 1,000,000 hours mean to you?},
+	author       = {Schroeder, Bianca and Gibson, Garth A},
+	year         = 2007,
+	pages        = 16,
+}
+article{Seltzer_Smith_Balakrishnan_Chang_McMains_Padmanabhan_1995,
+	title        = {(FFS vs LFS) File System Logging Versus Clustering: A Performance Comparison},
+
+    author       = {Seltzer, Margo and Smith, Keith A and Balakrishnan, Hari
+        and Chang, Jacqueline and McMains, Sara and Padmanabhan, Venkata
+    },
+	year         = 1995,
+	pages        = 16,
+}
+book{Stonebraker_1987,
+	title        = {(!) The Design of the POSTGRES Storage System:},
+	author       = {Stonebraker, Michael},
+	year         = 1987,
+	month        = {Feb},
+	doi          = {10.21236/ADA187244},
+	url          = {http://www.dtic.mil/docs/citations/ADA187244},
+	place        = {Fort Belvoir, VA},
+	institution  = {Defense Technical Information Center}
+}
+article{Yang_Gao_Luo_Wu_2010,
+	title        = {Analysis and Implementation of UFS File System Based on Computer Forensics},
+	author       = {Yang, Lei and Gao, Qin Quan and Luo, De Lin and Wu, Shun Xiang},
+	year         = 2010,
+	month        = {Nov},
+	journal      = {Applied Mechanics and Materials},
+	volume       = 39,
+	pages        = {186–191},
+	doi          = {10.4028/www.scientific.net/AMM.39.186},
+	issn         = {1662-7482},
+}
+misc{Databasemachine:anideawhosetimehaspassed?_1983,
+	year         = 1983,
+	url          = {https://minds.wisconsin.edu/bitstream/handle/1793/58446/TR504.pdf?sequence=1&isAllowed=y}
+}
+misc{ConcurrencycontrolandrecoveryinDBsystems_1987,
+	year         = 1987,
+	url          = {https://courses.cs.washington.edu/courses/cse490h/11wi/CSE490H_files/CSE550BHG-Ch7.pdf}
+}
+misc{Theepisodefilesystem_1992,
+	year         = 1992,
+	url          = {https://citeseerx.ist.psu.edu/viewdoc/download?doi=10.1.1.37.6439&rep=rep1&type=pdf}
+}
+misc{Animplementationofalog-structuredFSforUNIX_1993,
+	year         = 1993,
+	url          = {https://www.usenix.org/legacy/publications/library/proceedings/sd93/seltzer.pdf}
+}
+misc{AvoidingaDataCrunch_2000,
+	year         = 2000,
+	journal      = {Scientific American},
+	doi          = {10.1038/scientificamerican0500-58},
+	url          = {https://www.scientificamerican.com/article/avoiding-a-data-crunch/},
+	abstractnote = {Scientific American is the essential guide to the most awe-inspiring advances in science and technology, explaining how they change our understanding of the world and shape our lives.,}
+}
+misc{ZFSOn-DiskSpecification_2006,
+	year         = 2006,
+	url          = {http://www.giis.co.in/Zfs_ondiskformat.pdf}
+}
+misc{LocalityandTheFastFileSystem_2008,
+	year         = 2008,
+	url          = {https://pages.cs.wisc.edu/~remzi/OSTEP/file-ffs.pdf}
+}
+article{FFS/LFScomparison_2020,
+	year         = 2020,
+	month        = {Aug},
+	journal      = {ACM Transactions on Computer Systems},
+	volume       = 2,
+	number       = 3,
+	pages        = {181–197},
+	doi          = {10.1145/989.990},
+	issn         = {0734-2071, 1557-7333}
+}
+misc{1.fio-FlexibleI/Otesterrev.3.27—fio3.27documentation,
+	url          = {https://fio.readthedocs.io/en/latest/fio_doc.html}
+}
+misc{RealWorldTechnologies-Forums-Thread,
+	url          = {https://www.realworldtech.com/forum/?threadid=198497&curpostid=198647}
+}
+
+inproceedings{Ghemawat_Gobioff_Leung_2003,
+	title        = {The Google File System},
+	author       = {Ghemawat, Sanjay and Gobioff, Howard and Leung, Shun-Tak},
+	year         = 2003,
+	publisher    = {ACM},
+	url          = {https://static.googleusercontent.com/media/research.google.com/en//archive/gfs-sosp2003.pdf}
+}
+book{PapersWeLove_2015,
+	title        = {Ryan Zezeski’s Memory by the Slab: The Tale of Bonwick’s Slab Allocator},
+	author       = {PapersWeLove},
+	year         = 2015,
+	month        = {Oct},
+	url          = {https://www.youtube.com/watch?v=UQVd9mZr-jI},
 }

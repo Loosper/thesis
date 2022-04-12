@@ -3,14 +3,13 @@
     \section{Methodology}
         \label{sec_methodology}
 
+        % TODO: (some) duplicate with discussion
         Designing a filesystem is difficult and implemneting it even more so.
-        For example, EXT4's documentation
-        \cite{https://www.kernel.org/doc/html/latest/filesystems/ext4/index.html}
-        is roughly 20000 words of mostly major design features, and around
-        60000 lines of Linux kernel code. For this reason designing and
-        implemneting this filesystem followed a peculiar process to reduce the
-        risk of having an incomplete prototype by the submission deadline due
-        to comlextiy.
+        For example, EXT4's documentation \cite{ext4_docs} is roughly 20000
+        words of mostly major design features, and around 60000 lines of Linux
+        kernel code. For this reason designing and implemneting this filesystem
+        followed a peculiar process to reduce the risk of having an incomplete
+        prototype by the submission deadline due to comlextiy.
 
         The process boils down a single principle: always have a working
         prototype. The idea is to start with the smallest and simplest
@@ -81,23 +80,21 @@
 
         A popular way keep track of available free space is block bitmaps.
         Historically, many filesystems have frequently used it like FFS
-        \cite{FFS}, WAFL \cite{WALF} and more recently, EXT4
-        \cite{ext4_space_maps} and HFS+
-        \cite{https://developer.apple.com/library/archive/technotes/tn/tn1150.html}.
-        They are very space efficient, using only 256 KB per GB with 4KB blocks
-        or about 0.02\%. Their small size allows them to be easily cached and
-        kept up to date. A major drawback is that traversing these bitmaps is
-        not particularly efficient as it usually devolves to some form of
-        linear search, although some techniques can help mitigate this (for
-        example storing extra bits of information about the closest free
-        block).
+        \cite{FFS}, WAFL \cite{WAFL} and more recently, EXT4
+        \cite{ext4_space_maps} and HFS+ \cite{HFSplus}.  They are very space
+        efficient, using only 256 KB per GB with 4KB blocks or about 0.02\%.
+        Their small size allows them to be easily cached and kept up to date. A
+        major drawback is that traversing these bitmaps is not particularly
+        efficient as it usually devolves to some form of linear search,
+        although some techniques can help mitigate this (for example storing
+        extra bits of information about the closest free block).
 
         There are other techniques available, such as tracking free extents in
-        a \bplustree like XFS \cite{XFS} or a proposed space map for EXT4 which
-        relies on RB-trees \cite{ext4_space_maps}. Both of these approaches
-        rely on space being managed in extents (see \ref{sec_block_size}).
-        Their major drawback of these approaches is their significantly
-        increased complexity.
+        a \bplustree like XFS \cite{XFS_scalability} or a proposed space map
+        for EXT4 which relies on RB-trees \cite{ext4_space_maps}. Both of these
+        approaches rely on space being managed in extents (see
+        \ref{sec_block_size}).  Their major drawback of these approaches is
+        their significantly increased complexity.
 
         In the end the classic bitmaps were selected. They work well enough,
         their implemntation is simple and a variety of allocation policies are
@@ -162,14 +159,14 @@
         the tree will not contain a block for reading past the end of the file
         which will result in an error. However, basic programs like
         \monospace{cat} (which are one of the simplest way to access files
-        \cite{https://tldp.org/HOWTO/Linux+IPv6-HOWTO/ch11s01.html}) read the
-        size of the file before making a request for its size (with
-        \syscall{stat}) before reading it. This presents a challenge as,
-        although it is possible to find out the size on each such call, it
-        requires a nontrivial amount of code to do so. Needless to say, it is
-        also unnecessarily inefficient. For the purpose of less code and a
-        speed increase, it was deemed that storing this information and taking
-        the slight complexity with it is worth it overall.
+        \cite{TLDP_proc_access}) read the size of the file before making a
+        request for its size (with \syscall{stat}) before reading it. This
+        presents a challenge as, although it is possible to find out the size
+        on each such call, it requires a nontrivial amount of code to do so.
+        Needless to say, it is also unnecessarily inefficient. For the purpose
+        of less code and a speed increase, it was deemed that storing this
+        information and taking the slight complexity with it is worth it
+        overall.
 
     \section{B-tree}
         \label{sec_design_btree}
@@ -205,7 +202,7 @@
         There is a single provision for increasing data locality. It is to have
         a minimum allocation size. This is because greater data locality "can
         increase the size of each transfer request while reducing the total
-        number of requests" \cite{EXT documentation}. That minimum is set to 20
+        number of requests" \cite{ext4_docs}. That minimum is set to 20
         blocks for a balance between high preallocation but not wasting much
         space.
 

@@ -10,15 +10,14 @@
 
         Linux Kernel development is a notoriously difficult and time consuming
         process, as evidenced by the many guides on the topic
-        \cite{https://kernelnewbies.org/KernelDevViewpoint},
-        \cite{https://www.kernel.org/doc/html/v4.16/process/howto.html}. Even
-        trivial changes to it frequently take days to implement and big
-        projects, such as a filesystem, cover a very wide range of topics that
-        \textit{must} be considered for the end result to be functional. Things
-        such as concurrency, memory limitations, kernel API intricacies,
-        caching and so on. To avoid the risk of getting bogged down with them
-        and running out of time to implement the project, the decision to stay
-        in userspace was made.
+        \cite{kernelnewbies_developer}, \cite{Linux_howto}. Even trivial
+        changes to it frequently take days to implement and big projects, such
+        as a filesystem, cover a very wide range of topics that \textit{must}
+        be considered for the end result to be functional. Things such as
+        concurrency, memory limitations, kernel API intricacies, caching and so
+        on. To avoid the risk of getting bogged down with them and running out
+        of time to implement the project, the decision to stay in userspace was
+        made.
 
         The advantage is that most of these details are either handled for the
         programmer by either the kernel or the standard library or can be
@@ -29,34 +28,31 @@
         packaged and distributed for a much wider selection of kernels. It is
         widely known that the kernel does not maintain a stable API between
         versions
-        \cite{https://elixir.bootlin.com/linux/v5.18-rc1/source/Documentation/process/stable-api-nonsense.rst}.
+        \cite{Linux_source}[Documentation/process/stable-api-nonsense.rst].
         This means that for compatibility with more than one version of the
         kernel the module has to be rebuilt (and potentially edited) upon each
         release. The alternative to this, of course, is upstreaming the module
         as a driver in the Linux kernel itself. However, this is vastly out of
         scope for this project, ignoring the likelyhood of such a major feature
         being ever accepted. Building this project in userspace solves this, as
-        all userspace APIs are guaranteed stability \cite{we do not break
-        userspace} and standard libraries follow this rule.
+        all userspace APIs are guaranteed stability
+        \cite{never_break_userspace} and standard libraries follow this rule.
 
         The disadadvantage of this approach is a loss of efficiency. There are
         two factors at play: the kernel-userspace transitions and the lack of
         integration with the kernel. The kernel-userspace transitions are an
         overhead (so much so that there are specific features to minimise their
-        occurances such as vDSO
-        \cite{https://man7.org/linux/man-pages/man7/vdso.7.html}) that however
-        small is measurable and adds up
-        \cite{https://eli.thegreenplace.net/2018/measuring-context-switching-and-memory-overheads-for-linux-threads/}.
-        The lack of integration is primarily in caching and memory allocation.
-        As a consequence, computations will take longer because they will not
-        be explicitly cached, instead realying only on what the kernel's
-        caching policy might be for arbitrary data, potentially being
-        suboptimal. Binaries will be larger and allocate more memory at runtime
-        because they will share less code with the kernel (although this will
-        be partially mitigated by shared libraries
-        \cite{https://tldp.org/HOWTO/Program-Library-HOWTO/shared-libraries.html})
-        and will use a separate memory address space and allocator which
-        prevents from optimising memory usage with the kernel and making memory
+        occurances such as vDSO \cite{man_vDSO}) that however small is
+        measurable and adds up \cite{Linux_context_switch_overhead}. The lack
+        of integration is primarily in caching and memory allocation. As a
+        consequence, computations will take longer because they will not be
+        explicitly cached, instead realying only on what the kernel's caching
+        policy might be for arbitrary data, potentially being suboptimal.
+        Binaries will be larger and allocate more memory at runtime because
+        they will share less code with the kernel (although this will be
+        partially mitigated by shared libraries \cite{shared_libraries}) and
+        will use a separate memory address space and allocator which prevents
+        from optimising memory usage with the kernel and making memory
         fragmentation more likely.
 
         All things considered, opting for a userspace implementation for this
@@ -65,12 +61,11 @@
         development time which reduces risk.
 
         The particular mechanism of implementing the filesystem in userspace is
-        the aptly named FUSE (Filesystems in USErspace) framework
-        \cite{https://www.kernel.org/doc/html/latest/filesystems/fuse.html}. It
-        provides a kernel interface specifically for implementing filesystems
-        as well as a userspace library to connect to it with very little code.
-        This is the only native Linux kernel framework for this and since this
-        is a Linux project the choice is made fur us.
+        the aptly named FUSE (Filesystems in USErspace) framework \cite{FUSE}.
+        It provides a kernel interface specifically for implementing
+        filesystems as well as a userspace library to connect to it with very
+        little code. This is the only native Linux kernel framework for this
+        and since this is a Linux project the choice is made fur us.
 
     \section{Supported operations}
 
@@ -107,20 +102,19 @@
         the shelf solution was much preferred but turned out to be unsuitable
         as they would require major reworks that would creep up in scope to a
         full custom implementation. Examples include an implementation on
-        GitHub \cite{https://github.com/tidwall/btree.c} but this makes the
-        assumption that the B-tree will be in memory and as a consequence uses
-        pointer arithmetic across the board. The on-disk representation of the
-        B-tree means the logical "pointers" are in fact just block numbers,
-        which are very separate to memory addresses. An option was to map the
-        disk in memory as a stopgap, however this presents further challenges
-        with making sure \syscall{malloc} and such work in that address range.
-        SQLite's interface \cite{https://sqlite.org/btreemodule.html} was
-        unsutable as this assumes a database context. Other implementations,
-        such as this one \cite{http://fallabs.com/tokyocabinet/spex-en.html}
+        GitHub \cite{GitHub_btree} but this makes the assumption that the
+        B-tree will be in memory and as a consequence uses pointer arithmetic
+        across the board. The on-disk representation of the B-tree means the
+        logical "pointers" are in fact just block numbers, which are very
+        separate to memory addresses. An option was to map the disk in memory
+        as a stopgap, however this presents further challenges with making sure
+        \syscall{malloc} and such work in that address range.  SQLite's
+        interface \cite{SQLite_btree} was unsutable as this assumes a database
+        context. Other implementations, such as this one \cite{random_btree}
         were discarded for similar reasons.
 
         In the end, unsurpisingly, an implementation from the Linux kernel
-        (\monospace{lib/btree.c}) was chosen. It is a general purpose
+        (\cite{Linux_source}[lib/btree.c]) was chosen. It is a general purpose
         \bplustree implemntation that is fairly freestanding, as in the bulk of
         the logic does not depend on the kernel's internals and the few bits
         that do are abstracted away in a way that is easy to change and only
@@ -141,7 +135,7 @@
     \section{Bootstrap}
 
         Bootrstrapping a filesystem is usually done by a separate command like
-        mkfs \cite{man mkfs}, leaving the filesystem in an always initialised
+        mkfs \cite{man_mkfs}, leaving the filesystem in an always initialised
         state. For this project the distinction was done away with, choosing
         instead for the filesystem to do it itself. This was once again done
         for simplicity, as maintaining a separate binary takes extra makefile

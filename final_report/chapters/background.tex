@@ -11,13 +11,6 @@
     % remainder of this chapter will normally cover everything to be assessed
     % under the `Background Research` criterion in the mark scheme.>
 
-    % Here is an example of how to cite a reference using the numeric system
-    % \cite{parikh1980adaptive}.
-
-
-    % Must provide evidence of a literature review. Use sections
-    % and subsections as they make sense for your project.
-
 % TODO: this is a temporary name
 \chapter{Lit review}
     \section{The UNIX filesystem}
@@ -29,7 +22,7 @@
         still with us to this day. It brough forward many novel ideas: wide
         hardware compatibility, simple and powerful system calls, a powerfull
         shell and minimal design and most importantly a file system
-        \cite{UNIX}. All these features are still with us, largely unmodified,
+        \cite{UFS}. All these features are still with us, largely unmodified,
         to this day, although greatly expanded and improved upon.
 
         The most important part, the filesystem, had an implementation akin to
@@ -97,7 +90,7 @@
             respectively. The free list was a simple linked list, where
             each block had pointers to free blocks and a pointer to the
             next block in the list \cite{UNIX_implementation},
-            \cite{UNIX_thompson}.
+            \cite{UNIX_source_commentary}.
 
             Over time, however, it turned out that this arrangement was very
             inefficient. In particular, data blocks for a file lacked locality,
@@ -151,7 +144,7 @@
             physical nature of spinning hard drives make such operations costly
             when performed in a random manner. To imporove performance, caching
             is identified as a substantial improvement, which has been wildly
-            used since \cite{Linux_caching}, \cite{IO_bottleneck}.
+            used since \cite{Linux_VFS_cache}, \cite{IO_bottleneck}.
 
             However, \citeauthor{IO_bottleneck} points out some issues with
             such an approach: a system crash or a power outage puts the
@@ -231,9 +224,9 @@
             crash cannot cause corruption. Rather a new copy is built somewhere
             in free space and only "added" to the filesystem when the whole
             branch of the tree is complete. Writing a single block is assumed
-            to be atomic \cite{???}, so updating the root an all or nothing
-            operation, limiting the impact of a crash to only some data loss
-            that hasn't had the time to be commited to disk.
+            to be atomic \cite{drive_atomicity} so updating the root an all or
+            nothing operation, limiting the impact of a crash to only some data
+            loss that hasn't had the time to be commited to disk.
 
         \subsection{Other filesystems}
             XFS?
@@ -247,11 +240,11 @@
 
         B-trees are a de facto standard for file organisation
         \cite{btree_ubiquitous}. Most modern filesystems incorporate them in
-        some way, like EXT4 (section \ref{sec_ext4}), XFS
-        \cite{xfs_scalability}, HFS+ \cite{see notes} and, probably most
-        notably, BTRFS which stands for "B-tree File System" \cite{the wiki?}.
-        They are very well suited to secondary storage based applications and
-        their use is only natural.
+        some way, like ext4 (section \ref{sec_ext4}), XFS
+        \cite{XFS_scalability}, HFS+ \cite{HFSplus} and, probably most notably,
+        BTRFS which stands for "B-tree File System" \cite{BTRFS}. They are very
+        well suited to secondary storage based applications and their use is
+        only natural.
 
         % TODO: prime candidate for graphics
         As explained by \citeauthor{btree_ubiquitous}, B-tree are a
@@ -290,7 +283,7 @@
         requirement for nodes prevents sparse trees from forming, increasing
         space utilisation and further reducing depth.
 
-    \section{EXT4}
+    \section{ext4}
         \label{sec_ext4}
 
         The most modern version of the ext filesystem, ext4, is native and
@@ -302,15 +295,12 @@
 
         It is a good benchmark for modern filesystems as it is the default on
         many (if not most) major Linux distributions like Debian
-        \cite{https://wiki.debian.org/FileSystem} and Red Hat
-        \cite{https://access.redhat.com/documentation/en-us/red_hat_enterprise_linux/6/html/performance_tuning_guide/s-storage-fs}.
-        It is actively maintained
-        \cite{https://www.spinics.net/lists/linux-ext4/} and very mature, first
-        appearing in version 2.6.19 in 2006
-        \cite{http://www.h-online.com/open/features/Kernel-Log-Higher-and-Further-The-innovations-of-Linux-2-6-28-746805.html}.
-        Finally, unlike its most direct competitiors by the likes of Windows'
-        NTFS and MacOS' APFS, it is free and open source, so code and
-        documentation are readily available.
+        \cite{Debian_filesystem} and Red Hat \cite{RedHat_filesystem}.  It is
+        actively maintained \cite{ext4_mailing_list} and very mature, first
+        appearing in version 2.6.19 in 2006 \cite{ext4_origin}.  Finally,
+        unlike its most direct competitiors by the likes of Windows' NTFS and
+        MacOS' APFS, it is free and open source, so code and documentation are
+        readily available.
 
         % TODO: ext4 extent tree is like a btree. Never said explicitly, cos
         % its funky. You have to explain why (when you draw it on paper it's
@@ -326,11 +316,11 @@
             sized indexes will not satisfy sizes much different than whatever
             the general case might be set. On the other hand rebalancing,
             called rehashing, may lead to large spikes in file creation time, a
-            feature that is undesiriable in filesystems. \citeauthor{Htree}
+            feature that is undesiriable in filesystems. \citeauthor{HTree}
             also presents some implementation difficulties.
 
-            Instead, EXT4 uses a modified form of the B-tree known as an Htree
-            (meaning Hash tree) \cite{Htree}. The major difference is that keys
+            Instead, ext4 uses a modified form of the B-tree known as an Htree
+            (meaning Hash tree) \cite{HTree}. The major difference is that keys
             in the tree are hashes of directory entry names instead of the
             names themselves. This way the tree can implement ranges of hashes
             (buckets in the hash table) in its leaves. This solves the problem
@@ -340,11 +330,11 @@
 
         \subsection{Data locality}
 
-            EXT4 employs a range of tricks to maximise locality of data of
+            ext4 employs a range of tricks to maximise locality of data of
             various types. This has the obvious benefit of reducing seek times
             on spinning hard drives, but can also help solid state drives too
             as locality "can increase the size of each transfer request while
-            reducing the total number of requests" \cite{EXT documentation}.
+            reducing the total number of requests" \cite{ext4_docs}.
 
             % TODO: i haven't checked the references
             First, it uses blocks of at least 4KB, as discussed in chapter
@@ -362,7 +352,7 @@
             that root directoy entries are spread out as much as possible to
             encourage them to grow independent and reduce fragmentation.
 
-            The final interesting technique is that EXT4 uses extents which are
+            The final interesting technique is that ext4 uses extents which are
             a "range of contiguous physical blocks owned by a file"
             \cite{ext4_space_maps}. Using them allows to reduce the amount of
             necessary metadata for large contiguous chunks of space which
@@ -376,7 +366,7 @@
             by completely unexpectable events like bit flips due to a stray
             gamma ray and many machines lack the hardware capabilities to
             detect or correct them, as evidenced by a recent rant by Linus
-            Torvalds \cite{Linus_rant}.
+            Torvalds \cite{Linus_ECC_rant}.
 
             To that effect, system crashes are assumed to be inevitable and
             steps are taken to address them. This is especially true for
@@ -384,26 +374,25 @@
             time consuming failures possible. There are various ways to
             minimise the chances of that happening but two major ones are Soft
             updates, where metadata is only written in a very specific order to
-            ensure consistency \cite{Soft_updates} and journaling where
+            ensure consistency \cite{soft_updates} and journaling where
             metadata is written to a small LFS style log before entering the
-            filesystem proper \cite{journaling}.
+            filesystem proper \cite{ext4_docs}[journal].
             \citeauthor{journaling_vs_soft_updates} presents a thorough
             comparison but in the EXT familiy journaling is used.
 
-            Another reliability feature is that all EXT4 data structures are
+            Another reliability feature is that all ext4 data structures are
             checksummed wherever possible (due to backwards compatibility).
             This greatly helps with combating silent filesystem corruption and
             can help the kernel limit damage.
 
             It is important to note that despite the reliability features of
-            EXT4, only metadata enjoys their guarantees. Data itself (like file
+            ext4, only metadata enjoys their guarantees. Data itself (like file
             contents) have no guarantees whatsoever. It is impossible to enable
             journaling for data too, however, the performance impact is sever
             \cite{ext4_docs}[journaling]. Adding other guarantees for it
             requires backwards incompatible changes to the filesystem, which
             the Linux kernel is famously unfavourable towards with the "Never
-            break userspace" motto
-            \cite{https://www.lkml.org/lkml/2012/12/23/75}
+            break userspace" motto \cite{never_break_userspace}
 
     \section{Data integrity}
 
@@ -413,12 +402,11 @@
 
             Non-volatile storage mediums have historically been orders of
             magnitude slower than volatile memories like RAM which are
-            themselves much slower than CPUs and their caches \cite{raid has a
-            Frank87, Stevens81}. Disk arrays are an attempt to increase IO
+            themselves much slower than CPUs and their caches
+            \cite{IO_bottleneck}. Disk arrays are an attempt to increase IO
             performance and bridge that gap. However, drives are inherently
-            unreliable \cite{pls (backblaze is a killer source)}, so putting
-            many of them together exacerbates the problem \cite{maybe also
-            raid. he has an MTTF caluclation}.  RAID is one solution for the
+            unreliable \cite{Backblaze_stats}, so putting many of them together
+            exacerbates the problem \cite{RAID}. RAID is one solution for the
             problem of drive reliability \cite{RAID}. As its name suggests,
             RIAD adds redundancy to disk arrays. Popular RAID arrangements are
             RAID 1 and RAID 4/5.
@@ -442,9 +430,9 @@
         \subsection{drive reliability}
             \label{sec_reliability}
 
-            Drives are unreliable \cite{RAID}, \cite{Backblaze (idk which one)}.
-            Due to their mechanical nature they wear out and stop working. They
-            do this at an unpredictable rate for individual drives, but at
+            Drives are unreliable \cite{RAID}, \cite{Backblaze_stats}. Due to
+            their mechanical nature they wear out and stop working. They do
+            this at an unpredictable rate for individual drives, but at
             relatively constant rates over large arrays \cite{Backblaze_stats}.
             Tools for monitoring drive health, like SMART, have been developed
             to combat the issue and are in general a good indicator for the
@@ -456,7 +444,8 @@
             Drives try to combat the issue by keeping an array of spare sectors
             that replace misbehvaing ones when detected. To determine if a
             sector is misbehvaing in the first place, drives employ ECC codes
-            \cite{data_corruption_storage_stack, although maybe someone else}.
+            \cite{data_corruption_storage_stack}.
+            % TODO: ^ citation might be bad
 
             However, despite all the best efforts of drives and their
             manufacturers, drives still cannot be relied upon to report correct
@@ -466,7 +455,7 @@
             data without indicating errors. As a consequence, individual drives
             are never relied upon for the data to be present and intact and
             other techniques are always employed to ensure both of these
-            independently \cite{LTT_data_loss?}.
+            independently lest there be data loss \cite{LTT_data_loss}.
 
             SSDs and flash storage in general are a similar tale. As
             \citeauthor{2D_RAID} puts it: "Flash is basically garbage. It
@@ -517,13 +506,13 @@
             % modern caches and that they have been there since time immemorial
 
             Caching is an integral part of modern operating systems
-            \cite{IO_bottleneck?}. All modern variants employ it in various
-            very visible ways. Reads are routinely cached and so are writes
-            although with extra care. This practice is so prevalent that
-            opening files/programs the first time is frequently orders of
-            magnitude slower than any subsequent access. In particular, it is
-            essential in obtaining good, almost sequential, performance out of
-            random small writes \cite{soft_updates}.
+            \cite{IO_bottleneck} \cite{LFS} \cite{FFS}. All modern variants
+            employ it in various very visible ways. Reads are routinely cached
+            and so are writes although with extra care. This practice is so
+            prevalent that opening files/programs the first time is frequently
+            orders of magnitude slower than any subsequent access. In
+            particular, it is essential in obtaining good, almost sequential,
+            performance out of random small writes \cite{soft_updates}.
 
             Caching, however, is tricky especially on the write side. Besides
             the usual cache coherence issues, caching of writes for prologned
@@ -532,24 +521,24 @@
             like soft updates \cite{soft_updates}, operating systems have to
             perform a fine balancing act.
 
-            Linux in particular caches aggresively \cite{its docs?}. Luckily,
-            its VFS layer implements this in an abstract manner, so individual
-            filesystems do not need to implement it themselves. Nevertheless,
-            they frequently need to be aware of it and in rare cases, like ZFS
-            (\ref{sec_ZFS}), they need special behaviour to implement some
-            features of the filesystem.
+            Linux in particular caches aggresively \cite{Linux_VFS_cache}.
+            Luckily, its VFS layer implements this in an abstract manner, so
+            individual filesystems do not need to implement it themselves.
+            Nevertheless, they frequently need to be aware of it and in rare
+            cases, like ZFS (\ref{sec_ZFS}), they need special behaviour to
+            implement some features of the filesystem.
 
         % TODO: incorporate the reliability analysis of ZFS here
         \subsection{ZFS}
             \label{sec_ZFS}
 
             Considered by many to be the most robust enterprise ready
-            filesystem \cite{pls you have to}, ZFS takes all necessary aspects
-            of a filesystem and tries to combine them into one as close to
-            bulletproof solution. It is widely recommended in place of almost
-            any other solution where possible. It integrates a very wide
-            variety of features to ensure data integrity while maintaining
-            performance.
+            filesystem (like TrueNAS does \cite{TrueNAS_enterprise}), ZFS takes
+            all necessary aspects of a filesystem and tries to combine them
+            into one as close to bulletproof solution. It is widely recommended
+            in place of almost any other solution where possible. It integrates
+            a very wide variety of features to ensure data integrity while
+            maintaining performance.
 
             % The data blocks contain objects. Each object contains different
             % things: an inode, an inode's data, a directoy and so on.
@@ -563,7 +552,7 @@
             corrupted, several backup copies of it are stored.
 
             Modifications to the tree of blocks is done in the same copy on
-            write manner as in WAFL (\ref{sec_WALF}) so it is always
+            write manner as in WAFL (\ref{sec_WAFL}) so it is always
             consistent.  The only critical operation is the uberblock
             overwrite, but its checksum allows for any failure to be detected
             and a backup read.
@@ -588,14 +577,14 @@
             Even though ZFS also goes to great lengths to allocate data blocks
             in contiguous chunks of space, ZFS reads and writes tend to be
             slower than those of other filesystem even when paired with RAID
-            functions \cite{i'm pretty sure someone somewhere said this}. To
-            counteract this ZFS caches extensively. So much so that TrueNAS (a
-            popular home file server operating system) has a dedicated guide on
-            how much memory a server should have
-            % \cite{https://www.truenas.com/docs/core/gettingstarted/corehardwareguide/\#memory-sizing}
-            and more memory is frequently recommended on forums. The caching is
-            such an important part of ZFS that it does not rely on the
-            operating system.
+            functions due to the copy on write "bubbling" mechanism having to
+            overwrite many blocks \cite{ZFS} \cite{WAFL}. To counteract this
+            ZFS caches extensively. So much so that TrueNAS (a popular home
+            file server operating system) has a dedicated guide on how much
+            memory a server should have
+            \cite{TrueNAS_hardware_guide}[memory-sizing] and more memory is
+            frequently recommended on forums. The caching is such an important
+            part of ZFS that it does not rely on the operating system.
 
             % You might want to rephrase the ARC citation to be more in line
             % with the paper
@@ -610,8 +599,8 @@
             of blocks many indirect accesses are required which degrades
             performance. To ensure that the same guarantees as data on disk are
             extended to the contents of the ARC, use ECC memory is strongly
-            recommended too
-            % \cite{https://www.truenas.com/docs/core/gettingstarted/corehardwareguide/\#error-correcting-code-memory}
+            recommended too \cite{TrueNAS_hardware_guide}[error correcting code
+            memory]
 
             The ZFS Intent Log, ZIL, acts like and solves similar problems to
             LFS (\ref{sec_LFS}). ZFS is always consistent on disk but to due to
@@ -629,13 +618,11 @@
             this, such as various caching. The result is a watertight design
             which is infamous for reliability across the industry.
 
-TODO: where linus ECC rant
-
 \chapter{Problem setting}
 
     As we have seen, non-volatile storage devices are very error-prone and not
     particularly reliable (\ref{sec_reliability}). To account for this, modern
-    filesystems, like ext4 (\ref{sec_EXT4}), perform metadata checksumming to
+    filesystems, like ext4 (\ref{sec_ext4}), perform metadata checksumming to
     avoid filesystem corruption. However, this still leaves actual data in the
     filesystem vulnerable. There exist various methods to combat the issue,
     like disk based parity RAID (\ref{sec_RAID}) or dedicated filesystems like
@@ -681,10 +668,9 @@ TODO: where linus ECC rant
 
         To "close" the write hole, Linux implements two features: a journal for
         RAID \cite{LWN_md_journal} (also called a cache occasionally) and a
-        partial parity log (PPL) \cite{PPL:
-        https://www.kernel.org/doc/html/latest/driver-api/md/raid5-ppl.html}.
+        partial parity log (PPL) \cite{partial_parity_log}.
         The journal uses a separate drive to store a journal of writes, much
-        like the ZIL and ext4 (\ref{sec_EXT4}, \ref{sec_ZFS}) and then recover
+        like the ZIL and ext4 (\ref{sec_ext4}, \ref{sec_ZFS}) and then recover
         any corruption on startup. Alternatively, the PPL stores extra
         (partial) parity in the metadata area of parity drives, again allowing
         for recovery on startup.
@@ -692,16 +678,16 @@ TODO: where linus ECC rant
         Both of theses are imperfect solutions though. The journal requires an
         additional drive (however small) which is very cumbersome for small
         systems like small form factor home servers and laptops (although the
-        advent of technologies like M.2 Intel Optane \cite{Optane_homepage} has
+        advent of technologies like M.2 Intel Optane \cite{Intel_Optane} has
         begun alleviating that concern too but it is expensive and an abundance
         of M.2 slots, which tend to be used for boot drives, is not widepsread
         yet). Regardless, the journal is susceptible to the same issues as the
         drives it is trying to protect.  So inevitable errors in the log drive
         (\ref{sec_reliability}) can diminish its benefit.
 
-        The PPL is imperfect too: its documentation \cite{PPL} concedes it
-        reduces performance by up to 40\% and in the event of a loss of a
-        (dirty) drive its behaviour is the same as unaltered RAID.
+        The PPL is imperfect too: its documentation \cite{partial_parity_log}
+        concedes it reduces performance by up to 40\% and in the event of a
+        loss of a (dirty) drive its behaviour is the same as unaltered RAID.
 
     % TODO: incorporate the reliability analysis of ZFS here
     % Does this go here?
@@ -761,11 +747,11 @@ TODO: where linus ECC rant
         integrity on a wide range of operating systems for all storage segments
         despite these shortcomings. However, there exists a reliability gap for
         small scale personal computers, workstations and home servers.
-        Filesystems that are intended for them, like EXT4, do not provide
+        Filesystems that are intended for them, like ext4, do not provide
         sufficent data integrity guarantees. Those that do can, like ZFS, be
         overkill or simply financially infeasible. Simple solutions, like RAID,
         have significant flaws by default and addressing them presents similar
-        challenges as to ZFS. Therefore a minimal filesystem with EXT4 like
+        challenges as to ZFS. Therefore a minimal filesystem with ext4 like
         features and basic amounts of redundancy to provide small scale data
         guarantees is missing while there could be significant benefits from
         using one.

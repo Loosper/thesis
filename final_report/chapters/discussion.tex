@@ -7,25 +7,24 @@
 
         Modern operating systems are enromous projects. Just the latest release
         of Linux, 5.17, included over 13000 patchsets by about 2000 developers
-        \cite{http://www.remword.com/kps_result/5.17_whole.html}.  Specifically
-        for EXT4, there were almost 4000 lines of insertions and deletions by
-        22 people over 74 commits (command: \monospace{git log --numstat
-        v5.16..v5.17 fs/ext4}) just for its maintanence. Considering that
-        releases are spaced 2 to 3 months apart
-        \cite{https://www.kernel.org/doc/html/latest/process/2.Process.html},
-        EXT4 has existed since 2006 and that it is about 60000 lines of code
-        (cmd: \monospace{cloc fs/ext4}, EXT4 represents many person-decades of
-        work. As a comparison, this project is about 2500 lines of code
-        spanning the time of about two releases by a single author. That is to
-        say, any sizeable developments in operating systems these days are big
-        efforts by teams of multiple teams over large timespans frequently
-        backed by big organisations.
+        \cite{Linux_dev_count}.  Specifically for EXT4, there were almost 4000
+        lines of insertions and deletions by 22 people over 74 commits
+        (command: \monospace{git log --numstat v5.16..v5.17 fs/ext4}) just for
+        its maintanence. Considering that releases are spaced 2 to 3 months
+        apart \cite{Linux_dev_process}, EXT4 has existed since 2006
+        \cite{ext4_origin} and that it is about 60000 lines of code (cmd:
+        \monospace{cloc fs/ext4}, EXT4 represents many person-decades of work.
+        As a comparison, this project is about 2500 lines of code spanning the
+        time of about two releases by a single author. That is to say, any
+        sizeable developments in operating systems these days are big efforts
+        by teams of multiple teams over large timespans frequently backed by
+        big organisations.
 
         Despite this project's small size and apparent uphill battle, it is
         still a notable development. Modern tools, like FUSE (\ref{sec_FUSE}),
         have gone a long way to simplify development and take it out of the
         kernel whenever it is not necessary. One notable example is SSHFS
-        \cite{https://github.com/libfuse/sshfs} which is particularly useful
+        \cite{SSHFS} which is particularly useful
         tool largely maintaned by 2 developers.
 
         Even though this project is far from a full kernel driver, which a

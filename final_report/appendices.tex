@@ -21,13 +21,53 @@
     % your project, you should still explain {\em why} you think it was not
     % relevant.>
 
-    \subsection{Legal issues}
+        % TODO ask should i keep copyright?
+        \subsection{Legal issues}
+            \label{app_licence}
 
-    \subsection{Social issues}
+            This project has one legal issue. It borrows code from the Linux
+            kernel which is licensed undre the GNU General Public License
+            version 2 (GPL v2). This license is restrictive to the extent that
+            it mandates any modification of borrowed code to be released under
+            the terms of the same license. To comply with this requrement, the
+            borrowed B-tree code maintains all license and copyright notices.
+            Further, the whole project adopts the GPL v2.
 
-    \subsection{Ethical issues}
 
-    \subsection{Professional issues}
+        \subsection{Social issues}
+
+            The project does not address nor does it further any social issues.
+            As a piece of infrastructure it does not relate or benefit other
+            disciplines such as education. It also does not further issues of
+            crime, bullying, privacy or (in)equality. The project is open
+            source and available to all regardless of skill, social or cultural
+            background. It cannot be used to facilitate criminal activity
+            insofar as any data storage system can.
+
+        \subsection{Ethical issues}
+
+            This project is not affected by ethical issues. That is becuase it
+            does not deal with human subjects directly and where it is
+            indirectly involved with humans, it provides no new tools where an
+            ethical issue might arise. Particularly, this project does not deal
+            with the particularly sensistive field of artificial intelligence
+            and its use of cryptography is limited to hashing. Any possible use
+            of the project is already covered by exisiting filesystems such as
+            EXT4 in regards to efficiency or ZFS for reliability. Where
+            features that ZFS provides can be used for criminal and morally
+            dubous activity, like data integrity, are meant to be a weaker in
+            this project from the project definition (\ref{sec_problem}). Where
+            features that EXT4 provides can be used for similar purposes, like
+            large scale deployments, this filesystem purposefully scales back
+            on to provide redundancy.
+
+        \subsection{Professional issues}
+
+            This project has been developed in accordance with the principles
+            of the British Computer Society's (BSC) code of conduct. In
+            particular, it aims to be further the public interest in that it
+            provides a useful tool for home use...
+            % TODO:
 
 
 %
@@ -45,11 +85,8 @@
     % were used, in which case a statement to that effect is all that is
     % required.>
 
-
-%
-% Other appendices can be added here following the same pattern as above.
-%
-
-
+    \begin{enumerate}
+        \item B-trees from Linux
+    \end{enumerate}
 
 \end{appendices}

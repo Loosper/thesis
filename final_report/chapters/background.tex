@@ -153,7 +153,6 @@
             is identified as a substantial improvement, which has been wildly
             used since \cite{Linux_caching}, \cite{IO_bottleneck}.
 
-
             However, \citeauthor{IO_bottleneck} points out some issues with
             such an approach: a system crash or a power outage puts the
             contents of such a cache in jeopardy. This is not a problem for a
@@ -214,7 +213,6 @@
             Besides file versioning, snapshots are useful for backups on the
             live system, since they are pretty much free on WAFL.
 
-
             The way WAFL implemnts the copy-on-write is by creating a tree of
             blocks, where the root is a known fixed block. Then it has all
             metadata (like i-list and free list) be a file too. The inodes of
@@ -237,12 +235,15 @@
             operation, limiting the impact of a crash to only some data loss
             that hasn't had the time to be commited to disk.
 
+        \subsection{Other filesystems}
+            XFS?
 
     % TODO: look at my notes from algorithms. Adjust as necessary (I think
     % btrees tend to have values too, so B+trees would have the tree as keys
     % and then values in the leaves?). This would also apply to the htree
     % TODO: very unnatural explanation I think
     \section{The B-tree}
+        \label{sec_btree}
 
         B-trees are a de facto standard for file organisation
         \cite{btree_ubiquitous}. Most modern filesystems incorporate them in
@@ -311,6 +312,9 @@
         NTFS and MacOS' APFS, it is free and open source, so code and
         documentation are readily available.
 
+        % TODO: ext4 extent tree is like a btree. Never said explicitly, cos
+        % its funky. You have to explain why (when you draw it on paper it's
+        % pretty much that).
         \subsection{The Htree}
 
             The best data structure for indexing a list of names, such as a
@@ -357,6 +361,12 @@
             groups in which the above rules apply. A major exception to them is
             that root directoy entries are spread out as much as possible to
             encourage them to grow independent and reduce fragmentation.
+
+            The final interesting technique is that EXT4 uses extents which are
+            a "range of contiguous physical blocks owned by a file"
+            \cite{ext4_space_maps}. Using them allows to reduce the amount of
+            necessary metadata for large contiguous chunks of space which
+            imporoves performance.
 
         \subsection{Metadata integrity}
 
@@ -427,6 +437,8 @@
             common. It is essentially RAID 5 but with more copies of the parity
             data (equal to the number of parity disks).
 
+            % TODO: non standard raid levels (specifically RAID-Z) OR in design have a citation for raid-z
+
         \subsection{drive reliability}
             \label{sec_reliability}
 
@@ -495,6 +507,8 @@
                 they return the wrong data, or are just unable to read a given
                 sector" \cite{Backblaze_arch} and software needs to be able to
                 identify the error and recompute the data from the parity.
+
+            \subsubsection{GFS}
 
         \subsection{Caching}
 
@@ -630,6 +644,7 @@ TODO: where linus ECC rant
     them \cite{LTT_data_loss}.
 
     \section{The write hole}
+        \label{sec_RAID_problems}
 
         RAID5 has a critical issue: writing data and experiencing a system
         crash can (silently) corrupt unrelated data on the disk. This
@@ -713,6 +728,10 @@ TODO: where linus ECC rant
         failure notifications they experienced major and unrecoverable data
         loss on a storage array of over a petabyte.
 
+    \section{Drive failure notifications?}
+
+    \section{3-2-1 rule}
+
     \section{ZFS resources}
 
         The reliability of ZFS comes at a very steep price - system resources
@@ -735,6 +754,7 @@ TODO: where linus ECC rant
         techincally savvy users.
 
     \section{The problem to address (conclusion)}
+        \label{sec_problem}
 
         Drives cannot be relied upon, no matter if mechanical or solid state.
         It is evident that there exist a plethora of techniques to ensure data

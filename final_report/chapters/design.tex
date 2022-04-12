@@ -1,6 +1,7 @@
 \chapter{Design}
 
     \section{Methodology}
+        \label{sec_methodology}
 
         Designing a filesystem is difficult and implemneting it even more so.
         For example, EXT4's documentation
@@ -21,6 +22,9 @@
         underestimation of effort turn out to be, there is always a submittable
         project to get some (even if lower) marks.
 
+        % TODO: you can note that the kernel uses a similar thing with their patch
+        % process. Think how I developed the arm internship code
+
     % TODO: is this necessary
     \section{Design goals}
 
@@ -33,6 +37,7 @@
         most basic solution that gives satisfactory results.
 
     \section{Metadata as files}
+        \label{sec_files}
 
         The first design choice was that all metadata in the filesystem would
         be kept as a regular file instead of having special data structures for
@@ -100,6 +105,13 @@
         not supported and would introduce far too much extra complexity to the
         project for a limited benefit considering the generally basic design
         and time constraint. Time is well spend developing other features.
+
+        Note that the free list isn't in the ilist, because of the bootstrap.
+
+    \section{Superblock?}
+
+        Say convention it's on block 1. It stores inode block nums to free list/ilist
+        It's minimal and stores very little
 
     \section{The inode table}
 

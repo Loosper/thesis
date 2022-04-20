@@ -206,7 +206,6 @@
         blocks for a balance between high preallocation but not wasting much
         space.
 
-    % TODO: incomplete
     \section{Redundancy}
 
         The aim for the redundancy is "RAID with checksums", since RAID alone
@@ -222,28 +221,115 @@
         significant complexity for checks at all places. If done at the block
         level, then the rest of the filesystem can be ignorant about the
         existance of checksums and carry on as normal, reducing complexity and
-        size requirements.  Since this filesystem does not implement a tree of
+        size requirements. Since this filesystem does not implement a tree of
         blocks, like ZFS (\ref{sec_ZFS}) does, this has the drawback that
         checksums are local to the data they protect. However, implemneting
         this is very trivial as it only needs to extend the block level
         interface and the entirity of the rest of the design can remain the
         same. This second approach is chosen for primarily this reason.
 
-        % TODO:!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-        % explain choice of checksum
-        Now, since checksums and data will be local to each other, the checksum
-        algorithm must be as resiliant as possible to minimise the chance that
-        a data corruption results in a checksum collision and the data is
-        reported as unaltered. Currently, this is SHA-1.
-
         For the question of where to store the checksum, there is only one
         solution that is not particularly involved. Storing the checksum within
         the block makes a corruption of the block extremely likely to corrupt
         the checksum too making it a very bad idea. The next best thing is
         having separate aggregate blocks that contain the checksums for as many
-        blocks as possible just after them. In the case of SHA-1 this is every
-        128th block contains the checksums for the previous 127 and a checksum
-        of itself.
+        blocks as possible just after them.
+
+        Next comes the question of how much space to allocate for checksums.
+        This is a space versus integrity tradeoff. On one hand the bigger the
+        checksum the better since it allows for a lesser chance for collisions
+        to mess things up. On the other hand, we want overhead to be as small
+        as possible so that drives can be better utilised. For example, ext4
+        allocates 4 bytes for each structure \cite{ext4_docs} but that is
+        mostly for backwards compatibility and there simply not being room for
+        more. ZFS stores 32 \cite{ZFS_docs}[basic\_cocepts/chechsums] for each
+        block (usually 128KiB), which is estimated to be around 0.5\%
+        \cite{ZFS_overhead}.
+
+        For the scheme above of collating checksums for blocks in a separate
+        block, a 4 byte checksum requires about 0.1\%, 16 bytes are 0.39\% and
+        32 bytes are 0.78\%. A 0.1\% overhead would be idea, however this
+        limits the choice of checksum algorithm severely (mostly Cyclic
+        Redundancy Checks (CRCs) and Fletcher checksums
+        \cite{embedded_checksums}). 64 bytes and more would be better for
+        integrity but the overhead reaches single digit percent overhead which
+        becomes significant. 32 bytes is the largest amount that is not
+        significant enough to raise eyebrows. To make block numbers easy to
+        compute this will mean every 128th block contains the checksums for the
+        previous 127. The 128th place will be technically unused, so a checksum
+        of the block itself for a bit of added integrity.
+
+        Now, since checksums and data will be local to each other, the checksum
+        algorithm must be as resiliant as possible to minimise the chance that
+        a data corruption results in a checksum collision and the data is
+        reported as unaltered. Even though the block checksums itself and that
+        checksum is stored on the same block next to all the others, a corrupt
+        block could feasibly alter an arbitrary checksum and the metachecksum
+        at the same time. Since we are targetting SSDs (\ref{sec_SSD}) we may
+        align checksum characteristics with SSD failure patterns.
+
+        One way to measure SSD failures is with the raw bit error rate (RBER).
+        The RBER is defined as the number of currupted bits per the number of
+        total bits read \cite{flash_reliability}.
+        \citeauthor{flash_reliability} take measurements over a vast number of
+        drives with single-level cell (SLC, 1 bit per memory cell) and
+        multi-level cells (MLC, 2 bits). They measure RBERs between $10^{-8}$
+        and $10^{-5}$. \citeauthor{bit_error_mlc} finds similar rates for MLC.
+        On the other hand \citeauthor{bit_error_qlc} finds that triple-level
+        cells (TLC) and quad-level cell (QLC) suffer RBER rates of around
+        $10^{-3}$ and $10^{-2}$ respectively. Although
+        \citeauthor{flash_reliability} also note that RBER rates are a poor
+        indicator of unrecoverable errors it puts an upper bound on their
+        likelyhood. Also all of them (\cite{flash_reliability},
+        \cite{bit_error_mlc}, \cite{bit_error_qlc}) cite error correcting codes
+        to mitigate these errors we can expect much lower rates that would
+        trigger our checksum recovery mechanisms.
+
+        % TODO: that facebook large scale study idk if cited here. Check i've cited it right
+
+        From the above we can expect a worst case failure of rate of a few bits
+        per block. As \citeauthor{flash_reliability} and
+        \citeauthor{flash_large_scale} note, these failures are not uniform and
+        change with SSD age and wear. With further analysis from
+        \citeauthor{flash_error_manual} it is apparent that this is due to a
+        wide range of physical phenomena. However, it becomes apparent that
+        these errors are relatively isolated from each other where only
+        adjacent cells can affect each other due to the way cells store
+        electrons. Further, due to effective error correcting techniques actual
+        unrecoverable errors are much lower than the RBER.
+
+        There are many ways to detect errors. Ext4 uses CRC \cite{idk if ref}
+        while ZFS uses sha256 \cite{ZFS_docs}[checksum]. Other examples include
+        Fletcher, Adler checksums \cite{embedded_checksums} and
+        Bose–Chaudhuri–Hocquenghem (BCH) \cite{flash_error_manual}. We settle
+        on hash based checksums for several reasons. First, we rely on extra
+        drives to provide redundancy for error correction (to be described
+        next) so a BCH is unnecessary. Then Adler and Fletcher checksums
+        perform worse than good CRCs for a given number of bit errors
+        \citeauthor{embedded_checksums}. Finally, the most common CRCs (eg.
+        CRC32) produce short check sequences (32 bits for CRC32). A best case
+        scenario will have a probability of undetected errors of
+        $\frac{1}{2^k}$
+        % BAD sentence (bad until end of paragraph tbh)
+        where k is the length of the checksum \cite{embedded_checksums} and a
+        longer checksum simply yields a lower probability. While CRC64 and
+        CRC128 do exist they are not typically implemented in hardware so are
+        unlikely to yield good speed. This leaves hashes as the most viable
+        option, especially since they strive for similar inputs to produce
+        different outputs, which is exactly the use case we expect.
+
+        % Cite where I got the SHAs from?
+        This leaves the choice of hash. Older hashes like MD5 and SHA-1 are
+        probably sufficent but they are starting to show their age, for example
+        SHA-1 is starting to have known collisions \cite{SHA_collision}.
+        Besides, we have allocated more space than the 160 bits for SHA-1 so we
+        can use the extra security from more modern ciphers. The major
+        candidates are SHA-2 (SHA256) and SHA-3 (SHA3256). Ideally, we would
+        use the latest and gratest SHA-3, however in the interest of efficiency
+        we select SHA-2. This is because on modern architectures it is around 3
+        times faster \cite{hash_stats} and the application we use it for is
+        very unlinkely to experience malicious bit manipulation so the security
+        is sufficent.
 
         % TODO: have the checksum be outside the block. Modify the allocator
         % somehow. OOOOO you can even checksum the checksum blocks too (might

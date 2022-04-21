@@ -1,0 +1,38 @@
+[global]
+    bs=4K
+    iodepth=8
+    bs=4K
+    ioengine=libaio
+    wait_for_previous
+    time_based
+    runtime=10
+
+
+[rand_small_r]
+    size=4K
+    rw=randread
+
+[rand_small_w]
+    size=4K
+    rw=randwrite
+
+[rand_small_rw]
+    size=4K
+    rw=randrw
+
+
+[seq_big_r]
+    size=4M
+    rw=read
+
+[seq_big_w]
+    size=4M
+    rw=write
+
+[seq_big_rw]
+    size=4M
+    rw=rw
+
+[pure_bandwidth]
+    size=1G
+    rw=rw

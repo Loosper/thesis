@@ -1,7 +1,6 @@
 [global]
     bs=4K
     iodepth=8
-    bs=4K
     ioengine=libaio
     wait_for_previous
     time_based
@@ -36,3 +35,9 @@
 [pure_bandwidth]
     size=1G
     rw=rw
+
+[metadata]
+    ioengine=filedelete
+    filesize=4K
+    nrfiles=100
+    loops=100

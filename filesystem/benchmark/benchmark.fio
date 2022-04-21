@@ -4,7 +4,7 @@
     ioengine=libaio
     wait_for_previous
     time_based
-    runtime=10
+    runtime=20
 
 
 [rand_small_r]

@@ -7,8 +7,10 @@
 
 [rw]
     ioengine=libaio
-    filesize=1M
+    rw=rw
     nrfiles=1
+    filesize=1M
+    size=1G
 
 [metadata]
     ioengine=filedelete

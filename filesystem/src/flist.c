@@ -89,11 +89,13 @@ size_t gen_flist()
 // DOES NOT initialize blocks!!! It's caller responsibility
 size_t allocate_block()
 {
+	static size_t start_from = 0;
+
 	struct inode flist = get_flist_inode();
 	uint8_t *data = malloc(FS_BLOCK_SIZE);
 	size_t bit_num;
 
-	for (bit_num = 0; ; bit_num++) {
+	for (bit_num = start_from; ; bit_num++) {
 		size_t cur_blk = bit_num / (FS_BLOCK_SIZE * 8);
 		size_t file_offset = cur_blk * FS_BLOCK_SIZE;
 
@@ -102,7 +104,7 @@ size_t allocate_block()
 		uint8_t bitmask = 1 << (bit_index_in_blk % 8);
 
 		// refresh block when we reach its end
-		if (bit_num == cur_blk * (FS_BLOCK_SIZE * 8))
+		if (bit_num == start_from || bit_num == cur_blk * (FS_BLOCK_SIZE * 8))
 			pread_ino(&flist, data, FS_BLOCK_SIZE, file_offset);
 
 		// it's allocated
@@ -120,5 +122,6 @@ size_t allocate_block()
 
 	// TODO: not sure if inefficient, but will reduce A LOT of errorS
 	init_blk_zero(bit_num);
+	start_from = bit_num;
 	return bit_num;
 }

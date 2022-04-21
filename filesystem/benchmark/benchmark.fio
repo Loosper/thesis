@@ -33,6 +33,9 @@
     rw=rw
 
 [pure_bandwidth]
+    ioengine=sync
+    nrfiles=1
+    filesize=1M
     size=1G
     rw=rw
 

@@ -2,7 +2,7 @@
     bs=4K
     iodepth=1
     time_based
-    runtime=1s
+    runtime=5m
     rw=randrw
 
 [rw]
@@ -13,5 +13,5 @@
 [metadata]
     ioengine=filedelete
     filesize=4K
-    nrfiles=1000
-    loops=100
+    nrfiles=100
+    loops=1000

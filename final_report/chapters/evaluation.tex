@@ -1,6 +1,7 @@
 \chapter{Evaluation and results}
 
     \section{Benchmarking}
+        \label{sec_benchmark}
 
         % the metdata benchmark is an IO benchmark. Argue this.
 
@@ -88,9 +89,95 @@
         implementation. To confirm this, we perform profiling analysys in
         \ref{sec_perf}.
 
+        The large file access is in line with the combined sequential test
+        indicating that further increases of file size do not reduce
+        performance. Finally, the metadata benchmark is surprising as it is in
+        line with ext4 and ntfs. This is tahnks to directory and inode files
+        having a count at the start of the file so finding a free slot is a
+        very fast operation.
+
+    \section{Profiling analysys}
+        \label{sec_perf}
+
+        To investigate why the performance is what it is the filesystem was
+        profiled with perf. Perf is powerful Linux tool (part of the kernel)
+        for program profiling. It can produce performance statistics for
+        hardware (cache hits, idle CPU cycles etc) and for sofware (call
+        graphs, call frequency, work in each subroutine etc.) \ref{perf}.
+
+        A single profile was taken with \monospace{perf record -g
+        <filesystem>}. For a workload, a full run of the benchmark was used
+        \ref{sec_benchmark}. Then resulting 147Mb profile was analysed with
+        \monospace{perf report -n --children} and \monospace{perf report -n
+        --no-children}.
+
+        Unsurpsiginly, most of the time is spent in the kernel (upwards of
+        90\%). However, looking into which subroutine enters the kernel (with
+        \monospace{--children}) has interesting results. The biggest time
+        consumer is, as expected the file access subroutine
+        (\monospace{do_read_write_full()}).  However, in it the block
+        read/write subroutines (\monospace{read_block()} and
+        \monospace{write_block()}) do not make up even a quarter of the time
+        spent. Instead, on overwhelming majority of the time is spent in btree
+        accesses (\monospace{btree_lookup64()} in this case). Upon inspecting
+        the code this is due to two reasons: First, each block is located
+        independently of all others and the sequential nature of the \bplustree
+        is not utilised (see \ref{sec_btree} design or impl?). Second, large
+        writes are handled like a sequence of small writes (with
+        \monospace{do_read_write_block()}). Even if sequences of blocks could
+        be utilised they could not be observed by the read/write subroutine as
+        it never receives them. As virtually all accesses in this filesystem
+        relate to a file (\ref{sec_files}), which are accessed with these
+        subroutines, all workloads behave identially porrly.
+
+        Knowing this, to explain the sequential read anomally is not hard. With
+        this arrangement reading any file will always be faster as it never
+        needs to perform file expansion which requires allocation for a small
+        speedup as this is un infrequent occurence. It will also, however,
+        bypass the file lookup to find the inode itself to begin the read. In
+        effect this removes a level of (inefficient) indirection recovering
+        about half of the lost performance due to the poor use of the btrees.
+        The sequential writes perform poorly because they make up the lost
+        level of indirection by expanding the file in a similar manner,
+        degrading performance about the same amount that was gained.
+
+        From this analaysys there arises a corollary: allocation cannot be
+        fast. And in fact this is the reason why even the largest test is
+        relatively small for today's standards. Since all reads and writes are
+        treated as individual requests with the size of a block, allocating a
+        gigabyte of space requires about 268 million calls to the allocation
+        subroutine. Since it is also slow, the results are untenable.
+
+        Benefit: simple impl. The kernel has all of that so it's fast.
+
+% actual percents. TODO: put in listing?
+% -   93.79%     0.01%            36  filesystem   filesystem            [.] do_read_write_full
+%    - 93.78% do_read_write_full
+%       - 93.55% do_read_write_block
+%          - 86.10% get_pblock_of_byte
+%             + 86.10% btree_lookup64
+%          + 6.44% file_add_space
+%          + 0.61% __libc_pread
+
+        TODO: full perf availble in???
+        say implementation is bad, how its bad but don't suggest anything else. That's a discussion
+
+
     \section{Failure simulation}
 
-    \section{Reliability}
+        To simulate failures we use a similar approach to the benchmarking.
+        Once again, we use fio. This time a 5 minute stress test is perfomerd.
+        It has two jobs which run concurrently. The first one preforms the same
+        1GB combined read and write load while the second one creates and
+        removes 100 files repeatedly. While this test is running a script goes
+        over the first drive in the array and flips a random number of bits on
+        each block up to a maximum of 100 in an infinite loop.
+
+        As expected, the 5 minute stress test runs without any user visible
+        errors. The filesystem detects and corrects all corrupt blocks and
+        returns correct data stored on the redundant drives.
+
+        % TODO: add a figure with the debug output that the error was detected and fixed
 
         probabilistic, not a guarantee like ZFS. ZFS is a "blockchain" I just
         minimise the likelyhood by many orders of magnitude

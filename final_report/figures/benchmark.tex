@@ -1,15 +1,19 @@
 \begin{tikzpicture}
-\begin{axis}[
-    ybar, ymode=log,
+\begin{axis} [
+    % TODO: add labels on data (useful)
+    ybar, ymode = log,
+    ylabel = {KiB/s},
+    % nodes near coords,
+    % nodes near coords align = {vertical},
     % enlargelimits=0.1,
-    width=\textwidth, height=0.7\textwidth,
-    symbolic x coords={
+    width=\textwidth, height = 0.7\textwidth,
+    symbolic x coords = {
         random reads, random writes, random both,
         sequential reads, sequential writes, sequential both,
         big file, metadata
     },
-    x tick label style={rotate=45,anchor=east},
-    legend pos={north west}
+    x tick label style = {rotate = 45, anchor = east},
+    legend pos = {north west}
 ]
 
     % ext

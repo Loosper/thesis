@@ -1,5 +1,6 @@
 \chapter{Discussion and Conclusion}
 
+    \section{the perfomance}
     \section{the implementation}
     the desing? idk what to call this
 
@@ -10,7 +11,7 @@
         performance of the proposed filesystem can never match or exceed that
         of any established filesystem. However, there are three features that
         can bring it most of the way there. First, is the use of B-trees. As we
-        have already seen (\sec{sec_btree}) they are well established and the
+        have already seen (\ref{sec_btree}) they are well established and the
         performance of this filesystem reflects that on sequentail reads
         (everywhere else there are at least two on top of each other or
         something else slowing it down (\ref{sec_perf}).
@@ -38,6 +39,35 @@
         % say it is feasible to improve it to go most of the way - just would need quote a bit of time and 10k LOC
 
     \section{Did this solve the problem? (Outcome)}
+    % more like the reliability
+
+        Despite the performance of this filesystem, its main task - data
+        reliability - performs well. It is not ironclad, like ZFS, but is not
+        meant to be. It is robust and provides a good degree of integrity. It
+        is many orders of magnitude better than the unsecured filesystems in
+        use today. It also provides the safety of RAID without a lengthy
+        cost-benefit analysis of different techniques to mitigate the various
+        problems and the drawbacks that might come with those mitifations.
+
+        For laptops this filesystem is of limited use. The tendency for low
+        profile and minimal devices makes adding an extra drive cost
+        prohibitive. Nevertheless, the checksumming can still be utilised as a
+        data integrity guarantee and the redundancy can be provided by an off
+        site backup. New developments, like Apple's M1 Ultra chips with
+        on-board flash controllers
+        \cite{https://www.notebookcheck.net/Mac-Studio-SSD-does-not-work-on-NVMe-top-level-ARM64-SSD-controller-in-M1-Ultra-makes-it-nearly-impossible-to-swap-out-or-add-raw-storage-modules.609363.0.html}
+        can make this setup viable with a single flash board.
+
+        For home and office desktop computers this filesystem makes a lot of
+        sense. These machines are bulky enough to house several drives (and
+        often do) and especially for office use the extra integrity can be
+        useful in missin critical environments.
+
+        Finally, for home NAS setups, this filesystem is an obvious choice.
+        their long term storage necessitates data integrity guarantees. A RAID
+        setup is flawed while ZFS would be hard to administer.
+
+        % TODO: explain about the mirror instead of a 3 drive arrangement (1 parity, 2 usable)
 
     % TODO: i need to figure out what my point with this is
     \section{Difficulties in modern operating system implementation}
@@ -133,3 +163,9 @@
         Notable omissions from the project are concurrent access and caching
         support. Finding a way to include them would greatly improve
         performance and is practically a must for a real filesystem.
+
+        Reliability detection - too many errors will cause the drive to be expunged
+
+        the performance lol
+
+    \section{Choice of userspace?}

@@ -1,5 +1,42 @@
 \chapter{Discussion and Conclusion}
 
+    \section{the implementation}
+    the desing? idk what to call this
+
+        Modern filesystem's complexity is justified and the performance
+        analaysys (\ref{sec_perf} ?) confirms that. Each seemingly small
+        addition has a large impact on some workload. There is no silver bullet
+        feature that magically makes a filesystem fast. For this reason the
+        performance of the proposed filesystem can never match or exceed that
+        of any established filesystem. However, there are three features that
+        can bring it most of the way there. First, is the use of B-trees. As we
+        have already seen (\sec{sec_btree}) they are well established and the
+        performance of this filesystem reflects that on sequentail reads
+        (everywhere else there are at least two on top of each other or
+        something else slowing it down (\ref{sec_perf}).
+
+        Second, is the use of extents which this filesystem does not implement.
+        Their need is most apparent for allocations and sequentail accesses but
+        impact every aspect of a filesystem where large chunks of data are
+        stored. Modern workloads and filesises measured in the giga and
+        terabytes cannot be accommodated with individually addressed data
+        blocks. The logarithmic complexity of any underlying storage method
+        (like the B-tree) is dwarfed when a linear or a large polynomial of
+        accesses are required.
+
+        Third, and perhaps most importantly is rigorous engineering effort into
+        integrating all features. While this is not a feature per se, but
+        allows for all other features to be utilised properly. Due to the time
+        experimental nature of this project this was not emphasised and
+        performance suffers accordingly especially in sequentail accesses.
+
+        With this in mind, the myriad of features and tens of thousands of
+        lines of code in ext4 fall into place. A modern performant filesystem
+        cannot be simple by design nor by implementation and a simple
+        filesystem cannot be performant.
+
+        % say it is feasible to improve it to go most of the way - just would need quote a bit of time and 10k LOC
+
     \section{Did this solve the problem? (Outcome)}
 
     % TODO: i need to figure out what my point with this is

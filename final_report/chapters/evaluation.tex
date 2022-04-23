@@ -115,20 +115,20 @@
         90\%). However, looking into which subroutine enters the kernel (with
         \monospace{--children}) has interesting results. The biggest time
         consumer is, as expected the file access subroutine
-        (\monospace{do_read_write_full()}).  However, in it the block
-        read/write subroutines (\monospace{read_block()} and
-        \monospace{write_block()}) do not make up even a quarter of the time
+        (\monospace{do\_read\_write\_full()}).  However, in it the block
+        read/write subroutines (\monospace{read\_block()} and
+        \monospace{write\_block()}) do not make up even a quarter of the time
         spent. Instead, on overwhelming majority of the time is spent in btree
-        accesses (\monospace{btree_lookup64()} in this case). Upon inspecting
+        accesses (\monospace{btree\_lookup64()} in this case). Upon inspecting
         the code this is due to two reasons: First, each block is located
         independently of all others and the sequential nature of the \bplustree
         is not utilised (see \ref{sec_btree} design or impl?). Second, large
         writes are handled like a sequence of small writes (with
-        \monospace{do_read_write_block()}). Even if sequences of blocks could
-        be utilised they could not be observed by the read/write subroutine as
-        it never receives them. As virtually all accesses in this filesystem
-        relate to a file (\ref{sec_files}), which are accessed with these
-        subroutines, all workloads behave identially porrly.
+        \monospace{do\_read\_write\_block()}). Even if sequences of blocks
+        could be utilised they could not be observed by the read/write
+        subroutine as it never receives them. As virtually all accesses in this
+        filesystem relate to a file (\ref{sec_files}), which are accessed with
+        these subroutines, all workloads behave identially porrly.
 
         Knowing this, to explain the sequential read anomally is not hard. With
         this arrangement reading any file will always be faster as it never
@@ -147,6 +147,9 @@
         treated as individual requests with the size of a block, allocating a
         gigabyte of space requires about 268 million calls to the allocation
         subroutine. Since it is also slow, the results are untenable.
+        % explain the 268 mil figure
+
+        do a complexity analysys
 
         Benefit: simple impl. The kernel has all of that so it's fast.
 
@@ -162,6 +165,29 @@
         TODO: full perf availble in???
         say implementation is bad, how its bad but don't suggest anything else. That's a discussion
 
+        IDK where to put this:
+
+        The overall poor performance cannot be attributed to a single factor,
+        but it is rather a combination of many things stacking with each other.
+        First, the above mentioned sequential performance affects the entirety
+        of the filesystem, including random accesses. This is beceause every
+        file needs to have its inode located in the i-list. Since this is a
+        single contiguous file accessing it is of sequential nature. Then, this
+        file is linear. Searches through it are of linear complexity. The
+        logarithmic speedup of the B-trees is irrelevant when all blocks need
+        to be acccessed, especially when they are trieated as random. The same
+        applies for direcoties, as their implementation is identical so
+        directory lookups get a double slow down. Further, allocations slow
+        things down further as described before. Finally, caching is not
+        present so any neighbouring or repeat accesses are treated as
+        completety independent and fresh leaving lots of performance on the
+        table.
+
+        essentially even random accesses are sequential and we already saw why those are slow
+
+    \section{Design of the filesystem}
+    % \subsection{Suitability of design as an FS}
+    % maybe in discussion?
 
     \section{Failure simulation}
 
@@ -179,7 +205,41 @@
 
         % TODO: add a figure with the debug output that the error was detected and fixed
 
-        probabilistic, not a guarantee like ZFS. ZFS is a "blockchain" I just
-        minimise the likelyhood by many orders of magnitude
+    \section{Design of the redundancy}
+    % \subsection{Suitability of design for error correction}
+    % \section{Reliability}
 
-    \section{Comparison to existing alternatives}
+        As shown experimentally, the integrity guarantee works. Theoretically,
+        best case security of the 256 bit hashes are $2^128$ bits. Theoretical
+        attacks on reduced versions of the function put this at $2^126$
+        \cite{sha2_security}, \cite{https://eprint.iacr.org/2016/374.pdf}. At
+        this time sha-256 does not have any known collisions. So for the
+        purposes of this project we consider it as secure with $2^126$ bits of
+        security (we select the lower bound for safety).  Thus the probability
+        that a faulty sector results in a hash collision will be at most
+        $2^-126$. It is important to note that errors are not entirely
+        arbitrary but rather follow some patterns \ref{the place I explain
+        this} and are likely to have very few bits changed. Therefore for
+        normal wear and tear the probability of a collision is likely to be
+        much lower due to the avalanching effect of the funciton \cite{one of
+        the above?}, however, this has not been theoretically verified and
+        shall not be relied upon.
+
+        In the event of malicious loads like a rowhammer like attack
+        \cite{https://www.usenix.org/system/files/conference/woot17/woot17-paper-kurmus.pdf}
+        the security is likely to be lower as the attacker can craft the
+        payload more carefully. However, the checksumming of the data provide a
+        barrier to pulling off such an attack despite the lowered security
+        (much like a canary in compilers). We can conclude that even if
+        security of the hash under malicios attack is greatly diminished there
+        is still a great security benefit.
+
+        Unlike ZFS \ref{sec_ZFS}, this filesystem does not chain checksums.
+        Therefore it is possible to change two blocks (one data and one hash)
+        in such a way that the checksum is still valid. ZFS's chaining of
+        hashes mitigates against this. However, the chance of this happening is
+        astronomically low. As the errors are independent on SSDs \ref{that
+        again} the likelyhood of that happening with sha256 will be $2^252$.
+        This is a valid issue to have with short (eg. CRC) checksums however
+        with long hashes this issue can be safely ignored.
+

@@ -4,7 +4,7 @@ override CFLAGS += $(FUSE_FLAGS) -Iinclude -g
 CC := gcc
 
 # DEBUG helpers
-CFLAGS += -Wno-unused-parameter -O2
+CFLAGS += -Wno-unused-parameter -O0
 # CFLAGS += -Wno-unused-variable
 
 COBJS  := $(patsubst %.c, %.o, $(wildcard src/*.c))
@@ -30,7 +30,7 @@ LOOP_NUM := 0
 .PHONY: loop_dev
 loop_dev:
 	losetup -d /dev/loop$(LOOP_NUM) || true
-	dd if=/dev/zero of=./loop$(LOOP_NUM)_data count=1M
+	dd if=/dev/zero of=./loop$(LOOP_NUM)_data count=3M
 	losetup /dev/loop$(LOOP_NUM) ./loop$(LOOP_NUM)_data
 	chmod 666 /dev/loop$(LOOP_NUM)
 

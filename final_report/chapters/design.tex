@@ -177,7 +177,7 @@
         data blocks for an inode. Simpler techniques have historically been
         used. Originally, UFS and FFS used a generic tree of staggered
         indirection (\ref{sec_UFS} and \ref{sec_FFS}). Another was FAT32 which
-        used a linked list to describe all data blocks \cite{needed}.
+        used a linked list to describe all data blocks \cite{fat32}.
 
         The FAT32 scheme was experimented with, as it is quite a lot simpler
         than a full B-tree implementation. However, it proved very difficult to
@@ -195,9 +195,9 @@
         A major focus for this filesystem was SSD instead of spinning
         mechanical hard drives. As a result, there are no major provisions for
         locality. This is because SSD random IO performance is almost in line
-        with their sequential capabilities \cite{something}. As a result,
-        things are laid out in an arbitrary best fit fashion along the disk
-        instead of considering future growth or access patterns.
+        with their sequential capabilities \cite{servethehome_review}. As a
+        result, things are laid out in an arbitrary best fit fashion along the
+        disk instead of considering future growth or access patterns.
 
         There is a single provision for increasing data locality. It is to have
         a minimum allocation size. This is because greater data locality "can
@@ -298,7 +298,7 @@
         electrons. Further, due to effective error correcting techniques actual
         unrecoverable errors are much lower than the RBER.
 
-        There are many ways to detect errors. Ext4 uses CRC \cite{idk if ref}
+        There are many ways to detect errors. Ext4 uses CRC \cite{ext4_docs}[checksums]
         while ZFS uses sha256 \cite{ZFS_docs}[checksum]. Other examples include
         Fletcher, Adler checksums \cite{embedded_checksums} and
         Bose–Chaudhuri–Hocquenghem (BCH) \cite{flash_error_manual}. We settle

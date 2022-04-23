@@ -210,36 +210,34 @@
     % \section{Reliability}
 
         As shown experimentally, the integrity guarantee works. Theoretically,
-        best case security of the 256 bit hashes are $2^128$ bits. Theoretical
-        attacks on reduced versions of the function put this at $2^126$
-        \cite{sha2_security}, \cite{https://eprint.iacr.org/2016/374.pdf}. At
-        this time sha-256 does not have any known collisions. So for the
-        purposes of this project we consider it as secure with $2^126$ bits of
-        security (we select the lower bound for safety).  Thus the probability
-        that a faulty sector results in a hash collision will be at most
-        $2^-126$. It is important to note that errors are not entirely
-        arbitrary but rather follow some patterns \ref{the place I explain
-        this} and are likely to have very few bits changed. Therefore for
-        normal wear and tear the probability of a collision is likely to be
-        much lower due to the avalanching effect of the funciton \cite{one of
-        the above?}, however, this has not been theoretically verified and
-        shall not be relied upon.
+        best case security of the 256 bit hashes are $2^{128}$ bits.
+        Theoretical attacks on reduced versions of the function put this at
+        $2^{126}$ \cite{sha2_security}, \cite{sha2_analysis}. At this time
+        sha-256 does not have any known collisions. So for the purposes of this
+        project we consider it as secure with $2^{126}$ bits of security (we
+        select the lower bound for safety).  Thus the probability that a faulty
+        sector results in a hash collision will be at most $2^{-126}$. It is
+        important to note that errors are not entirely arbitrary but rather
+        follow some patterns \ref{the place I explain this} and are likely to
+        have very few bits changed. Therefore for normal wear and tear the
+        probability of a collision is likely to be much lower due to the
+        avalanching effect of the funciton, however, this has not been
+        theoretically verified and shall not be relied upon.
 
         In the event of malicious loads like a rowhammer like attack
-        \cite{https://www.usenix.org/system/files/conference/woot17/woot17-paper-kurmus.pdf}
-        the security is likely to be lower as the attacker can craft the
-        payload more carefully. However, the checksumming of the data provide a
-        barrier to pulling off such an attack despite the lowered security
-        (much like a canary in compilers). We can conclude that even if
-        security of the hash under malicios attack is greatly diminished there
-        is still a great security benefit.
+        \cite{ssd_rowhammer} the security is likely to be lower as the attacker
+        can craft the payload more carefully. However, the checksumming of the
+        data provide a barrier to pulling off such an attack despite the
+        lowered security (much like a canary in compilers). We can conclude
+        that even if security of the hash under malicios attack is greatly
+        diminished there is still a great security benefit.
 
         Unlike ZFS \ref{sec_ZFS}, this filesystem does not chain checksums.
         Therefore it is possible to change two blocks (one data and one hash)
         in such a way that the checksum is still valid. ZFS's chaining of
         hashes mitigates against this. However, the chance of this happening is
         astronomically low. As the errors are independent on SSDs \ref{that
-        again} the likelyhood of that happening with sha256 will be $2^252$.
+        again} the likelyhood of that happening with sha256 will be $2^{252}$.
         This is a valid issue to have with short (eg. CRC) checksums however
         with long hashes this issue can be safely ignored.
 

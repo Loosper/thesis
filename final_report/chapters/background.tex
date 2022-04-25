@@ -317,6 +317,7 @@
         % its funky. You have to explain why (when you draw it on paper it's
         % pretty much that). THIS SUBCHAPTER NOT PROOFREAD!!!!
         \subsection{The Htree}
+            \label{sec_htree}
 
             The best data structure for indexing a list of names, such as a
             directory, would be hash table, due to its very fast lookup times
@@ -340,6 +341,10 @@
             impact of rebalancing the tree and maintaining good performance.
 
         \subsection{Data locality}
+            % TODO: i have this label to reference the quote below. Maybe put it in HW considerations and quote here?
+            % whatever you do, check all references to it as they might become wrong
+            % maybe make a new section to introduce SSDs? sec_reliability has references that can be combined with this
+            \label{sec_locality}
 
             Ext4 employs a range of tricks to maximise locality of various
             data. This has the obvious benefit of reducing seek times on
@@ -435,16 +440,46 @@
             Other techniques are always employed to ensure both are
             independently maintained. Otherwise data loss is always at risk.
 
-        % TODO: add a seciton SSD reliability and move the bit from design here (need lots of changes there tho)
             SSDs and flash storage in general are a similar story. As
             \citeauthor{2D_RAID} puts it: "Flash is basically garbage. It
-            barely works. We tolerate it because it is fast". They employ
+            barely works. We tolerate it because it is fast". SSDs employ
             similar techniques as spinning hard drives and suffer similar
             problems as them \cite{flash_large_scale},
             \cite{flash_reliability}. Their failure patterns are substantially
             different but the end result is the same - unrecoverable errors
             that would lead to data loss if not accounted for outside the
             drive.
+
+            One way to measure these failures is with the raw bit error rate
+            (RBER). The RBER is defined as the number of currupted bits per the
+            number of total bits read \cite{flash_reliability}.
+            \citeauthor{flash_reliability} takes measurements over a vast
+            number of drives with single-level cell (SLC, 1 bit per memory
+            cell) and multi-level cell (MLC, 2 bits) chips. They measure RBERs
+            between $10^{-8}$ and $10^{-5}$. \citeauthor{bit_error_mlc} finds
+            similar rates for MLC. On the other hand \citeauthor{bit_error_qlc}
+            finds that triple-level cell (TLC) and quad-level cell (QLC) flash
+            suffer RBER rates of around $10^{-3}$ and $10^{-2}$ respectively.
+            Although \citeauthor{flash_reliability} also notes that RBER rates
+            are a poor indicator of unrecoverable errors it puts an upper bound
+            on their likelyhood.
+
+            As a result we can expect a worst case failure rate of a few bits
+            per kilobyte of data read. As \citeauthor{flash_reliability} and
+            \citeauthor{flash_large_scale} note, these failures are not uniform
+            and change with SSD age and wear. With further analysis from
+            \citeauthor{flash_error_manual} it is apparent that this is due to
+            a wide range of physical phenomena. However, it becomes apparent
+            that these errors are relatively isolated from each other where
+            only adjacent cells can affect each other due to the way cells
+            store electrons.
+
+            Further, due to effective error correcting techniques
+            \cite{flash_reliability} \cite{bit_error_mlc} \cite{bit_error_qlc}
+            \cite{flash_error_manual} actual unrecoverable errors are much
+            lower than the RBER. Therefore, we can expect any higher level
+            recovery mechanisms to be needed much less frequently than might be
+            expected.
 
         \subsection{RAID}
 

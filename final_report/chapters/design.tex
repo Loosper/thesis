@@ -226,159 +226,137 @@
         standard operations like insert, delete and lookup natively and
         performanlty.
 
-    \section{Redundancy}
+    \section{Data integrity}
 
-        The aim for the redundancy is "RAID with checksums", since RAID alone
-        cannot be relied upon for data integrity (\ref{sec_RAID_problems}).
+        The aim is to achieve data integrity with a "RAID with checksums"
+        approach. The combination is required as RAID alone cannot be relied
+        upon for data integrity (\ref{sec_RAID_problems}) and checksums
+        themselves do not provide redundancy.
 
-        First, to combat silent drive unreliability (see \ref{sec_reliability})
-        all data must be checksummed. There are two choices for where this can
-        happen: at the data structure level or at the block level. If done at
-        the data structure level (i.e. every "pointer" would also include a
-        checksum of its data), like EXT4 (\ref{sec_EXT4}, then there is a
-        benefit that the data and its checksum are spatially separate (a
-        provision ZFS has \ref{sec_ZFS}). However, this approach adds
-        significant complexity for checks at all places. If done at the block
-        level, then the rest of the filesystem can be ignorant about the
-        existance of checksums and carry on as normal, reducing complexity and
-        size requirements. Since this filesystem does not implement a tree of
-        blocks, like ZFS (\ref{sec_ZFS}) does, this has the drawback that
-        checksums are local to the data they protect. However, implemneting
-        this is very trivial as it only needs to extend the block level
-        interface and the entirity of the rest of the design can remain the
-        same. This second approach is chosen for primarily this reason.
+        First, the checksumming is necessary to combat silent drive
+        unreliability (see \ref{sec_reliability}). There are two choices for
+        where this can happen: at the data structure level or at the block
+        level. If done at the data structure level (i.e. every "pointer" would
+        also include a checksum of its data), like EXT4 (\ref{sec_EXT4}, then
+        there is a benefit that the data and its checksum are spatially distant
+        (a provision ZFS has \ref{sec_ZFS}). However, this approach adds
+        significant complexity to make sure checks are performed everywhere. If
+        done at the block level, then the rest of the filesystem can be
+        ignorant about the existance of checksums and carry on as normal,
+        reducing the complexity. Since this filesystem does not implement a
+        tree of blocks, like ZFS (\ref{sec_ZFS}) does, this has the drawback
+        that checksums are local to the data they protect. However,
+        implemneting this is very trivial as it only needs to extend the block
+        level interface and the entirity of the rest of the design can remain
+        the same. This second approach is chosen primarily for this reason.
 
         For the question of where to store the checksum, there is only one
         solution that is not particularly involved. Storing the checksum within
         the block makes a corruption of the block extremely likely to corrupt
-        the checksum too making it a very bad idea. The next best thing is
+        the checksum too making it a very bad idea (becasue of collisions) plus
+        it diminishes the kernel's ability to cache large blocks of well
+        aligned data (since the checksum will either eat into the block's
+        usable size, wasting cache, or misalign blocks). The next best thing is
         having separate aggregate blocks that contain the checksums for as many
         blocks as possible just after them.
 
-        Next comes the question of how much space to allocate for checksums.
-        This is a space versus integrity tradeoff. On one hand the bigger the
-        checksum the better since it allows for a lesser chance for collisions
-        to mess things up. On the other hand, we want overhead to be as small
-        as possible so that drives can be better utilised. For example, ext4
-        allocates 4 bytes for each structure \cite{ext4_docs} but that is
-        mostly for backwards compatibility and there simply not being room for
-        more. ZFS stores 32 \cite{ZFS_docs}[basic\_cocepts/chechsums] for each
-        block (usually 128KiB), which is estimated to be around 0.5\%
-        \cite{ZFS_overhead}.
+        Next comes the space versus integrity tradeoff of how much space to
+        allocate for checksums. On one hand the bigger the checksum the better
+        since it reduces the chance for collisions to mess things up. On the
+        other hand, we want overhead to be as small as possible so that drives
+        can be better utilised. For example, for backwards compatibility, ext4
+        allocates 4 bytes for each structure \cite{ext4_docs} and uses a CRC
+        algorithm which can only detect a limited number of erronous bits (or
+        even correct them in the case of Bose–Chaudhuri–Hocquenghem (BCH) codes
+        \cite{flash_error_manual}). ZFS stores 32 bytes \cite{ZFS_docs} for
+        each block (usually 128KiB), which is estimated to use around 0.5\%
+        \cite{ZFS_overhead} of space.
 
+        % TODO: graphic?
         For the scheme above of collating checksums for blocks in a separate
-        block, a 4 byte checksum requires about 0.1\%, 16 bytes are 0.39\% and
-        32 bytes are 0.78\%. A 0.1\% overhead would be idea, however this
-        limits the choice of checksum algorithm severely (mostly Cyclic
-        Redundancy Checks (CRCs) and Fletcher checksums
-        \cite{embedded_checksums}). 64 bytes and more would be better for
-        integrity but the overhead reaches single digit percent overhead which
-        becomes significant. 32 bytes is the largest amount that is not
-        significant enough to raise eyebrows. To make block numbers easy to
-        compute this will mean every 128th block contains the checksums for the
-        previous 127. The 128th place will be technically unused, so a checksum
-        of the block itself for a bit of added integrity.
+        block, a 4 byte checksum requires about 0.1\% of space be allocated for
+        checksums, 16 bytes are 0.39\% and 32 bytes are 0.78\%. A 0.1\%
+        overhead would be ideal, however this limits the choice of checksum
+        algorithm severely (to mostly Cyclic Redundancy Checks (CRCs) and
+        Fletcher checksums \cite{embedded_checksums}). 64 bytes and more would
+        be better for integrity but the overhead reaches single digit
+        percentages which becomes significant. 32 bytes is the largest amount
+        that is not significant enough to raise eyebrows. To make block numbers
+        easy to compute this will mean every 128th block contains the checksums
+        for the previous 127. The 128th place in that block remains technically
+        unused, so a checksum of the block itself can be added for a bit of
+        added integrity.
 
-        Now, since checksums and data will be local to each other, the checksum
-        algorithm must be as resiliant as possible to minimise the chance that
-        a data corruption results in a checksum collision and the data is
-        reported as unaltered. Even though the block checksums itself and that
-        checksum is stored on the same block next to all the others, a corrupt
-        block could feasibly alter an arbitrary checksum and the metachecksum
-        at the same time. Since we are targetting SSDs (\ref{sec_SSD}) we may
-        align checksum characteristics with SSD failure patterns.
+        % TODO: can reference the locality of SSDs errors?
+        Now, since checksums and data are local to each other, the checksum
+        algorithm must be as collision resistant as possible to minimise the
+        chance a data corruption is left undetected. This is mostly a problem
+        on the checksumming blocks as they are the only blocks containing data
+        (in the form of checksums) and checksums of the same data on the same
+        block.
 
-        One way to measure SSD failures is with the raw bit error rate (RBER).
-        The RBER is defined as the number of currupted bits per the number of
-        total bits read \cite{flash_reliability}.
-        \citeauthor{flash_reliability} take measurements over a vast number of
-        drives with single-level cell (SLC, 1 bit per memory cell) and
-        multi-level cells (MLC, 2 bits). They measure RBERs between $10^{-8}$
-        and $10^{-5}$. \citeauthor{bit_error_mlc} finds similar rates for MLC.
-        On the other hand \citeauthor{bit_error_qlc} finds that triple-level
-        cells (TLC) and quad-level cell (QLC) suffer RBER rates of around
-        $10^{-3}$ and $10^{-2}$ respectively. Although
-        \citeauthor{flash_reliability} also note that RBER rates are a poor
-        indicator of unrecoverable errors it puts an upper bound on their
-        likelyhood. Also all of them (\cite{flash_reliability},
-        \cite{bit_error_mlc}, \cite{bit_error_qlc}) cite error correcting codes
-        to mitigate these errors we can expect much lower rates that would
-        trigger our checksum recovery mechanisms.
-
+        % Since we are targetting
+        % SSDs (\ref{sec_SSD}) we may align checksum characteristics with SSD
+        % failure patterns.
         % TODO: that facebook large scale study idk if cited here. Check i've cited it right
-
-        From the above we can expect a worst case failure of rate of a few bits
-        per block. As \citeauthor{flash_reliability} and
-        \citeauthor{flash_large_scale} note, these failures are not uniform and
-        change with SSD age and wear. With further analysis from
-        \citeauthor{flash_error_manual} it is apparent that this is due to a
-        wide range of physical phenomena. However, it becomes apparent that
-        these errors are relatively isolated from each other where only
-        adjacent cells can affect each other due to the way cells store
-        electrons. Further, due to effective error correcting techniques actual
-        unrecoverable errors are much lower than the RBER.
-
-        There are many ways to detect errors. Ext4 uses CRC \cite{ext4_docs}[checksums]
-        while ZFS uses sha256 \cite{ZFS_docs}[checksum]. Other examples include
-        Fletcher, Adler checksums \cite{embedded_checksums} and
-        Bose–Chaudhuri–Hocquenghem (BCH) \cite{flash_error_manual}. We settle
-        on hash based checksums for several reasons. First, we rely on extra
-        drives to provide redundancy for error correction (to be described
-        next) so a BCH is unnecessary. Then Adler and Fletcher checksums
-        perform worse than good CRCs for a given number of bit errors
-        \citeauthor{embedded_checksums}. Finally, the most common CRCs (eg.
-        CRC32) produce short check sequences (32 bits for CRC32). A best case
-        scenario will have a probability of undetected errors of
-        $\frac{1}{2^k}$
-        % BAD sentence (bad until end of paragraph tbh)
-        where k is the length of the checksum \cite{embedded_checksums} and a
-        longer checksum simply yields a lower probability. While CRC64 and
-        CRC128 do exist they are not typically implemented in hardware so are
-        unlikely to yield good speed. This leaves hashes as the most viable
-        option, especially since they strive for similar inputs to produce
-        different outputs, which is exactly the use case we expect.
-
-        % Cite where I got the SHAs from?
-        This leaves the choice of hash. Older hashes like MD5 and SHA-1 are
-        probably sufficent but they are starting to show their age, for example
-        SHA-1 is starting to have known collisions \cite{SHA_collision}.
-        Besides, we have allocated more space than the 160 bits for SHA-1 so we
-        can use the extra security from more modern ciphers. The major
-        candidates are SHA-2 (SHA256) and SHA-3 (SHA3256). Ideally, we would
-        use the latest and gratest SHA-3, however in the interest of efficiency
-        we select SHA-2. This is because on modern architectures it is around 3
-        times faster \cite{hash_stats} and the application we use it for is
-        very unlinkely to experience malicious bit manipulation so the security
-        is sufficent.
-
-        % TODO: have the checksum be outside the block. Modify the allocator
-        % somehow. OOOOO you can even checksum the checksum blocks too (might
-        % be a good idea as it might not be too much memory?)
-
-        Then, for the choice of RAID level, there are many options, from the
-        classic RAID levels 1 thorough 6, to some nonstandard and exotic
-        versions like RAID-Z (\ref{sec_RAID}). All have various performance
-        profiles and offer protection against various number of drive failures
-        However, for all intents and purposes they are interchangable - no
-        matter the level, the result is a contiguous pool of redundant storage.
-        For this reason, as a proof of concept, RAID 1 is selected. A basic
-        mirror provides just enough redundancy while being simple to implement.
-        There are no fancy stripe or parity calculations. One of the two disks
-        can fail outright and all data will still be intact.  In line with the
-        home user target, two drives is the smallest possible redundant number
-        of drives and most likely for the reason of cost and space. Any more
-        guarantees are not strictly necessary and if required can be added at
-        little cost.
-
         % TODO: test these scenarios, add checks for them Also, do some mathys
         % analysis of the likelyhood: say 10^-5 of a block corupt, 4 blocks
         % need to corrupt and then a collision too should be like 10^-20 or
         % some shit
-        Now, even though data and checksums are relatively local, this is
+
+        There are many ways to detect errors. Ext4 uses CRC \cite{ext4_docs}
+        while ZFS uses sha256 by defualt \cite{ZFS_docs}. Other examples
+        include Fletcher or Adler checksums \cite{embedded_checksums} and BCH
+        codes \cite{flash_error_manual}. We settle on hash based checksums for
+        several reasons. First, we rely on extra drives to provide redundancy
+        for error correction (described below) so an error correcting code
+        (like BCH) is unnecessary. Then only for detection Adler and Fletcher
+        checksums perform worse than good CRCs for a given number of bit errors
+        \citeauthor{embedded_checksums}. Finally, the most common CRCs (eg.
+        CRC32) produce short check sequences (32 bits for CRC32). A best case
+        scenario will have a probability of undetected errors of
+        $\frac{1}{2^k}$ where k is the length of the checksum
+        \cite{embedded_checksums}. So a longer checksum reduces this
+        probability and is better. In any case, CRCs only guarantee detection
+        of up to only a handful of bits \cite{embedded_checksums}. While CRC64
+        and CRC128 do exist they are not typically implemented in hardware
+        meaning they are unlikely to yield good speed. This leaves hashes as
+        the most viable option, especially since they strive for similar inputs
+        to produce different outputs, which is exactly the use case we expect.
+
+        % TODO: Cite where I got the SHAs from?
+        This leaves the choice of hash. Older hashes like MD5 and SHA-1 are
+        probably sufficent but they are starting to show their age, for example
+        SHA-1 (MD5's successor) is starting to have known collisions
+        \cite{SHA_collision}. Besides, we have allocated more space than the
+        160 bits necessary for SHA-1 so we can utilise the extra security from
+        more modern ciphers. The major candidates are SHA-2 (SHA256) and SHA-3
+        (SHA3256). Ideally, we would use the latest and gratest SHA-3, however,
+        in the interest of efficiency we select SHA-2. This is because on
+        modern architectures it is around 3 times faster \cite{hash_stats} and
+        the application we use it for is very unlinkely to experience malicious
+        bit manipulation so the security is sufficent.
+
+        Then, for the choice of RAID level, there are many options discussed in
+        \ref{sec_RAID}. All have various performance profiles and offer
+        protection against various numbers of drive failures. However, for all
+        intents and purposes they are interchangable - no matter the level, the
+        result is a contiguous pool of redundant storage. So, to once again
+        maintain simplicity, RAID 1 (mirroring) is selected. A basic mirror
+        provides just enough redundancy while being simple to implement - all
+        accesses are identical to both drives. There are no fancy stripe or
+        parity calculations. One of the two disks can fail outright and all
+        data will still be present. In line with the home user target, two
+        drives is the smallest possible redundant number of drives and most
+        likely for the reason of cost and space. Any more guarantees are not
+        strictly necessary and if required can be added at little cost.
+
+        % TODO: this might really benefit from some maths
+        Now, even though data and checksum locality is high, this can be
         compensated for by the RIAD arrangement. In the unlikely event that a
-        block gets currupted and its associated checksum block gets corrupted
-        too in such a way as to cause a collision and appear to be correct,
-        both of these blocks have a mirrored copy. Their checksums can be
-        compared to see if they are identical. The odds of two independent
-        blocks corrupting in such a way as to cause a hash collision and doing
-        so twice on two independent drives is extremely low.
+        block and its associated checksum get currupted such that a collision
+        occurs and they appear valid, both of these blocks have a carbon copy
+        on the other drive. So the filesystem can read the data from one drive
+        and its checksum from the other. With the likelyhoods we are working
+        with, independent colliding corruptions on both drives is practically
+        impossible outside of a malicious attack.

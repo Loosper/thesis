@@ -10,174 +10,190 @@
 
         Linux Kernel development is a notoriously difficult and time consuming
         process, as evidenced by the many guides on the topic
-        \cite{kernelnewbies_developer}, \cite{Linux_howto}. Even trivial
-        changes to it frequently take days to implement and big projects, such
-        as a filesystem, cover a very wide range of topics that \textit{must}
-        be considered for the end result to be functional. Things such as
+        \cite{kernelnewbies_developer} \cite{Linux_howto}. Even trivial changes
+        to it frequently take days to implement and big projects, such as a
+        filesystem, cover a very wide range of topics that \textit{must} be
+        considered for the end result to be functional. Things such as
         concurrency, memory limitations, kernel API intricacies, caching and so
-        on. To avoid the risk of getting bogged down with them and running out
-        of time to implement the project, the decision to stay in userspace was
-        made.
+        on. For this reason the project is not implemented in the kernel,
+        rather in userspace. This avoids the risk of getting bogged down with
+        such details and running out of time to implement the project. Instead,
+        most of the effort was put towards developing the filesystem in a more
+        basic manner.
+        % it still is very close tho
 
-        The advantage is that most of these details are either handled for the
-        programmer by either the kernel or the standard library or can be
-        safely ignored. For example, memory is managed by the simple
+        The advantage is that most of these details are either handled in the
+        kernel or the standard library. Where they are not, often times they
+        can be safely ignored. For example, memory is managed by the simple
         \syscall{malloc} and \syscall{free} in the standard library while
         concurrency can be ignored because by defualt the environment is single
-        threaded. Further, a userspace implementation allows the product to be
-        packaged and distributed for a much wider selection of kernels. It is
-        widely known that the kernel does not maintain a stable API between
-        versions
-        \cite{Linux_source}[Documentation/process/stable-api-nonsense.rst].
-        This means that for compatibility with more than one version of the
-        kernel the module has to be rebuilt (and potentially edited) upon each
-        release. The alternative to this, of course, is upstreaming the module
-        as a driver in the Linux kernel itself. However, this is vastly out of
-        scope for this project, ignoring the likelyhood of such a major feature
-        being ever accepted. Building this project in userspace solves this, as
-        all userspace APIs are guaranteed stability
-        \cite{never_break_userspace} and standard libraries follow this rule.
+        threaded. For example, the kernel is very particular about its memory
+        management and it is preemptive by default. Further, a userspace
+        implementation allows the product to be packaged and distributed for a
+        much wider selection of kernels. It is widely known that the kernel
+        does not maintain a stable API between versions
+        \cite{Linux_stable_api}. This means that for compatibility with more
+        than one version of the kernel the module has to be rebuilt (and
+        potentially edited) upon each release. The alternative to this, of
+        course, is upstreaming the module as a driver in the Linux kernel
+        itself. However, this is vastly out of scope for this project, ignoring
+        the likelyhood of such a major feature being ever accepted. Building
+        this project in userspace solves this, as all userspace APIs are
+        guaranteed stability \cite{never_break_userspace} and standard
+        libraries follow this rule.
 
         The disadadvantage of this approach is a loss of efficiency. There are
         two factors at play: the kernel-userspace transitions and the lack of
         integration with the kernel. The kernel-userspace transitions are an
         overhead (so much so that there are specific features to minimise their
         occurances such as vDSO \cite{man_vDSO}) that however small is
-        measurable and adds up \cite{Linux_context_switch_overhead}. The lack
+        measurable and adds up \cite{Linux_context_switch_overhead}). The lack
         of integration is primarily in caching and memory allocation. As a
         consequence, computations will take longer because they will not be
         explicitly cached, instead realying only on what the kernel's caching
         policy might be for arbitrary data, potentially being suboptimal.
-        Binaries will be larger and allocate more memory at runtime because
-        they will share less code with the kernel (although this will be
-        partially mitigated by shared libraries \cite{shared_libraries}) and
-        will use a separate memory address space and allocator which prevents
-        from optimising memory usage with the kernel and making memory
-        fragmentation more likely.
+        Additionally, binaries will be larger and allocate more memory at
+        runtime because they will share less code with the kernel (although
+        this will be partially mitigated by shared libraries
+        \cite{shared_libraries}) and will use a separate memory address space
+        and allocator which prevents optimisations of memory usage with the
+        kernel and making memory fragmentation more likely.
 
-        All things considered, opting for a userspace implementation for this
-        project is the best option. Especially since a minimal implementation
-        is desired and this choice drastically simplifies the code and reduces
-        development time which reduces risk.
+        With these in mind, opting for a userspace implementation for this
+        project is the best option. This is primarily due to the minimal scale
+        and relatively short timescale of the project. This project does not
+        need the production readyness of a full in-kernel implementation and
+        will only get slowed down. Opting for this approach greatly readuces
+        risk as well since development is much more straightforward and less
+        error prone.
 
-        The particular mechanism of implementing the filesystem in userspace is
-        the aptly named FUSE (Filesystems in USErspace) framework \cite{FUSE}.
-        It provides a kernel interface specifically for implementing
-        filesystems as well as a userspace library to connect to it with very
-        little code. This is the only native Linux kernel framework for this
-        and since this is a Linux project the choice is made fur us.
+        The particular mechanism for doing this is the aptly named FUSE
+        (Filesystems in USErspace) framework \cite{FUSE}. It provides a kernel
+        interface specifically for implementing filesystems as well as a
+        userspace library to connect to it with very little code. This is the
+        only such interface the Linux kernel provides so it is the only
+        recommended option outside of the kernel.
 
     \section{Supported operations}
 
-        There are 44 operations that FUSE exposes to filesystems to implement.
-        These include the simple operations like \syscall{open},
-        \syscall{read}, \syscall{write}, etc., but also advanced features like
-        asynchronous operations like \syscall{poll}, extended attribute
-        operations like \syscall{getxattr} or POSIX compliance features such as
-        locks with \syscall{getlk}. However, none are strictly necessary and
-        may be left out and the FUSE driver will return ENOSYS (function not
-        implemented) if it is invoked. Addtionally, some programs will ignore
-        errors with particular functions such as \syscall{getxattr} and
-        \syscall{fsync} in the case of vim. For this reason a subset of 15
-        operations is implemented. These are  \syscall{lookup},
-        \syscall{create}, \syscall{flush}, \syscall{release}, \syscall{access},
+        As of libfuse version 3.10, there are 44 operations that it exposes to
+        filesystems to implement. These include the simple operations like
+        \syscall{open}, \syscall{read}, \syscall{write}, etc., but also
+        advanced features like asynchronous operations with \syscall{poll},
+        extended attribute operations with \syscall{getxattr} or POSIX
+        compliance features such as locks with \syscall{getlk}. However, none
+        are strictly necessary and may be left out and the FUSE driver will
+        return ENOSYS (function not implemented) if an unimplemented system
+        call is invoked. Addtionally, some programs will ignore errors with
+        particular functions such as \syscall{getxattr} and \syscall{fsync} in
+        the case of vim. For this reason a minimal subset that would yield a
+        working and usable filesystem of 15 operations is chosen to be
+        implemented. These are \syscall{lookup}, \syscall{create},
+        \syscall{flush}, \syscall{release}, \syscall{access},
         \syscall{getattr}, \syscall{setattr}, \syscall{open}, \syscall{write},
         \syscall{read}, \syscall{mkdir}, \syscall{unlink}, \syscall{rmdir},
-        \syscall{opendir} and \syscall{readdir}. They were chosen as a minimal
-        subset of all operations that would yield a working and usable
-        filesystem. They are the operations that almost every program that
-        interacts with files will use and major commands a user might type in
-        the shell. Nice to haves like \syscall{fseek} are done away with as
-        their functionality can be obtained via other (even if slightly more
-        verbose) means.
+        \syscall{opendir} and \syscall{readdir}. There are the operations that
+        almost every program and shell command that interacts with files will
+        use. Nice to haves like \syscall{fseek} are done away with as their
+        functionality can be obtained via other (even if slightly more verbose)
+        means.
 
-    \section{Redundancy}
+    % \section{Redundancy}
+
+%     % TODO:
+%     \section{Superblock?}
+
+%         Say convention it's on block 1. It stores inode block nums to free list/ilist
+%         It's minimal and stores very little
 
     \section{B-tree}
+        \label{sec_implementation_btree}
 
         % TODO: move to research?
-        The B-tree implementation is perhaps the single most important and
-        biggest piece of code in the whole project. For this reason using a
-        custom "roll your own" implementation was avoided at all costs. An off
-        the shelf solution was much preferred but turned out to be unsuitable
-        as they would require major reworks that would creep up in scope to a
-        full custom implementation. Examples include an implementation on
+        The B-tree implementation is perhaps the most important and most
+        volumous piece of code in the whole project. For this reason using an
+        off the shelf solution was greatly prioritised instead of a custom
+        implementation. A problem was that the available ones turned out to be
+        unsuitable as they would require major reworks that would creep up in
+        scope to a custom implementation. One example is an implementation on
         GitHub \cite{GitHub_btree} but this makes the assumption that the
         B-tree will be in memory and as a consequence uses pointer arithmetic
         across the board. The on-disk representation of the B-tree means the
         logical "pointers" are in fact just block numbers, which are very
-        separate to memory addresses. An option was to map the disk in memory
-        as a stopgap, however this presents further challenges with making sure
-        \syscall{malloc} and such work in that address range.  SQLite's
-        interface \cite{SQLite_btree} was unsutable as this assumes a database
-        context. Other implementations, such as this one \cite{random_btree}
-        were discarded for similar reasons.
+        different (albeit numerically identical) to memory addresses. An option
+        was to map the disk in memory as a stopgap, however, this presents
+        further challenges with making sure \syscall{malloc} and such work in
+        that address range and not elsewhere. Another option, SQLite's
+        interface \cite{SQLite_btree}, was unsutable as this assumes a database
+        context. Other implementations, such as \cite{random_btree} were
+        discarded for similar reasons.
 
-        In the end, unsurpisingly, an implementation from the Linux kernel
-        (\cite{Linux_source}[lib/btree.c]) was chosen. It is a general purpose
-        \bplustree implemntation that is fairly freestanding, as in the bulk of
-        the logic does not depend on the kernel's internals and the few bits
-        that do are abstracted away in a way that is easy to change and only
-        requires about 30 lines of kernel header to be copied over. Further,
-        even though it assumes to be stored in memory, every single access to
-        the tree is abstracted away in a handful of getter and setter routines
-        which perform the pointer arithmetic. This allowed for the whole thing
-        to be stored on disk with the via those functions without chagning any
-        internals. Further, despite the code being over a decade old
+        In the end, unsurpisingly, an implementation from the Linux kernel (in
+        \monospace{lib/btree.c} \cite{Linux_source}) was chosen. It is a
+        general purpose \bplustree implemntation that is fairly freestanding,
+        (the bulk of the logic does not depend on the kernel's internals) and
+        the few bits that do are abstracted away in a way that is easy to
+        change and export (about 30 lines of headers). Further, even though it
+        also assumes the tree will be stored in memory, every single access to
+        the it is abstracted away in a handful of getter and setter routines
+        which exclusively perform any pointer arithmetic. This allowed for the
+        whole thing to be stored on disk via those functions without changing
+        any internals. Further, despite the code being over a decade old
         (originally submitted in 2009) it has received several bugfixes over
         the years, indicating that it is actively used and maintaned. Adding to
         that, because it is kernel code, it is of extraordinary quality, making
         it a pleasure to work with. There is only one issue that is do with the
         kernel's relatively restrictive GPLv2 licence, which this code is
-        licenced under. To resolve this the project adopts thr GPLv2, discussed
-        in appendix \ref{app_licence}.
+        licenced under. To resolve this the project adopts the GPLv2 as
+        discussed in appendix \ref{app_licence}.
 
     \section{Bootstrap}
 
         Bootrstrapping a filesystem is usually done by a separate command like
         mkfs \cite{man_mkfs}, leaving the filesystem in an always initialised
-        state. For this project the distinction was done away with, choosing
+        state. For this project the distinction is done away with, opting
         instead for the filesystem to do it itself. This was once again done
         for simplicity, as maintaining a separate binary takes extra makefile
-        rules and a more meticulous file heirarchy. Nevertheless, all of the
-        same funcionality is present and the initialion routine is very clearly
-        separate from the rest of the filesystem so that there is still
-        possibility of separating it without requiring major code reworks.
+        rules and a more meticulous source code file heirarchy. Nevertheless,
+        all of the same funcionality is present and the initialisation routine
+        is very clearly separate from the rest of the filesystem so that it can
+        still be separated without requiring major code reworks.
 
-        To initialise the filesystem is a bit tricky as the problem is
-        partially dependent on itself as writing the filesystem datastructures
-        relies on having some of them present. Having a linear and static
-        initialiser proved to be very difficult to maintain as it produced a
-        lot of duplicate special purpose code that is, of course, prone to
-        bugs. The static arrangement itself was problematic as hard coding
-        block numbers to data structures was very fragile as they tended to
-        change frequently as the general design evolved.
+        % ---- I don't think this fits the report tbh ----
+        % To initialise the filesystem is a bit tricky as the problem is
+        % partially dependent on itself as writing the filesystem datastructures
+        % relies on having some of them present. Having a linear and static
+        % initialiser proved to be very difficult to maintain as it produced a
+        % lot of duplicate special purpose code that is, of course, prone to
+        % bugs. The static arrangement itself was problematic as hard coding
+        % block numbers to data structures was very fragile as they tended to
+        % change frequently as the general design evolved.
 
-        Instead a dynamic approach was selected. To do this we (ab)use the fact
-        that everything is a file (\ref{sec_files}), so normal file operation
-        routines can be used at initialisation, particulary file creation and
-        writing. For them to work, however, the free list needs to be present.
-        Assuming a valid free list, all other bootstrap operations can be done
-        with code used throughput the filesystem with clever ordering. In
-        particular, the inode list must be allocated first, filled in, after
-        which the root directory (\monospace{/}) can be allocated. Only caveat is
-        that the block at which the inode of the inode list is stored must be
-        fed back to the superblock so that its location is known to the
-        filesystem, since it is th e only file that is not referenced by
-        another.
+        % Instead a dynamic approach was selected. To do this we (ab)use the fact
+        % that everything is a file (\ref{sec_files}), so normal file operation
+        % routines can be used at initialisation, particulary file creation and
+        % writing. For them to work, however, the free list needs to be present.
+        % Assuming a valid free list, all other bootstrap operations can be done
+        % with code used throughput the filesystem with clever ordering. In
+        % particular, the inode list must be allocated first, filled in, after
+        % which the root directory (\monospace{/}) can be allocated. Only caveat is
+        % that the block at which the inode of the inode list is stored must be
+        % fed back to the superblock so that its location is known to the
+        % filesystem, since it is th e only file that is not referenced by
+        % another.
 
-        % TODO: maybe put the convention bit in the superblock chapter
-        Writing the free list while done statically is done in a clever way to
-        reuse as much code as possible. First, a convention is assumed: the
-        superblock is stored on block 1 and the free list can immediately
-        follow. So an alternate bootrstrap only allocator is put in the place
-        of the filesystem allocator which returns block sequentailly starting
-        from block 2. Then the free list inode and body are allocated as
-        regular files. They end up fully sequential with the inode on block 2
-        and the file data on blocks 3 and onward. Once this is done, the file
-        is written with 1's for as many blocks as the volume on which the
-        filesystem is being formatted on has with normal IO routines. After
-        this is done, the free list is complete and the normmal allocator is
-        put back in place.
+        % % TODO: maybe put the convention bit in the superblock chapter
+        % Writing the free list while done statically is done in a clever way to
+        % reuse as much code as possible. First, a convention is assumed: the
+        % superblock is stored on block 1 and the free list can immediately
+        % follow. So an alternate bootrstrap only allocator is put in the place
+        % of the filesystem allocator which returns block sequentailly starting
+        % from block 2. Then the free list inode and body are allocated as
+        % regular files. They end up fully sequential with the inode on block 2
+        % and the file data on blocks 3 and onward. Once this is done, the file
+        % is written with 1's for as many blocks as the volume on which the
+        % filesystem is being formatted on has with normal IO routines. After
+        % this is done, the free list is complete and the normmal allocator is
+        % put back in place.
 
     \section{version control and good practices?}

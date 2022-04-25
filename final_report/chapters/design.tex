@@ -110,25 +110,54 @@
         Say convention it's on block 1. It stores inode block nums to free list/ilist
         It's minimal and stores very little
 
-    \section{The inode table}
+        approaches rely on space being managed in extents. Their major drawback is
+        the significantly increased complexity.
 
-        Similarly to the free list, the inode table is a linear array of inodes
-        but with a single entry at the start to signify the number of used
-        inodes. This enjoys the same benefits and suffers the same drawbacks as
-        the free list.
+        In the end a file of the classic bitmap approach was selected. They
+        work well enough, their implementation is simple and a variety of
+        allocation policies are possible with them. Alternative approaches
+        would introduce far too much extra complexity to the project for a
+        limited benefit considering the generally basic design. Due to the time
+        constraint, time is better spend developing other features.
 
-    \section{Directory}
+    \section{The inode table and directories}
 
-        Directories are normal files with a specified format and uneditable by
-        direct file manipulation system calls like \syscall{write} as in any
-        UNIX filesystem (\ref{sec_UFS}). Their format is like an inode table -
-        a liner list of entries with only the number of entries at the start.
-        Each entry is a 2-tuple of the inode number and the name that this
-        inode appears as in the directory. As the free list and the inode
-        table, the directory structure suffers from the same linearity
-        drawbacks but also enjoys the simplicity.  It is also conceptually
-        extremely close to the inode table, allowing the two to share
-        implemntation code, futher reducing complexity.
+        Both structures are files containing a linear array of items. At the
+        start of each file there is a small header which stores how many
+        entries each file has. The only difference is in the items they store.
+        The inode table contains inodes while directories store the usual
+        (name, i-number) tuples. In both cases this is functionally equivalent
+        to UFS (\ref{sec_UFS}).
+
+        very different use cases.
+        different arguments
+        for simplicity keep linear
+        made sense to unify
+
+        Both structures serve very different purposes from a user facing
+        perspective. However, the workload they need to complete is very
+        similar. Both store a list of unordered entries. The directoy has to be
+        searched to find the i-numbers of names. The inode table has to be
+        searched to find a free entry to place a new inode. The only functional
+        difference is that the inode table can be indexed to produce a result
+        in constant time (and to that effect can be considered ordered, however
+        the contents themselves have no particular order except their indices).
+
+        As this filesystem strives for simplicity (\ref{sec_methodology}) it
+        makes sense to unify the two structures. There exist bespoke
+        implementations for both like ext4's Htrees for directories
+        (\ref{sec_htree}). However, adding them introduces a lot of extra
+        complexity which is undesiriable. Such features will not benefit the
+        basic case much as the overwhelming majority of lookup in the inode
+        table are i-number to inode resulutions (which are constant time as the
+        index is reused in the table). Meanwhile, for home use, which this
+        filesystem targets (\ref{sec_problem}), directories tend to not have a
+        large number of files in them \cite{contents_strudy}. Therefore an
+        imporovement in their speed will not be particularly noticable.
+
+        As a result, a simple linear approach is adopted. It has pretty much
+        the same benefits and the same drawbacks as those for the free list as
+        the underlying structure is the same.
 
     \section{inode}
 

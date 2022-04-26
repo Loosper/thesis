@@ -306,12 +306,15 @@
 
         Ext4 is a gold standard for modern filesystems as it is the default on
         many (if not most) major Linux distributions like Debian
-        \cite{Debian_filesystem} and Red Hat \cite{RedHat_filesystem}.  It is
-        actively maintained \cite{ext4_mailing_list} and very mature, first
-        appearing in version 2.6.19 in 2006 \cite{ext4_origin}. Finally, unlike
-        its most direct competitiors by the likes of Windows' NTFS and MacOS'
-        APFS, it is free and open source, so code and documentation are readily
-        available.
+        \cite{Debian_filesystem} and Red Hat \cite{RedHat_filesystem}. It is
+        actively maintained \cite{ext4_mailing_list}, with the latest Linux
+        release (5.17) adding 74 commits to it \footnote{\monospace{git log
+        --numstat v5.16..v5.17 fs/ext4})}. It has existed since 2006
+        \cite{ext4_origin} and it is about \numprint{60000} lines of code
+        \footnote{\monospace{cloc fs/ext4}} so it is very mature. Finally,
+        unlike its most direct competitiors by the likes of Windows' NTFS and
+        MacOS' APFS, it is free and open source, so code and documentation are
+        readily available.
 
         % TODO: ext4 extent tree is like a btree. Never said explicitly, cos
         % its funky. You have to explain why (when you draw it on paper it's

@@ -1,133 +1,164 @@
 \chapter{Discussion and Conclusion}
 
-    \section{the perfomance}
+    % \section{the perfomance} or design?
     \section{the implementation}
-    the desing? idk what to call this
 
-        Modern filesystem's complexity is justified and the performance
-        analaysys (\ref{sec_perf} ?) confirms that. Each seemingly small
-        addition has a large impact on some workload. There is no silver bullet
-        feature that magically makes a filesystem fast. For this reason the
-        performance of the proposed filesystem can never match or exceed that
-        of any established filesystem. However, there are three features that
-        can bring it most of the way there. First, is the use of B-trees. As we
-        have already seen (\ref{sec_btree}) they are well established and the
-        performance of this filesystem reflects that on sequentail reads
-        (everywhere else there are at least two on top of each other or
-        something else slowing it down (\ref{sec_perf}).
+        Modern filesystems' complexity is very high and the performance
+        analaysys (\ref{sec_benchmark} and \ref{sec_perf}) show that it is
+        justified. Each seemingly small addition has a large impact on some
+        workload. Provided enough such features are included, most workloads
+        are efficient. There is no silver bullet feature that magically makes a
+        filesystem fast. This is why the performance of the proposed filesystem
+        can never match or exceed that of any established filesystem. However,
+        there are three features that cover a wide range of workloads and can
+        bring performance most of the way there.
 
-        Second, is the use of extents which this filesystem does not implement.
-        Their need is most apparent for allocations and sequentail accesses but
-        impact every aspect of a filesystem where large chunks of data are
-        stored. Modern workloads and filesises measured in the giga and
-        terabytes cannot be accommodated with individually addressed data
-        blocks. The logarithmic complexity of any underlying storage method
-        (like the B-tree) is dwarfed when a linear or a large polynomial of
-        accesses are required.
+        First is the use of B-trees. As we have already seen (\ref{sec_btree})
+        they are well established and the sequentail read performance of this
+        filesystem shows it is competitive.
 
-        Third, and perhaps most importantly is rigorous engineering effort into
-        integrating all features. While this is not a feature per se, but
-        allows for all other features to be utilised properly. Due to the time
-        experimental nature of this project this was not emphasised and
-        performance suffers accordingly especially in sequentail accesses.
+        Second is the use of extents, which have been included as far back as
+        \citeyear{FFS}. This filesystem does not include them under the
+        assumption that SSDs can handle lots of random accesses well. While
+        this remains true, not collating chunks of storage introduces lots of
+        additional metadata the processing of which amplifies the number of
+        accesses required exponentially. This is most apparent (but not
+        limited) to allocations and sequential accesses because individually
+        addressing each data block for workloads measured in the giga and tera
+        bytes requires millions of entreis per gigabyte of data (as noted in
+        \ref{sec_perf}) instead of the handful that might be needed if extents
+        are present. Even if we do not consider the space requirement for the
+        metadata itself, no matter how fast as a random access may be, having
+        more of them reduces observed efficiency. A logarithmic complexity of
+        any underlying data structure (like the B-tree) is dwarfed when a
+        linear or a large polynomial of accesses are required.
+
+        The original assumptions made in \ref{sec_block_size} remain true,
+        however, they fail to take into account the above overheads unrelated
+        to drive speed. Due to computers historically using mechanical hard
+        drives, the literature focues on the drawback of random accesses and
+        the metadata amplifcation issue is not apparent.
+
+        The third and most subtle feature is a polished implementation.  to
+        integrate all features. While this is not a feature as such, it allows
+        for all other features to be utilised properly. Due to the focus on
+        data integrity and the experimental nature of this project, this was
+        not emphasised and performance suffers accordingly. This prototype
+        successfully demonstrates data integrity however as a prototype is has
+        not production readiness.
 
         With this in mind, the myriad of features and tens of thousands of
-        lines of code in ext4 fall into place. A modern performant filesystem
-        cannot be simple by design nor by implementation and a simple
-        filesystem cannot be performant.
-
-        % say it is feasible to improve it to go most of the way - just would need quote a bit of time and 10k LOC
+        lines of code in ext4 (\ref{sec_ext4}) fall into place. It is a huge
+        project developed by many people over a very long time. A modern
+        performant filesystem cannot be simple by design nor by implementation
+        and a simple filesystem cannot be performant. The times of UFS
+        (\ref{sec_UFS}) are long gone and modern computer systems are
+        inherently complex.
 
     \section{Did this solve the problem? (Outcome)}
     % more like the reliability
 
+        % omits things like the chaining of checksums
         Despite the performance of this filesystem, its main task - data
-        reliability - performs well. It is not ironclad, like ZFS, but is not
-        meant to be. It is robust and provides a good degree of integrity. It
-        is many orders of magnitude better than the unsecured filesystems in
-        use today. It also provides the safety of RAID without a lengthy
+        reliability - performs well. It is not ironclad, like ZFS, as it does
+        not implement every possible feature and does not actively protect
+        against every eventuality. It is, however, also not meant to be.
+        Covering every risk under the sun introduces extra complexity and
+        configuration considerations which are simply overkill in a home
+        setting. This is especially true as sensitive data should have
+        additional data regardless of redundancy \cite{Backblaze_321}. Getting
+        a robust implementation that gets most of the way is sufficent. This
+        filesystem does exactly that. Having data integrity guarantees is many
+        orders of magnitude better than current filesystems' reliance on the
+        questionable track record of SSDs, if for no other reason than peace of
+        mind. It also provides the safety of RAID without a lengthy
         cost-benefit analysis of different techniques to mitigate the various
-        problems and the drawbacks that might come with those mitifations.
+        problems and the drawbacks that might come with those mitifations
+        (\ref{sec_RAID_problems}).
 
-        For laptops this filesystem is of limited use. The tendency for low
-        profile and minimal devices makes adding an extra drive cost
-        prohibitive.  Nevertheless, the checksumming can still be utilised as a
-        data integrity guarantee and the redundancy can be provided by an off
-        site backup. New developments, like Apple's M1 Ultra chips with
-        on-board flash controllers \cite{m1_ultra_controller} can make this
-        setup viable with a single flash board.
+        For laptops this filesystem is of limited use. The trend towards low
+        profile and minimalistic devices makes adding an extra drive cost and
+        space prohibitive. Nevertheless, the checksumming can still be utilised
+        as a data integrity guarantee without any redundancy. New developments,
+        like Apple's M1 Ultra chips with on-board flash controllers
+        \cite{m1_ultra_controller} can make this setup viable with a single
+        flash board although this is an area for further research.
 
         For home and office desktop computers this filesystem makes a lot of
-        sense. These machines are bulky enough to house several drives (and
-        often do) and especially for office use the extra integrity can be
-        useful in missin critical environments.
+        sense. These machines are bulky enough to house several drives and
+        accommodate any redundancy setup that may be desired. The lower
+        administion overhead can help otherwise sceptical users to the
+        complexity of solutions like ZFS (\ref{sec_ZFS}) make the leap add some
+        much needed integrity to their storage. Especially for office use the
+        extra integrity can be useful in mission critical environments where
+        corrupted files can cost many times more than the hardware requirement
+        to prevent them.
 
-        Finally, for home NAS setups, this filesystem is an obvious choice.
-        their long term storage necessitates data integrity guarantees. A RAID
-        setup is flawed while ZFS would be hard to administer.
+        There has been a recent trend towards cloud based backup solutions like
+        Google's Drive \cite{gdrive}, Apple's iCloud \cite{icloud} or ad-hoc
+        services like Backblaze \cite{Backblaze_321} or Dropbox \cite{dropbox}
+        instead of relying on any redundancies on the devices themselves. These
+        solutions perform very similar integrity checks, hashing all files, and
+        regularly uploading all specified directories to the cloud where full
+        integrity and redundancy is guaranteed \cite{Backblaze_arch} with much
+        higher degrees of security and usually also preserve file history.
+        These solutions tend to have a low but monthly price (usually around
+        £8 for 2TB).
 
-        % TODO: explain about the mirror instead of a 3 drive arrangement (1 parity, 2 usable)
+        These are very good backup solutions, however their are of limited use
+        as simple redundancy. Replacing misbehaving or outright failing drives
+        may be isolated from data loss, however, it will certainly involve long
+        down time. When it comes to pure integrity they are valid solutions as
+        they integrate well with operating systems and the history features
+        allow for recovery of silent data corruption. They are slightly
+        inferior, however, as silent data corruption may have to be manually
+        corrected even if all data is preserved. One major drawback though is
+        the long-term price. The low monthly costs are unlikely to raise
+        eyebrows but over longer periods they add up to a similar amounts of
+        owning the drives. As a result, it is believed that these solutions are
+        viable alternates but not direct competitiors to the proposed
+        filesystem with user preference being the biggest factor.
 
-    % TODO: i need to figure out what my point with this is
-    \section{Difficulties in modern operating system implementation}
-
-        Modern operating systems are enromous projects. Just the latest release
-        of Linux, 5.17, included over 13000 patchsets by about 2000 developers
-        \cite{Linux_dev_count}.  Specifically for EXT4, there were almost 4000
-        lines of insertions and deletions by 22 people over 74 commits
-        (command: \monospace{git log --numstat v5.16..v5.17 fs/ext4}) just for
-        its maintanence. Considering that releases are spaced 2 to 3 months
-        apart \cite{Linux_dev_process}, EXT4 has existed since 2006
-        \cite{ext4_origin} and that it is about 60000 lines of code (cmd:
-        \monospace{cloc fs/ext4}, EXT4 represents many person-decades of work.
-        As a comparison, this project is about 2500 lines of code spanning the
-        time of about two releases by a single author. That is to say, any
-        sizeable developments in operating systems these days are big efforts
-        by teams of multiple teams over large timespans frequently backed by
-        big organisations.
-
-        Despite this project's small size and apparent uphill battle, it is
-        still a notable development. Modern tools, like FUSE (\ref{sec_FUSE}),
-        have gone a long way to simplify development and take it out of the
-        kernel whenever it is not necessary. One notable example is SSHFS
-        \cite{SSHFS} which is particularly useful
-        tool largely maintaned by 2 developers.
-
-        Even though this project is far from a full kernel driver, which a
-        truly successful implementation would be, it is notprevented from
-        becoming a fully functional filesystem.
+    % TODO: you need more discussion. It's 40% of grade and it's like 6 pages
+    % \section{Choice of userspace?}
 
     \section{Unexpected benefits of the methodology}
 
-        The methodology (\ref{sec_methodology}) greatly benefited this project.
-        The aim for an always working prototype lead for many issues to be
-        timely discovered and desgin altered before too much momentum had been
-        built up. There were two notable examples for this: the everything is a
-        file phylosophy (\ref{sec_files}) and the linked list method for
-        storing file data (\ref{sec_btree}??????????).
+        The choice of methodology (\ref{sec_methodology}) greatly benefited
+        this project. The aim for an always working prototype lead to many
+        issues being timely discovered and desgin altered before too much
+        momentum had been built up. There were two notable examples for this:
+        the everything is a file phylosophy (\ref{sec_files}) and the linked
+        list method for storing file data (\ref{sec_design_btree}).
 
         Storing all metadata as a file presented an interesting circular
         problem: the routine to write a file depended on a routine to extend a
-        file when writing past its end, but to allocate space for a file the
-        free list (another file) needed to be written by the same routine.
+        file when writing past its end. However, to allocate space for a file
+        the free list (another file) needed to be written by the same routine.
         Small bugs frequently resulted in infinite recursion which is slow to
-        debug. Catching this flaw early allowed for design to be modified to
-        reduce the problem.  Some of the changes were keeping the free list out
-        of the inode table, making its access direct instead of thorugh another
-        level of recursion.  Another change was storing the block number on
-        which an inode is stored in the inode itself to allow for updating its
-        size to happen directly.
+        debug. Identifying this flaw early allowed for design to be modified to
+        reduce the problem. Some other timely changes were keeping the free
+        list out of the inode table, making its access direct instead of
+        thorugh a level of recursive indirection. Another change was placing
+        the block number on which an inode is stored in the inode itself to
+        allow for updating its size to happen directly.
 
         The linked list method of storing data blocks was particulary
-        troublesome. Although, the reason for this is still not entirely clear,
-        reasoning with its block layout and performing calculations was very
-        difficult and error prone. Seemingly simple operations like calculating
-        which sequential block an arbitrary byte would reside in was a big
-        routine with small edge cases that lead to duplicate code. Luckily,
-        this prompted this approach to be abandoned and replaced with a B-tree
-        (\ref{sec_btree}). Perhaps largely owing to the complete
-        implementation, the project's complexity dropped substantially and
-        progress was much quicker.
+        troublesome. Despite an inital expectaion for simplicity, reasoning
+        with its block layout and performing calculations was very difficult
+        and error prone. Seemingly simple operations like calculating which
+        sequential block an arbitrary byte would reside in was a big routine
+        with small edge cases that lead to duplicate code. Luckily, this
+        prompted this approach to be abandoned and replaced with a B-tree.
+        Perhaps largely owing to its complete implementation borrowed from
+        Linux, the project's complexity dropped substantially and progress was
+        much quicker.
+
+        Had a more upfront method been used for this project (predefined
+        targets for example) it would have failed. Its high complexity and wide
+        field of factors for considerations meant any preset plan could crumble
+        at any moment. This way a general goal was set and the project
+        naturally evolved to what it is now.
 
     \section{Conclusions}
 
@@ -166,5 +197,3 @@
         Reliability detection - too many errors will cause the drive to be expunged
 
         the performance lol
-
-    \section{Choice of userspace?}

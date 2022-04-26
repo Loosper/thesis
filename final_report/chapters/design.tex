@@ -510,4 +510,30 @@
         is very clearly separate from the rest of the filesystem so that it can
         still be separated without requiring major code reworks.
 
-    \section{version control and good practices?}
+    \section{code management}
+
+        This project was developed with the help of git. It was used for the
+        purpose of tracking progress and changes of the project as well as
+        backup. This was done for both the source code and the final report.
+        Addtionally, a reference manager, Zotero \cite{zotero} was used to
+        collect citations, although this was not checked into version control
+        directly. Instead references were gradually commited as they were
+        relevant and backups of the library were kept separate. A mirror of
+        the source code is available on GitHub at \cite{source_repository}.
+
+        Throughout the project changes were commited at regular intervals.
+        Commits tried to be have self contained changes and be semantically
+        isolated from one another.
+
+        The project's file layout evolved over time but it adopted a
+        concsistent directory structure. The filesystem source and the report
+        were kept in separate folders. The report was split into per-chapter
+        files with graphs and figures separated in their own directories. The
+        source code for the filesystem was a bit more involved. First, a single
+        filesystem builds the whole project. It containts rules such that files
+        could be added without modifying it. Source code was separated into
+        headers and sources. This is a common practice (Linux
+        \cite{Linux_source} for example does it) to keep headers which
+        frequently depend on each other close together for easier editting,
+        while source code is separate so that the object files it produces do
+        not pollute the namespace too much.

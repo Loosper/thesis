@@ -57,7 +57,6 @@
         such details and running out of time to implement the project. Instead,
         most of the effort was put towards developing the filesystem in a more
         basic manner.
-        % it still is very close tho
 
         The advantage is that most of these details are either handled in the
         kernel or the standard library. Where they are not, often times they
@@ -138,8 +137,6 @@
 
     \section{Block size and hardware considerations}
         \label{sec_block_size}
-        % \section{Hardware considerations} <- used to be separate
-        % \label{sec_hardware}
 
         In recent years SSDs have become ever more affordable. There has been a
         recent trend for them to replace mechanical hard drives
@@ -180,17 +177,16 @@
         while maximising performance of sequentail accesses and minimising
         overhead for things like free lists.
 
-    % TODO: proofread again
     \section{Metadata as files}
         \label{sec_files}
 
         The first design choice, heavily inspired by WAFL (\ref{sec_WAFL}), was
         that all metadata in the filesystem would be kept as a regular file
         instead of having special data structures for each. This principle was
-        pedantically followed, unlike filesystems like ext4 (\ref{sec_ext4})
-        which leave some metadata in especially formatted places on disk. This
-        way implementation complexity is greatly reduced and all metadata can
-        benefit from the underlying indexing method. Further, this
+        pedantically followed, something filesystems like ext4 (\ref{sec_ext4})
+        do not do and leave some metadata in especially formatted places on
+        disk. This way implementation complexity is greatly reduced and all
+        metadata can benefit from the underlying indexing method. Further, this
         automatically solves the problem of how to allocate space for metadata.
         For example, there is no need make any special consideration for its
         size, placement or alginment. It can begin empty and grow as necessary,
@@ -233,15 +229,14 @@
     % TODO: not proofread
     \section{The inode table and directories}
 
-        Both structures are files containing a linear array of items. At the
-        start of each file there is a small header which stores how many
-        entries each file has. The only difference is in the items they store.
+        Both structures are files containing a linear array of items with small
+        headers at the start. The only difference is in the items they store.
         The inode table contains inodes while directories store the usual
         (name, i-number) tuples. In both cases this is functionally equivalent
         to UFS (\ref{sec_UFS}).
 
         Both structures serve very different purposes from a user facing
-        perspective. However, the workload they need to complete is very
+        perspective. However, the workload they need to complete is rather
         similar. Both store a list of unordered entries. The directoy has to be
         searched to find the i-numbers of names. The inode table has to be
         searched to find a free entry to place a new inode. The only functional
@@ -258,7 +253,7 @@
         table are i-number to inode resulutions (which are constant time as the
         index is reused in the table). Meanwhile, for home use, which this
         filesystem targets (\ref{sec_problem}), directories tend to not have a
-        large number of files in them \cite{contents_strudy}. Therefore an
+        large number of files in them \cite{contents_study}. Therefore an
         imporovement in their speed will not be particularly noticable.
 
         As a result, a simple linear approach is adopted. It has pretty much
@@ -303,8 +298,6 @@
 
     \section{B-tree}
         \label{sec_design_btree}
-        % \label{sec_implementation_btree} % go over these and check cos
-        % i combined these two
 
         Despite its ubiquity, the B-tree is not the only choice for storing
         data blocks for an inode. Simpler techniques have historically been
@@ -322,7 +315,6 @@
         standard operations like insert, delete and lookup natively and
         performanlty.
 
-        % TODO: move to research?
         The B-tree implementation is perhaps the most important and most
         volumous piece of code in the whole project. For this reason using an
         off the shelf solution was greatly prioritised instead of a custom
@@ -422,17 +414,15 @@
         unused, so a checksum of the block itself can be added for a bit of
         added integrity.
 
-        % TODO: can reference the locality of SSDs errors?
         Now, since checksums and data are local to each other, the checksum
         algorithm must be as collision resistant as possible to minimise the
         chance a data corruption is left undetected. This is mostly a problem
         on the checksumming blocks as they are the only blocks containing data
         (in the form of checksums) and checksums of the same data on the same
-        block.
+        block. Even though errors tend to be on adjacent cells
+        (\ref{sec_reliability}), the cell's placement could be such that it
+        affects both items.
 
-        % Since we are targetting
-        % SSDs (\ref{sec_SSD}) we may align checksum characteristics with SSD
-        % failure patterns.
         % TODO: that facebook large scale study idk if cited here. Check i've cited it right
         % TODO: test these scenarios, add checks for them Also, do some mathys
         % analysis of the likelyhood: say 10^-5 of a block corupt, 4 blocks
@@ -459,15 +449,15 @@
         the most viable option, especially since they strive for similar inputs
         to produce different outputs, which is exactly the use case we expect.
 
-        % TODO: Cite where I got the SHAs from?
-        This leaves the choice of hash. Older hashes like MD5 and SHA-1 are
-        probably sufficent but they are starting to show their age, for example
-        SHA-1 (MD5's successor) is starting to have known collisions
-        \cite{SHA_collision}. Besides, we have allocated more space than the
-        160 bits necessary for SHA-1 so we can utilise the extra security from
-        more modern ciphers. The major candidates are SHA-2 (SHA256) and SHA-3
+        This leaves the choice of hash. Older hashes like MD5 and SHA-1
+        \cite{sha1} are probably sufficent but they are starting to show their
+        age, for example SHA-1 (MD5's successor) is starting to have known
+        collisions \cite{SHA_collision}. Besides, we have allocated more space
+        than the 160 bits necessary for SHA-1 so we can utilise the extra
+        security from more modern ciphers. The major candidates are SHA-2
+        \cite{sha2_analysis} (SHA256) and the latest SHA-3 \cite{sha3}
         (SHA3256). Ideally, we would use the latest and gratest SHA-3, however,
-        in the interest of efficiency we select SHA-2. This is because on
+        in the interest of efficiency we select SHA-2.  This is because on
         modern architectures it is around 3 times faster \cite{hash_stats} and
         the application we use it for is very unlinkely to experience malicious
         bit manipulation so the security is sufficent.
@@ -498,16 +488,16 @@
 
     \section{Bootstrap}
 
-        % TODO: mention that this tried to reduce code duplication too?
         Bootrstrapping a filesystem is usually done by a separate command like
-        mkfs \cite{man_mkfs}, leaving the filesystem in an always initialised
-        state. For this project the distinction is done away with, opting
-        instead for the filesystem to do it itself. This was once again done
-        for simplicity, as maintaining a separate binary takes extra makefile
-        rules and a more meticulous source code file heirarchy. Nevertheless,
-        all of the same funcionality is present and the initialisation routine
-        is very clearly separate from the rest of the filesystem so that it can
-        still be separated without requiring major code reworks.
+        mkfs \cite{man_mkfs} leaving the filesystem driver to operate in an
+        initialised state. For this project the distinction is done away with,
+        opting instead for the filesystem to do it itself. This was once again
+        done for simplicity, as maintaining a separate binary takes extra
+        makefile rules and a more meticulous source code file heirarchy.
+        Nevertheless, all of the same funcionality is present and the
+        initialisation routine is very clearly separate from the rest of the
+        filesystem so that it can still be separated without requiring major
+        code reworks.
 
     \section{code management}
 

@@ -1,7 +1,4 @@
-% Sections and sub-sections can be declared using \section and \subsection.
-% There is also a \subsubsection, but consider carefully if you really need
-% so many layers of section structure.
-\chapter{Introduction and Background Research}
+\chapter{Introduction}
 
     \section{Introduction}
 
@@ -111,33 +108,33 @@
         \subsection{FFS}
             \label{sec_FFS}
 
-            % maybe mention that increasing block size decreases the need for
-            % indirection
             \citeauthor{FFS} proposed many improvements to increase
-            performance.  For a start, block size was increased 8 fold from 512
-            bytes to 4096 (or even 8192), which improved locality and reduced
-            seek times, essentially for free, although extra complexity was
-            introduced to minimise wasted space from small files. Further,
-            blocks were grouped together into cylinder groups, where a cylinder
-            is a physical feature of a hard drive, blocks on which have very
-            good sequential performance (accessing the file in sequence). Then,
-            policies were introduced to put the inodes of files in the same
-            directory in the same cylinder group as well as their data blocks
-            to reduce seeking. Finally, the free list became a bitmap of a
-            fixed size, eliminating the scrambling of logically sequential
-            entries that further degrade performance.
+            performance. For a start, block size was increased 8 fold from 512
+            bytes to 4096 (or even 8192). This improves locality and
+            performance pretty much for free. This is because a larger block
+            allows the hard drive to read for longer before a seek might be
+            required. A side effect is that the data fits in fewer blocks which
+            reduces the indirection to index them and as a result the need for
+            seeks. Extra complexity was introduced to minimise wasted space
+            from small files. Further, blocks were grouped together into
+            cylinder groups, where a cylinder is a physical feature of a hard
+            drive, blocks on which have very good sequential performance
+            (accessing the file in sequence). Then, policies were introduced to
+            put the inodes of files in the same directory in the same cylinder
+            group as well as their data blocks to reduce seeking. Finally, the
+            free list became a bitmap of a fixed size, eliminating the
+            scrambling of logically sequential entries that further degrade
+            performance.
 
             The result was that \citeauthor{FFS} measured an increase in disk
             bandwidth utilisation of about an order of magnitude without an
             increase in wasted space.
 
-            % TODO: do i need this
-            % An important note is that cylinder groups include redundant copies
-            % of various metadata to increase resiliance to data loss from damage
-            % to the disk.
-
-            % Another important note is that filesystems which are near their
-            % capacity suffer greatly decreased performance.
+            An important note is that cylinder groups include redundant copies
+            of various metadata to increase resiliance to data loss from damage
+            to the disk. This shows that reliability came into the picture very
+            early in the history of UNIX like filesystems and the issue of data
+            recovery was given active thought to.
 
         \subsection{LFS}
             \label{sec_LFS}
@@ -167,10 +164,6 @@
             fills up. This gives locality to files that are used close
             together, utilises the burst nature of writes and recovery is easy
             - only the end may get corrupted \cite{IO_bottleneck}.
-
-            It must be noted that maintaining a fraction of the disk free is
-            once again emphasised as critical for good performance. % TODO:
-            % check ffs, this is the first time for now
 
             \citeauthor{LFS}, reiterates the necessity of asynchronous writes
             (and therefore a cache). In his LFS, based on \cite{IO_bottleneck},
@@ -236,12 +229,6 @@
             or nothing operation, limiting the impact of a crash to only some
             data loss that hasn't had the time to be commited to disk.
 
-        % \subsection{Other filesystems}
-
-        %     XFS?, BTRFS, fat32, gfs. Consider funneling the bits and pieces I
-        %     mention throughout to here. Can have a short list of ALL FSs i
-        %     mention throughout for reference
-
     \section{The B-tree}
         \label{sec_btree}
 
@@ -300,7 +287,7 @@
         The most modern version of the ext filesystem, ext4, is native and
         usually the default on Linux. It was build by the Linux community
         specifically for it. Since Linux is a UNIX (\ref{sec_UFS}) derivative,
-        so was the ext family. As a result, it integrates the principles and
+        so is the ext family. As a result, it integrates the principles and
         improvements over the past 50 years while maintaining the same general
         idea.
 
@@ -316,44 +303,31 @@
         MacOS' APFS, it is free and open source, so code and documentation are
         readily available.
 
-        % TODO: ext4 extent tree is like a btree. Never said explicitly, cos
-        % its funky. You have to explain why (when you draw it on paper it's
-        % pretty much that). THIS SUBCHAPTER NOT PROOFREAD!!!!
-        \subsection{The Htree}
+        \subsection{Use of B-trees}
             \label{sec_htree}
 
-            The best data structure for indexing a list of names, such as a
-            directory, would be hash table, due to its very fast lookup times
-            of arbitrary length strings. However a major drawback is that their
-            size is fixed and extending a hash table cannot be done
-            incrementally, but rather has to happen in large chunks. However,
-            due to the dynamic nature of filesystem directories having fixed
-            sized indexes will not satisfy sizes much different than whatever
-            the general case might be set. On the other hand rebalancing,
-            called rehashing, may lead to large spikes in file creation time, a
-            feature that is undesiriable in filesystems. \citeauthor{HTree}
-            also presents some implementation difficulties.
+            Ext4 uses B-trees in two places - extent trees \cite{ext4_docs} and
+            directory indexing. An extent tree is a \bplustree in which files
+            store the list of extents that make up its data. It is a somewhat
+            modified implementation, most notably lacking references between
+            leaf nodes, and the documentation does not refer to is as such.
 
-            Instead, ext4 uses a modified form of the B-tree known as an Htree
-            (meaning Hash tree) \cite{HTree}. The major difference is that keys
-            in the tree are hashes of directory entry names instead of the
-            names themselves. This way the tree can implement ranges of hashes
-            (buckets in the hash table) in its leaves. This solves the problem
-            of rehashing the table, by allowing incremental changes.
-            Additionally, leaves are kept at a uniform depth to remove the
-            impact of rebalancing the tree and maintaining good performance.
+            Directory indices use a heavily modified version of a B-tree known
+            as an HTree (meaning Hash tree) \cite{HTree}. The major difference
+            is that keys in the tree are hashes of directory entry names
+            instead of the names themselves. This way the tree can implement
+            ranges of hashes (like buckets in a hash table) in its leaves. This
+            solves the problem of rehashing (rebalancing) a hash table, by
+            allowing incremental changes. Additionally, leaves are kept at a
+            uniform depth to remove the impact of rebalancing the tree and
+            maintaining good performance.
 
         \subsection{Data locality}
-            % TODO: i have this label to reference the quote below. Maybe put it in HW considerations and quote here?
-            % whatever you do, check all references to it as they might become wrong
-            % maybe make a new section to introduce SSDs? sec_reliability has references that can be combined with this
             \label{sec_locality}
 
             Ext4 employs a range of tricks to maximise locality of various
             data. This has the obvious benefit of reducing seek times on
-            spinning hard drives, but can also help solid state drives too as
-            locality "can increase the size of each transfer request while
-            reducing the total number of requests" \cite{ext4_docs}.
+            spinning hard drives.
 
             First, it uses blocks of at least 4KB, like FFS (\ref{sec_FFS}),
             but larger (powers of 2) are supported too. Allocations on file
@@ -485,6 +459,7 @@
             expected.
 
         \subsection{RAID}
+            \label{sec_RAID}
 
             Non-volatile storage has historically been orders of magnitude
             slower than volatile memory, like RAM, which is itslef much slower
@@ -540,8 +515,6 @@
             \cite{Backblaze_arch} and software needs to be able to identify the
             error and recompute the data from the parity.
 
-        % \subsubsection{GFS}
-
         \subsection{Caching}
 
             Caching is an integral part of modern operating systems
@@ -569,9 +542,11 @@
             cases, like ZFS (\ref{sec_ZFS}), they need special behaviour to
             implement some features of the filesystem.
 
-        % TODO: incorporate the reliability analysis of ZFS here
         \subsection{ZFS}
             \label{sec_ZFS}
+
+            % Even a filesystem like ZFS with incredible reliability
+            % characteristics \cite{ZFS_reliability} is vulnerable to this (referes scrubbing)
 
             Considered by many to be the most robust enterprise ready
             filesystem (like TrueNAS does \cite{TrueNAS_enterprise}), ZFS takes
@@ -733,29 +708,6 @@
         \cite{partial_parity_log} concedes it reduces performance by up to 40\%
         and in the event of a loss of a (dirty) drive its behaviour is the same
         as unaltered RAID.
-
-    % TODO: incorporate the reliability analysis of ZFS here
-    % Does this go here? maybe background research
-    \section{Scrubbing}
-
-        Drive scrubbing \cite{scrubbing} is a necessary feature for both
-        hardware (RAID) and filesystem (ZFS) based solutions. It is essentially
-        a regularly scheduled automatic full filesystem read that is meant to
-        detect and repair silent errors (\ref{sec_reliability}) such that when
-        a drive inevitably fails all data is correct and recoverable. It is a
-        simple but critical part of reliable data storage. The obvious drawback
-        is that this induces significant wear on drives, but the benefit
-        greatly outweighs this. If scrubbing is not regularly performed, loss
-        of drives can mean data loss is inevitable no matter the redundancy
-        solution that is being used. Even a filesystem like ZFS with incredible
-        reliability characteristics \cite{ZFS_reliability} is vulnerable to
-        this. If scrubbing is omitted data corruption may be silent in the case
-        of RAID or more detectible but still unrecoverable in the case of ZFS.
-
-        This technicality was recently demonstrated by a popular tech media
-        organisation \cite{LTT_data_loss}. Due to no scheduled scrubbing and no
-        drive failure notifications they experienced major and unrecoverable
-        data loss on a storage array of over a petabyte.
 
     \section{ZFS resources}
 

@@ -29,9 +29,10 @@
         contents are stored in a chain of blocks like fat32 \cite{fat32}.
         Alternatively, random file accesses may be performant while metadata
         are not due to a poor choice of data strctures in the directory
-        representation for example.
+        representation for example. Even though metadata benchmarks are pure
+        throughput tests they focus on the data structure implementation as an
+        indicator of filesystem quality.
 
-        % the metdata benchmark is an IO benchmark. Argue this.
         To account for these quirks the devised test includes measures of pure
         workloads as well as varieties of them to represent the likely tasks
         for home or office use (\ref{sec_problem}). These include the usual
@@ -43,8 +44,9 @@
         large directoies as those are likley to be rare in our use case
         \cite{contents_study}.
 
-        % sequentail performance - very important but mostly bragging rights
-        % random - realistic but over empahsised
+        % might be good without these
+        % sequentail performance - very important but mostly bragging rights - most accesses are smaller
+        % random - realistic but over empahsised - say it's unlikey except in search
         % metadata - likely to indicate search
 
         To measure these a utility written by the author of the new Linux
@@ -173,10 +175,11 @@
         From this analaysys arises a corollary: allocation cannot be fast. And
         in fact this is the reason why even the largest test is relatively
         small for today's standards. Since all accesses are split into blocks
-        and treated individually, allocating a gigabyte of space requires about
-        268 million calls to the allocation subroutine (one per block
-        required). Since it the free list is also linear, after a period of use
-        the search for free blocks start to dominate the required time.
+        and treated individually, allocating a gigabyte of space with 4096 byte
+        blocks requires an allocaiton for each or $2^{30} / 4096 \approx
+        \numprint{262000}$ calls to the allocation subroutine. Since it the
+        free list is also linear, after a period of use the search for free
+        blocks start to dominate the required time.
 
         % Analyse the free list, maybe the i-list?
         % do a complexity analysys
@@ -208,10 +211,6 @@
 %          + 0.61% __libc_pread
 
 
-    % \section{Design of the filesystem}
-    % \subsection{Suitability of design as an FS}
-    % maybe in discussion?
-
     \section{Failure simulation}
 
         To simulate failures we use a similar approach to the benchmark. Once
@@ -230,14 +229,12 @@
         % TODO: add a figure with the debug output that the error was detected and fixed
 
     \section{Design of the redundancy}
-    % \subsection{Suitability of design for error correction}
-    % \section{Reliability}
 
         As shown experimentally, the integrity guarantee works. Theoretically,
         best case security of the 256 bit hashes are $2^{128}$ bits.
         Theoretical attacks on reduced versions of the function put this at
         $2^{126}$ \cite{sha2_security} \cite{sha2_analysis}. At this time
-        sha-256 does not have any known collisions. So for the purposes of this
+        SHA256 does not have any known collisions. So for the purposes of this
         project we consider it as secure with $2^{126}$ bits of security (we
         select the lower bound for safety). Thus the probability that a faulty
         sector results in a hash collision will be at most $2^{-126}$. It is
@@ -253,7 +250,7 @@
         in such a way that the checksum is still valid. ZFS's chaining of
         hashes mitigates against this. However, the chance of this happening is
         astronomically low. As the errors are independent on SSDs
-        \ref{sec_reliability} the likelyhood of that happening with sha-256
+        \ref{sec_reliability} the likelyhood of that happening with SHA256
         will be $2^{252}$. This is a valid issue to have with short (eg. CRC)
         checksums however with our long hashes this issue can be safely
         ignored. Regardless, the alternation of data and checksum accesses
@@ -265,7 +262,7 @@
         attacker can craft the payload more carefully. However, the
         checksumming of the data provide a barrier to pulling off such an
         attack despite any ability for controlling failures the attacker might
-        have. In effect this acts like stack canaries \cite{canaries} as it is
+        have. In effect this acts like stack canaries \cite{canary} as it is
         an extra, unknown, value that is assumed to be difficult to acces and
         predict by the attacker. We can conclude that since the checksum is at
         least slightly separate its modificaiton will be extremely difficult

@@ -151,28 +151,27 @@
         filesystem targets SSDs instead of classic mechanical hard drives.
 
         This choice has many consequences (duscussed in \ref{sec_reliability}),
-        however one of the more important ones is their performance. Unlike
-        hard drives, SSD random access performance is in line with their
-        sequentail access capabilities \cite{servethehome_review}. As a result,
-        major locality considerations have a lesser impact on performance
-        (although they still have some \ref{sec_locality}). Because of this and
-        the simplicity goal it makes sense to do away with extents
-        (\ref{sec_LFS}, \ref{sec_locality}). They are a common feature for
-        increasing throughput but this filesystem does not include them as they
-        significantly increase implementation complexity. Other features that
-        may necessitate them like tree based space tracking (see
+        however one of the more important ones is performance characteristics.
+        Unlike hard drives, SSD random access throughput is in line with that
+        of sequentail accesses \cite{servethehome_review}. As a result, major
+        locality considerations have a lesser impact on performance. Accessing
+        adjacent blocks and accessing them far apart will perform similarly
+        (although having them sequentially can lead to "reducing the total
+        number of requests" \cite{ext4_docs} for extra performance). Because of
+        this and the simplicity goal it makes sense to do away with extents
+        (introduced in \ref{sec_LFS} and \ref{sec_locality}). They are a common
+        feature for increasing throughput but this filesystem does not include
+        them as they significantly increase implementation complexity. Other
+        features that may necessitate them like tree based space tracking (see
         \ref{sec_free_list}), more involved allocation algorithms like those in
         ext4 (\ref{sec_ext4}) or \citeauthor{ext4_space_maps}'s space tracking
         proposal will not be included so the use of extents is not necessary.
-        % The speed advantage of keeping sequentail data sequentailly on disk
-        % is important, however, since this filesystem will target SSDs (see
-        % \ref{sec_hardware}) the benefit is much less pronounced.
 
         There is a single provision for increasing data locality - to have a
         minimum allocation size. This can have some impact on performance even
-        on SSDs (\ref{sec_locality}) but more importantly reduces the frequency
-        of allocations. That minimum is set to 20 blocks for a balance between
-        high preallocation but not wasting much space.
+        on SSDs but more importantly reduces the frequency of allocations. That
+        minimum is set to 20 blocks for a balance between high preallocation
+        but not wasting much space.
 
         To counteract the drawbacks of lacking extents blocksizes must be
         maximised to reduce bookkeeping overheads. As a sensible default blocks

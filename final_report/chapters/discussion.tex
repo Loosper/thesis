@@ -18,26 +18,42 @@
         filesystem shows it is competitive.
 
         Second is the use of extents, which have been included as far back as
-        \citeyear{FFS}. This filesystem does not include them under the
-        assumption that SSDs can handle lots of random accesses well. While
-        this remains true, not collating chunks of storage introduces lots of
-        additional metadata the processing of which amplifies the number of
-        accesses required exponentially. This is most apparent (but not
-        limited) to allocations and sequential accesses because individually
-        addressing each data block for workloads measured in the giga and tera
-        bytes requires millions of entreis per gigabyte of data (as noted in
-        \ref{sec_perf}) instead of the handful that might be needed if extents
-        are present. Even if we do not consider the space requirement for the
-        metadata itself, no matter how fast as a random access may be, having
-        more of them reduces observed efficiency. A logarithmic complexity of
-        any underlying data structure (like the B-tree) is dwarfed when a
-        linear or a large polynomial of accesses are required.
+        \citeyear{LFS}. This filesystem does not include them under the
+        assumption that SSDs can handle lots of random accesses well (discussed
+        in \ref{sec_block_size}). This, however, introduces an unforseen
+        problem. Not collating chunks of storage means each one must be indexed
+        independently. The index will not be large per gigabyte (assuming 8
+        byte pointers, the \numprint{200000} blocks (\ref{sec_perf}) require
+        about 2 MiB which arranged in a B-tree with 4096 byte nodes will only
+        need one extra node to complete the tree) its space overhead is
+        neglegible so it can be ignored. However, managing a tree of this size
+        amplifies the number of operations required. An allocation for a
+        gigabyte of space becomes \numprint{200000} node insertions into the
+        tree for example. This is an exponential increase over an even badly
+        fragmented filesystem that can only allocate extents of single digit
+        megabytes (and it that case the tree will need about a thousand
+        entries).
 
-        The original assumptions made in \ref{sec_block_size} remain true,
-        however, they fail to take into account the above overheads unrelated
-        to drive speed. Due to computers historically using mechanical hard
-        drives, the literature focues on the drawback of random accesses and
-        the metadata amplifcation issue is not apparent.
+        As a result, the speed of any one operation is not slower - drive
+        utilisation is 100\% and time is not wasted due to the medium. However,
+        the complexity of operations increases in orderds of magnitude. A
+        logarithmic complexity of any underlying data structure (like the
+        B-tree) is dwarfed when a linear or a large polynomial of accesses are
+        required. Having this much processing required reduces observed
+        efficiency. By \citeauthor{FFS}'s measurements this arrangement would
+        be optimal, however performance will be wasted.
+
+        On second review, this reality seems well understood. The literature's
+        historical focus on mechanical hard drives and their seek inefficiency
+        means that the justification for extents is based on ageing factors.
+        Even though those factors have evidently changed with SSDs, the
+        solution remains valid and has not sparked a need to reconsider them.
+        In the meantime, engineers appear well versed in this fact, however,
+        their knowdledge has a tendency of not being externally documented
+        (indeed, ext4 only has a single sentence that alludes to that fact) and
+        being integrated into the large code base. In any case, the mere
+        existance of multi gigabyte workloads (like videos for home users) make
+        this feature a essential for any filesystem.
 
         The third and most subtle feature is a polished implementation.  to
         integrate all features. While this is not a feature as such, it allows

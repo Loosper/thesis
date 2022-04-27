@@ -179,7 +179,33 @@
 
     \section{Conclusions}
 
-        mixed bag - good redundancy, not polished. has potential
+        This project has produced a functional Linux filesystem design and
+        prototype. The main feature of the filesystem is its strong integrity
+        guarantee. This is achieved with full built-in redundancy with robust
+        checksumming usging modern cryptographically secure hashes of every
+        block. It is targetted towards SSD deployments and takes into account
+        their unique reliability characteristics. The filesystem itself is
+        enabled by a portable FUSE module for use accross a wide range of Linux
+        distributions. It integrates standard filesystem featues like its use
+        of B-trees for data indexing.
+
+        The design has a flaw that drastically hampers performance. Under an
+        assumption of SSD speed, it does not include extents. However this
+        choice avalanches simple operations into complex problems. As a result
+        most aspects of the filesystem perform an order of magnitude lower than
+        desired. Nevertheless, due to the robust design, changing this choice
+        does not affect other parts of the design. The implementation can be
+        accordingly modified without much reworks.
+
+        The proposed solution solves the problem of data integrity to a
+        satisfactory degree for home use. As a result it is a good potential
+        replacement to the common ext4. It is substantially simpler and lacks
+        the plethora of options of ZFS so it may be considered in places where
+        such a filesystem is desired but not the accompanying complexity.
+        Finally, the targetted deployments for it are cost competitive with
+        cloud based backup solutions although those target somewhat different
+        class of usage. As a result home users gain a useful tool which may
+        better fit their needs.
 
     \section{Ideas for future work}
 

@@ -1,22 +1,3 @@
-rand_small_r: (g=0): rw=randread, bs=(R) 4096B-4096B, (W) 4096B-4096B, (T) 4096B-4096B, ioengine=libaio, iodepth=8
-rand_small_w: (g=1): rw=randwrite, bs=(R) 4096B-4096B, (W) 4096B-4096B, (T) 4096B-4096B, ioengine=libaio, iodepth=8
-rand_small_rw: (g=2): rw=randrw, bs=(R) 4096B-4096B, (W) 4096B-4096B, (T) 4096B-4096B, ioengine=libaio, iodepth=8
-seq_big_r: (g=3): rw=read, bs=(R) 4096B-4096B, (W) 4096B-4096B, (T) 4096B-4096B, ioengine=libaio, iodepth=8
-seq_big_w: (g=4): rw=write, bs=(R) 4096B-4096B, (W) 4096B-4096B, (T) 4096B-4096B, ioengine=libaio, iodepth=8
-seq_big_rw: (g=5): rw=rw, bs=(R) 4096B-4096B, (W) 4096B-4096B, (T) 4096B-4096B, ioengine=libaio, iodepth=8
-pure_bandwidth: (g=6): rw=rw, bs=(R) 4096B-4096B, (W) 4096B-4096B, (T) 4096B-4096B, ioengine=sync, iodepth=8
-metadata: (g=7): rw=read, bs=(R) 4096B-4096B, (W) 4096B-4096B, (T) 4096B-4096B, ioengine=filedelete, iodepth=8
-fio-3.29
-Starting 8 processes
-rand_small_r: Laying out IO file (1 file / 0MiB)
-rand_small_w: Laying out IO file (1 file / 0MiB)
-rand_small_rw: Laying out IO file (1 file / 0MiB)
-seq_big_r: Laying out IO file (1 file / 4MiB)
-seq_big_w: Laying out IO file (1 file / 4MiB)
-seq_big_rw: Laying out IO file (1 file / 4MiB)
-pure_bandwidth: Laying out IO file (1 file / 1MiB)
-metadata: Laying out IO files (100 files / total 0MiB)
-
 rand_small_r: (groupid=0, jobs=1): err= 0: pid=249949: Thu Apr 21 15:12:23 2022
   read: IOPS=40.9k, BW=160MiB/s (167MB/s)(3192MiB/20001msec)
     slat (nsec): min=908, max=1035.0k, avg=17011.59, stdev=5581.40

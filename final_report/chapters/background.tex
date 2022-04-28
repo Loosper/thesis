@@ -57,10 +57,9 @@
     positioned segment. It provides a prototype that integrate all essentail
     features for high data integrity while being easy to use and deploy.
 
-% TODO: this is a temporary name
-\chapter{Lit review}
+\chapter{Background}
     \section{The UNIX filesystem}
-        \label{sec_UFS}
+        \label{sec:UFS}
 
         For the past 50 years the UNIX style operating system has been one of
         the most prevalent operating system architectures out there. The
@@ -138,8 +137,8 @@
             of blocks. They have respectively 1, 2 and 3 levels of indirection
             to reach a data block. The free list was a simple linked list,
             where each block had pointers to free blocks and a pointer to the
-            next block in the list \cite{UNIX_implementation},
-            \cite{UNIX_source_commentary}.
+            next block in the list \cite{UNIX_implementation,
+            UNIX_source_commentary}.
 
             Over time, however, it turned out that this arrangement was very
             inefficient. In particular, data blocks for a file lacked locality,
@@ -155,7 +154,7 @@
             4\% \cite{FFS}.
 
         \subsection{FFS}
-            \label{sec_FFS}
+            \label{sec:FFS}
 
             \citeauthor{FFS} proposed many improvements to increase
             performance. For a start, block size was increased 8 fold from 512
@@ -186,16 +185,16 @@
             recovery was given active thought to.
 
         \subsection{LFS}
-            \label{sec_LFS}
+            \label{sec:LFS}
 
             With advances in software and hardware, by \citeyear{IO_bottleneck}
             file access and reliability patterns became apparent. Especially
             for office use, small reads and writes dominated the workload. Like
-            in UFS and FFS, the mechanical nature of hard drives made such
-            operations costly when performed in a random manner. To imporove
-            performance, caching is identified as a substantial improvement,
-            which has been wildly used since \cite{IO_bottleneck}
-            \cite{Linux_VFS_cache}.
+            in \hyperref[sec:UFS]{UFS} and \nameref{sec:FFS}, the mechanical
+            nature of hard drives made such operations costly when performed in
+            a random manner. To imporove performance, caching is identified as
+            a substantial improvement, which has been wildly used since
+            \cite{IO_bottleneck, Linux_VFS_cache}.
 
             However, \citeauthor{IO_bottleneck} points out some issues with
             such an approach: a system crash or a power outage puts the
@@ -236,7 +235,7 @@
             head of the log to ensure reliability.
 
         \subsection{WAFL}
-            \label{sec_WAFL}
+            \label{sec:WAFL}
 
             With time reliability became an ever growing concern, both from a
             techincal and from a human perspective. The idea of snapshots
@@ -278,12 +277,12 @@
             or nothing operation, limiting the impact of a crash to only some
             data loss that hasn't had the time to be commited to disk.
 
-    \section{The B-tree}
-        \label{sec_btree}
+    \section{he B-tree}
+        \label{sec:btree}
 
         B-trees are a de facto standard for file organisation
         \cite{btree_ubiquitous}. Most modern filesystems incorporate them in
-        some way, like ext4 (section \ref{sec_ext4}), XFS
+        some way, like \nameref{sec:ext4}, XFS
         \cite{XFS_scalability}, HFS+ \cite{HFSplus} and, probably most notably,
         BTRFS (short for "B-tree File System") \cite{BTRFS}. They are very well
         suited to secondary storage based applications (like filesystem) due to
@@ -331,11 +330,11 @@
         common with files.
 
     \section{ext4}
-        \label{sec_ext4}
+        \label{sec:ext4}
 
         The most modern version of the ext filesystem, ext4, is native and
         usually the default on Linux. It was build by the Linux community
-        specifically for it. Since Linux is a UNIX (\ref{sec_UFS}) derivative,
+        specifically for it. Since Linux is a UNIX (\autoref{sec:UFS}) derivative,
         so is the ext family. As a result, it integrates the principles and
         improvements over the past 50 years while maintaining the same general
         idea.
@@ -353,7 +352,7 @@
         readily available.
 
         \subsection{Use of B-trees}
-            \label{sec_htree}
+            \label{sec:htree}
 
             Ext4 uses B-trees in two places - extent trees \cite{ext4_docs} and
             directory indexing. An extent tree is a \bplustree in which files
@@ -372,13 +371,13 @@
             maintaining good performance.
 
         \subsection{Data locality}
-            \label{sec_locality}
+            \label{sec:locality}
 
             Ext4 employs a range of tricks to maximise locality of various
             data. This has the obvious benefit of reducing seek times on
             spinning hard drives.
 
-            First, it uses blocks of at least 4KB, like FFS (\ref{sec_FFS}),
+            First, it uses blocks of at least 4KB, like \nameref{sec:FFS},
             but larger (powers of 2) are supported too. Allocations on file
             creation are speculative and large in size to give space for the
             file to grow in a contiguous chunk of space. Additionally,
@@ -397,7 +396,7 @@
             a "range of contiguous physical blocks owned by a file"
             \cite{ext4_space_maps}. Using them allows to reduce the amount of
             necessary metadata for those large contiguous chunks within a block
-            group which imporoves performance, like in LFS (\ref{sec_LFS}).
+            group which imporoves performance, like in \nameref{sec:LFS}.
 
         \subsection{Metadata integrity}
 
@@ -437,10 +436,10 @@
 
     \section{Data integrity}
 
-        \subsection{drive reliability}
-            \label{sec_reliability}
+        \subsection{Drive reliability}
+            \label{sec:reliability}
 
-            Drives are unreliable \cite{RAID}, \cite{Backblaze_stats}. Due to
+            Drives are unreliable \cite{RAID, Backblaze_stats}. Due to
             their mechanical nature they wear out and stop working. They do
             this at an unpredictable rate for individual drives, but at
             relatively constant rates over large arrays \cite{Backblaze_stats}.
@@ -470,11 +469,10 @@
             \citeauthor{2D_RAID} puts it: "Flash is basically garbage. It
             barely works. We tolerate it because it is fast". SSDs employ
             similar techniques as spinning hard drives and suffer similar
-            problems as them \cite{flash_large_scale},
-            \cite{flash_reliability}. Their failure patterns are substantially
-            different but the end result is the same - unrecoverable errors
-            that would lead to data loss if not accounted for outside the
-            drive.
+            problems as them \cite{flash_large_scale, flash_reliability}. Their
+            failure patterns are substantially different but the end result is
+            the same - unrecoverable errors that would lead to data loss if not
+            accounted for outside the drive.
 
             One way to measure these failures is with the raw bit error rate
             (RBER). The RBER is defined as the number of currupted bits per the
@@ -501,20 +499,20 @@
             store electrons.
 
             Further, due to effective error correcting techniques
-            \cite{flash_reliability} \cite{bit_error_mlc} \cite{bit_error_qlc}
-            \cite{flash_error_manual} actual unrecoverable errors are much
-            lower than the RBER. Therefore, we can expect any higher level
-            recovery mechanisms to be needed much less frequently than might be
+            \cite{flash_reliability, bit_error_mlc, bit_error_qlc,
+            flash_error_manual} actual unrecoverable errors are much lower than
+            the RBER. Therefore, we can expect any higher level recovery
+            mechanisms to be needed much less frequently than might be
             expected.
 
         \subsection{RAID}
-            \label{sec_RAID}
+            \label{sec:RAID}
 
             Non-volatile storage has historically been orders of magnitude
             slower than volatile memory, like RAM, which is itslef much slower
             than CPUs and their caches \cite{IO_bottleneck}. Disk arrays are an
             attempt to increase IO performance and bridge that gap. Since
-            drives are inherently unreliable (\ref{sec_reliability}), putting
+            drives are inherently unreliable (\autoref{sec:reliability}), putting
             many of them together exacerbates the problem. RAID (a redundant
             array of inexpensive disks) is one solution for the problem of
             drive reliability \cite{RAID}. As its name suggests, RIAD adds
@@ -567,43 +565,41 @@
         \subsection{Caching}
 
             Caching is an integral part of modern operating systems
-            \cite{IO_bottleneck} \cite{LFS} \cite{LFS} \cite{FFS}. All modern
+            \cite{IO_bottleneck, LFS, LFS, FFS}. All modern
             variants employ it in various very visible ways. Reads are
             routinely cached and so are writes although with extra care. This
             practice is so prevalent that opening files/programs the first time
             is frequently orders of magnitude slower than any subsequent
             access. In particular, it is essential in obtaining good, almost
             sequential, performance out of random small writes
-            \cite{soft_updates} \cite{LFS}.
+            \cite{soft_updates, LFS}.
 
             Caching, however, is tricky especially on the write side. Besides
             the usual cache coherence issues, caching of writes for prologned
             periods of time introduces a risk of data loss. To avoid this
             possibility while not diminishing the effectiveness of techniques
             like soft updates \cite{soft_updates} or log based filesystem
-            (\ref{sec_LFS}), operating systems have to perform a fine balancing
+            (\autoref{sec:LFS}), operating systems have to perform a fine balancing
             act.
 
             Linux in particular caches aggresively \cite{Linux_VFS_cache}.
             Luckily, its VFS layer implements this in an abstract manner, so
             individual filesystems do not need to implement it themselves.
             Nevertheless, they frequently need to be aware of it and in rare
-            cases, like ZFS (\ref{sec_ZFS}), they need special behaviour to
+            cases, like \nameref{sec:ZFS}, they need special behaviour to
             implement some features of the filesystem.
 
         \subsection{ZFS}
-            \label{sec_ZFS}
-
-            % Even a filesystem like ZFS with incredible reliability
-            % characteristics \cite{ZFS_reliability} is vulnerable to this (referes scrubbing)
+            \label{sec:ZFS}
 
             Considered by many to be the most robust enterprise ready
-            filesystem (like TrueNAS does \cite{TrueNAS_enterprise}), ZFS takes
-            all necessary aspects of a filesystem and tries to combine them
-            into one as close to bulletproof solution. It is widely recommended
-            in place of almost any other solution outside large scale
-            enterprise world. It integrates a very wide variety of features to
-            ensure data integrity while maintaining performance.
+            filesystem \cite{ZFS_reliability} (most notably by TrueNAS
+            \cite{TrueNAS_enterprise}), ZFS takes all necessary aspects of a
+            filesystem and tries to combine them into one as close to
+            bulletproof solution. It is widely recommended in place of almost
+            any other solution outside large scale enterprise world. It
+            integrates a very wide variety of features to ensure data integrity
+            while maintaining performance.
 
             In ZFS all blocks are checksummed \cite{ZFS}. This checksum is
             stored on any other block that saves a pointer to it. This way data
@@ -616,7 +612,7 @@
             stored.
 
             Modifications to the tree of blocks is done in the same
-            copy-on-write (CoW) manner as in WAFL (\ref{sec_WAFL}) so it is
+            copy-on-write (CoW) manner as in \nameref{sec:WAFL} so it is
             always consistent. The only critical operation is the uberblock
             overwrite, but its checksum allows for any failure to be detected
             and a redundant copy read.
@@ -643,7 +639,7 @@
             in contiguous chunks of space, ZFS reads and writes tend to be
             slower than those of other filesystem even when paired with RAID
             functions due to the CoW "bubbling" mechanism having to overwrite
-            many blocks \cite{ZFS} (\ref{sec_WAFL}). To counteract this ZFS
+            many blocks \cite{ZFS} (\autoref{sec:WAFL}). To counteract this ZFS
             caches extensively. So much so that TrueNAS (a popular home file
             server operating system) has a dedicated guide on how much memory a
             server should have \cite{TrueNAS_hardware_guide} and more memory is
@@ -669,7 +665,7 @@
             \cite{TrueNAS_hardware_guide}.
 
             The ZFS Intent Log (ZIL) acts like and solves similar problems to
-            LFS (\ref{sec_LFS}). ZFS is always consistent on disk but because
+            \nameref{sec:LFS}. ZFS is always consistent on disk but because
             of copy-on-write, performing these updates frequently requires many
             bubbling operations up to the uberblock, degrading performance. The
             ZIL acts as a stopgap for writes (of both data and metadata) that
@@ -687,18 +683,18 @@
 \chapter{Problem setting}
 
     As we have seen, non-volatile storage devices are very error-prone and not
-    particularly reliable (\ref{sec_reliability}). To account for this, modern
-    filesystems, like ext4 (\ref{sec_ext4}), perform metadata checksumming to
+    particularly reliable (\autoref{sec:reliability}). To account for this, modern
+    filesystems, like \nameref{sec:ext4}, perform metadata checksumming to
     avoid filesystem corruption. However, this still leaves actual data in the
     filesystem vulnerable. There exist various methods to combat the issue,
-    like disk based parity RAID (\ref{sec_RAID}) or dedicated filesystems like
-    ZFS (\ref{sec_ZFS}). However, these solutions are not perfect and suffer
+    like disk based parity \nameref{sec:RAID} or dedicated filesystems like
+    \nameref{sec:ZFS}. However, these solutions are not perfect and suffer
     from some unfortunate flaws. There are notable examples of data loss even
     when using them \cite{LTT_data_loss}. This section examines these
     shortcomings and presents the problem this dissertation will tackle.
 
     \section{The write hole}
-        \label{sec_RAID_problems}
+        \label{sec:RAID_problems}
 
         RAID 5 has a critical issue: writing data and experiencing a system
         crash can silently corrupt unrelated data on the disk. This phenomenon
@@ -740,8 +736,8 @@
         To "close" the write hole, Linux implements two features: a journal for
         RAID \cite{LWN_md_journal} (also called a cache occasionally) and a
         partial parity log (PPL) \cite{partial_parity_log}. The journal uses a
-        separate drive to store a journal of writes, much like the ZIL, ext4
-        and LFS (\ref{sec_ext4}, \ref{sec_ZFS} and \ref{sec_LFS}) and then
+        separate drive to store a journal of writes, much like the ZIL (in
+        \autoref{sec:ZFS}), \nameref{sec:ext4} and \nameref{sec:LFS} and then
         recover any uncommited changes on startup. Alternatively, the PPL
         stores extra (partial) parity in the metadata area of parity drives,
         again allowing for recovery on startup.
@@ -752,7 +748,7 @@
         \cite{Intel_Optane} reduces the concern but it is expensive and slots
         to plug it in are not in abundance yet). Regardless, the journal is
         susceptible to the same issues as the drives it is trying to protect.
-        Therefore inevitable errors in the log drive (\ref{sec_reliability})
+        Therefore inevitable errors in the log drive (\autoref{sec:reliability})
         can diminish its benefit. On the other hand, the PPL's  documentation
         \cite{partial_parity_log} concedes it reduces performance by up to 40\%
         and in the event of a loss of a (dirty) drive its behaviour is the same
@@ -760,8 +756,8 @@
 
     \section{ZFS resources}
 
-        The reliability of ZFS comes at a very steep price - system resources
-        \ref{sec_ZFS}. Due to its caching policy, main memory requirements are
+        The reliability of \nameref{sec:ZFS} comes at a very steep price - system resources.
+        Due to its caching policy, main memory requirements are
         very high and not satisfying them can and will degrade performance.
         Workstation class devices are not dedicated file servers and rely on
         their memory for other tasks - 3D morelling, rendering, compillation
@@ -781,7 +777,7 @@
         techincally savvy users.
 
     \section{The problem to address (conclusion)}
-        \label{sec_problem}
+        \label{sec:problem}
 
         Neither mechanical nor solid state drives cannot be relied upon. It is
         evident that there exist a plethora of techniques to ensure data

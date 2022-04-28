@@ -1,9 +1,0 @@
-\begin{lstlisting}[language={},basicstyle=\tiny,caption={perf sample},label={fig_perf_sample}]
--   93.79%begin     0.01%            36  filesystem   filesystem            [.] do_read_write_full
-   - 93.78% do_read_write_full
-      - 93.55% do_read_write_block
-         - 86.10% get_pblock_of_byte
-            + 86.10% btree_lookup64
-         + 6.44% file_add_space
-         + 0.61% __libc_pread
-\end{lstlisting}

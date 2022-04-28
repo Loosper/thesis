@@ -1,7 +1,7 @@
 \chapter{Evaluation and results}
 
     \section{Benchmarking}
-        \label{sec_benchmark}
+        \label{sec:benchmark}
 
         Benchmarking a file system involves many aspects and different authors
         have done it in varying ways over the years. \citeauthor{FFS} measures
@@ -35,7 +35,7 @@
 
         To account for these quirks the devised test includes measures of pure
         workloads as well as varieties of them to represent the likely tasks
-        for home or office use (\ref{sec_problem}). These include the usual
+        for home or office use (\autoref{sec:problem}). These include the usual
         large sequentail reads and writes as well as small and random accesses
         to get a baseline. Then a very large access to control for things like
         caches that might be speeding things up. Finally, a metadata access of
@@ -66,7 +66,7 @@
         backing store. The drive is a "SAMSUNG MZVLB1T0HBLR-000L7" high speed
         NVMe drive tested on an AMD Ryzen 7 PRO 4750U CPU. The test was ran 3
         times and average values were taken. As controls two more filesystems
-        were tested: ext4 (\ref{sec_ext4}) and ntfs (with the ntfs-3g driver).
+        were tested: ext4 (\autoref{sec:ext4}) and ntfs (with the ntfs-3g driver).
         They represent the modern defauls on two of the most popular operating
         systems used today and are the most likely candidates for a user to
         compare against. For concsistency, all tests were performed by
@@ -75,17 +75,17 @@
 
     \section{Test results}
 
-        The results of this benchmark are in figure \ref{fig_benchmark}.
+        The results of this benchmark are in \autoref{fig:benchmark}.
         Combined read and write tests have the read and write components added
         toghether in the summary. The raw output for the graph can be found in
-        appendinx \ref{app_benchmark}.
+        \autoref{app:benchmark}.
 
         % \begin{wrapfigure}{L}{0.2\textwidth}
         % \end{wrapfigure}
-        \begin{figure}[h!]
+        \begin{figure}[h]
             \caption{Benchmark results}
             \input{./figures/benchmark}
-            \label{fig_benchmark}
+            \label{fig:benchmark}
         \end{figure}
 
         The ext4 and ntfs controls appear to behave as expected. Their
@@ -99,7 +99,7 @@
         implementation.
 
         The proposed filesystem performs an order of magnitude slower across
-        the board. From the design stage (\ref{sec_design}) performance was
+        the board. From the design stage (\autoref{ch:design}) performance was
         expected to be worse due to the simplified design and out of kernel
         FUSE implementation. Random reads and writes are of comparable speed.
         This is not surprising, as the code paths they take are similar. Each
@@ -110,7 +110,7 @@
         attributed to drive access assymetry, as the difference tends to be
         linear in SSDs \cite{servethehome_review}. Ext4 handles both workloads
         identially, supporting this idea. To confirm this, and investigate the
-        cause, profiling analysys is performed in \ref{sec_perf}.
+        cause, profiling analysys is performed in \autoref{sec:perf}.
 
         The large file access is in line with the combined sequential test
         indicating that further increasing the work load does not reduce
@@ -120,7 +120,7 @@
         contribution to outweighs other operations.
 
     \section{Profiling analysys}
-        \label{sec_perf}
+        \label{sec:perf}
 
         To investigate the reasons for the performance the filesystem was
         profiled with perf \cite{perf}. Perf is powerful Linux tool (part of
@@ -129,11 +129,11 @@
         sofware (call graphs, call frequency, work in each subroutine etc.).
 
         A profile was taken with \monospace{perf record -g <filesystem>}. For a
-        workload, a full run of the benchmark was used \ref{sec_benchmark}.
+        workload, a full run of the benchmark was used (\autoref{sec:benchmark}).
         Then, the resulting 147Mb profile was manually analysed with
         \monospace{perf report -n --children} and \monospace{perf report -n
         --no-children}. The output of these two commands can be found in
-        appendix \ref{app_perf}.
+        \autoref{app:perf}.
 
         Unsurpsiginly, most of the time is spent in the kernel (upwards of
         90\%). However, looking into which subroutine enters the kernel (with
@@ -142,11 +142,12 @@
         (\monospace{do\_read\_write\_full()}). However, in it direct block
         read/write calls (with \monospace{read\_block()} and
         \monospace{write\_block()}) do not make up even a quarter of the time
-        spent. Instead, an overwhelming majority of it is spent in btree
+        spent. Instead, expanding the graph reveals (as seen in
+        \autoref{fig:perf_sample}) that an overwhelming majority of it is spent in btree
         accesses (\monospace{btree\_lookup64()} in this case) which indirectly
         call those subroutines. Inspecting the code provides two reasons.
         First, each block is located independently of all others and the quick
-        access of sequential keys in the \bplustree (see \ref{sec_btree}) is
+        access of sequential keys in the \bplustree (see \autoref{sec:btree}) is
         not utilised. Additionally, large writes are handled like a sequence of
         small writes (with \monospace{do\_read\_write\_block()}). Even if
         sequences of blocks were to be accesses efficiently, this could not be
@@ -158,12 +159,25 @@
         result, even large sequential workloads behave like numerous random
         ones and a lot of performance is left on the table.
 
+        \begin{figure}[h]
+            \caption{Perf smaple}
+            \label{fig:perf_sample}
+            \begin{lstlisting}[gobble=12]
+            - 93.78% do_read_write_full
+               - 93.55% do_read_write_block
+                  - 86.10% get_pblock_of_byte
+                     + 86.10% btree_lookup64
+                  + 6.44% file_add_space
+                  + 0.61% __libc_pread
+            \end{lstlisting}
+        \end{figure}
+
         Knowing this, explaining the sequential read anomally is not hard. With
         this arrangement reading any file will always be faster than writing it
         due to a single factor - file expansion. By definition, when reading a
         file it cannot change its size. However, this does happen when writing
         it. Setting the file size in advance is not supported
-        (\ref{sec_operations}) so the only place this can happen is on file
+        (\autoref{sec:operations}) so the only place this can happen is on file
         write. Since all blocks get handled individually, each time the file is
         allocated the B-tree must be traveresed from the start. Then a
         potentially linear allocation must also happen. What is worse is that
@@ -185,7 +199,7 @@
         % do a complexity analysys
 
         % Virtually all accesses in this filesystem require a file access,
-        % becasue their metadata is stored in files (\ref{sec_files}). Since they
+        % becasue their metadata is stored in files (\autoref{sec:files}). Since they
         % are also accessed with these subroutines, all workloads behave
         % identically.
 
@@ -200,17 +214,6 @@
         penalty stacks for an exponential decrease in performance, as we
         observe.
 
-
-% actual percents. TODO: put in listing?
-% -   93.79%     0.01%            36  filesystem   filesystem            [.] do_read_write_full
-%    - 93.78% do_read_write_full
-%       - 93.55% do_read_write_block
-%          - 86.10% get_pblock_of_byte
-%             + 86.10% btree_lookup64
-%          + 6.44% file_add_space
-%          + 0.61% __libc_pread
-
-
     \section{Failure simulation}
 
         To simulate failures we use a similar approach to the benchmark. Once
@@ -224,37 +227,66 @@
 
         As expected, the whole test runs without any user visible errors. The
         filesystem detects and corrects all corrupt blocks and returns correct
-        data stored on the redundant drives.
+        data stored on the redundant drives. A sample of the debug output can
+        be seen in \autoref{fig:corruption}.
 
-        % TODO: add a figure with the debug output that the error was detected and fixed
+        \begin{figure}[h]
+            \caption{Corruption debug output}
+            \label{fig:corruption}
+            \begin{lstlisting}[gobble=16]
+                lookup refused: 'metadata.0.53', of: 1
+                block 2199 corrupted, retrying from devb
+                create: 'metadata.0.53' (156), at: 1
+                setattr of 156,
+                write 156 at 0 for 4096 bytes
+                lookup refused: 'metadata.0.54', of: 1
+                lookup refused: 'metadata.0.54', of: 1
+                block 2200 corrupted, retrying from devb
+                create: 'metadata.0.54' (157), at: 1
+                setattr of 157,
+                write 157 at 0 for 4096 bytes
+                lookup refused: 'metadata.0.55', of: 1
+                lookup refused: 'metadata.0.55', of: 1
+                block 2201 corrupted, retrying from devb
+                create: 'metadata.0.55' (158), at: 1
+                setattr of 158,
+                write 158 at 0 for 4096 bytes
+                block 3862 corrupted, retrying from devb
+                block 3861 corrupted, retrying from devb
+                block 3863 corrupted, retrying from devb
+                lookup refused: 'metadata.0.56', of: 1
+                lookup refused: 'metadata.0.56', of: 1
+                create: 'metadata.0.56' (159), at: 1
+            \end{lstlisting}
+        \end{figure}
 
     \section{Design of the redundancy}
 
         As shown experimentally, the integrity guarantee works. Theoretically,
         best case security of the 256 bit hashes are $2^{128}$ bits.
         Theoretical attacks on reduced versions of the function put this at
-        $2^{126}$ \cite{sha2_security} \cite{sha2_analysis}. At this time
+        $2^{126}$ \cite{sha2_security, sha2_analysis}. At this time
         SHA256 does not have any known collisions. So for the purposes of this
         project we consider it as secure with $2^{126}$ bits of security (we
         select the lower bound for safety). Thus the probability that a faulty
         sector results in a hash collision will be at most $2^{-126}$. It is
         important to note that errors are not entirely arbitrary but rather
-        follow some patterns (\ref{sec_reliability}) and are likely to have
+        follow some patterns (\autoref{sec:reliability}) and are likely to have
         very few bits changed. Therefore for normal wear and tear the
         probability of a collision is likely to be much lower due to the
         avalanching effect of the funciton, however, this has not been
         theoretically verified and is not be relied upon.
 
-        Unlike ZFS \ref{sec_ZFS}, this filesystem does not chain checksums.
+        Unlike ZFS (\autoref{sec:ZFS}), this filesystem does not chain checksums.
         Therefore it is possible two blocks (one data and one hash) to corrupt
         in such a way that the checksum is still valid. ZFS's chaining of
         hashes mitigates against this. However, the chance of this happening is
         astronomically low. As the errors are independent on SSDs
-        \ref{sec_reliability} the likelyhood of that happening with SHA256
+        (\autoref{sec:reliability}) the likelyhood of that happening with SHA256
         will be $2^{252}$. This is a valid issue to have with short (eg. CRC)
         checksums however with our long hashes this issue can be safely
         ignored. Regardless, the alternation of data and checksum accesses
-        (\ref{sec_data_integrity}) between the two drives makes this
+        (\autoref{sec:data_integrity}) between the two drives makes this
         impossible.
 
         In the event of malicious loads, like a rowhammer derivative attack
@@ -272,10 +304,7 @@
     % \section{Technical evaluation?}
     % TODO: Appropriate technical and/or user evaluation.
     % Results clearly related to motivation/goals as appropriate
-
-    % \section{Implementation}
-
-    %     As noted in the performance analysys \ref{sec_perf}, this filesystem's
+    %     As noted in the performance analysys \autoref{sec:perf}, this filesystem's
     %     performance is not on par with what is available. Separately, it
     %     experiences occasional crashes and instability, independently of the
     %     reliability mechanisms. As a proof of concept, this is deemed to be

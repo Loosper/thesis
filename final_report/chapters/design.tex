@@ -1,8 +1,9 @@
 \chapter{Design and implementation}
-    \label{sec_design}
+    \label{ch:design}
 
     \section{Methodology and design goals}
-        \label{sec_methodology}
+        \label{sec:methodology}
+
 
         % paragraph not proofread (and prob redundant and can be incorporated below)
         The backdrop for the design that follows are two goals: demonstrating
@@ -43,11 +44,11 @@
         % methodology \cite{agile}.
 
     \section{FUSE module}
-        \label{sec_FUSE}
+        \label{sec:FUSE}
 
         Linux Kernel development is a notoriously difficult and time consuming
         process, as evidenced by the many guides on the topic
-        \cite{kernelnewbies_developer} \cite{Linux_howto}. Even trivial changes
+        \cite{kernelnewbies_developer, Linux_howto}. Even trivial changes
         to it frequently take days to implement and big projects, such as a
         filesystem, cover a very wide range of topics that \textit{must} be
         considered for the end result to be functional. Things such as
@@ -111,7 +112,7 @@
         recommended option outside of the kernel.
 
     \section{Supported operations}
-        \label{sec_operations}
+        \label{sec:operations}
 
         As of libfuse version 3.10, there are 44 operations that it exposes to
         filesystems to implement. These include the simple operations like
@@ -136,18 +137,18 @@
         means.
 
     \section{Block size and hardware considerations}
-        \label{sec_block_size}
+        \label{sec:block_size}
 
         In recent years SSDs have become ever more affordable. There has been a
         recent trend for them to replace mechanical hard drives
-        \cite{ssd_sales} especially in home computers. With their smaller sizes
+        \cite{SSD_sales} especially in home computers. With their smaller sizes
         and orders of magnitude greater performance they make perfect sense for
         small form-factor laptops and performant home NAS solutions, which is
-        what this project targets (\ref{sec_problem}). Since this is the more
+        what this project targets (\autoref{sec:problem}). Since this is the more
         likely technology for the future (if current trends continue), this
         filesystem targets SSDs instead of classic mechanical hard drives.
 
-        This choice has many consequences (duscussed in \ref{sec_reliability}),
+        This choice has many consequences (duscussed in \autoref{sec:reliability}),
         however one of the more important ones is performance characteristics.
         Unlike hard drives, SSD random access throughput is in line with that
         of sequentail accesses \cite{servethehome_review}. As a result, major
@@ -156,12 +157,12 @@
         (although having them sequentially can lead to "reducing the total
         number of requests" \cite{ext4_docs} for extra performance). Because of
         this and the simplicity goal it makes sense to do away with extents
-        (introduced in \ref{sec_LFS} and \ref{sec_locality}). They are a common
+        (introduced in \autoref{sec:LFS} and \autoref{sec:locality}). They are a common
         feature for increasing throughput but this filesystem does not include
         them as they significantly increase implementation complexity. Other
         features that may necessitate them like tree based space tracking (see
-        \ref{sec_free_list}), more involved allocation algorithms like those in
-        ext4 (\ref{sec_ext4}) or \citeauthor{ext4_space_maps}'s space tracking
+        \autoref{sec:free_list}), more involved allocation algorithms like those in
+        \nameref{sec:ext4} or \citeauthor{ext4_space_maps}'s space tracking
         proposal will not be included so the use of extents is not necessary.
 
         There is a single provision for increasing data locality - to have a
@@ -172,18 +173,18 @@
 
         To counteract the drawbacks of lacking extents blocksizes must be
         maximised to reduce bookkeeping overheads. As a sensible default blocks
-        are set to 4KiB in size, a minimum dating as far back as FFS
-        (\ref{sec_FFS}). It offers a low amount of wasted space in small files
+        are set to 4KiB in size, a minimum dating as far back as \nameref{sec:FFS}
+        . It offers a low amount of wasted space in small files
         while maximising performance of sequentail accesses and minimising
         overhead for things like free lists.
 
     \section{Metadata as files}
-        \label{sec_files}
+        \label{sec:files}
 
-        The first design choice, heavily inspired by WAFL (\ref{sec_WAFL}), was
+        The first design choice, heavily inspired by \nameref{sec:WAFL}, was
         that all metadata in the filesystem would be kept as a regular file
         instead of having special data structures for each. This principle was
-        pedantically followed, something filesystems like ext4 (\ref{sec_ext4})
+        pedantically followed, something filesystems like \nameref{sec:ext4}
         do not do and leave some metadata in especially formatted places on
         disk. This way implementation complexity is greatly reduced and all
         metadata can benefit from the underlying indexing method. Further, this
@@ -199,7 +200,7 @@
         preallocated (presumably large) i-table.
 
     \section{The free list}
-        \label{sec_free_list}
+        \label{sec:free_list}
 
         A popular way to keep track of available free space is block bitmaps
         where each block in the filesystem has a bit in the free list which
@@ -233,7 +234,7 @@
         headers at the start. The only difference is in the items they store.
         The inode table contains inodes while directories store the usual
         (name, i-number) tuples. In both cases this is functionally equivalent
-        to UFS (\ref{sec_UFS}).
+        to \nameref{sec:UFS}.
 
         Both structures serve very different purposes from a user facing
         perspective. However, the workload they need to complete is rather
@@ -244,15 +245,15 @@
         in constant time (and to that effect can be considered ordered, however
         the contents themselves have no particular order except their indices).
 
-        As this filesystem strives for simplicity (\ref{sec_methodology}) it
+        As this filesystem strives for simplicity (\autoref{sec:methodology}) it
         makes sense to unify the two structures. There exist bespoke
         implementations for both like ext4's Htrees for directories
-        (\ref{sec_htree}). However, adding them introduces a lot of extra
+        (\autoref{sec:htree}). However, adding them introduces a lot of extra
         complexity which is undesiriable. Such features will not benefit the
         basic case much as the overwhelming majority of lookup in the inode
         table are i-number to inode resulutions (which are constant time as the
         index is reused in the table). Meanwhile, for home use, which this
-        filesystem targets (\ref{sec_problem}), directories tend to not have a
+        filesystem targets (\autoref{sec:problem}), directories tend to not have a
         large number of files in them \cite{contents_study}. Therefore an
         imporovement in their speed will not be particularly noticable.
 
@@ -260,13 +261,13 @@
         the same benefits and the same drawbacks as those for the free list as
         the underlying structure is the same.
 
-    \section{inode}
+    \section{The inode}
 
         Once again, to maintain simplicity, the inode contains only essentail
         information. This includes metadata like the owner's user and group
         IDs, the access permissions and creation/modifiaction timestamps.
         Non-metadata fields are the file's size and the head to the tree of
-        data nodes, stored as a B-tree (see \ref{sec_design_btree}).
+        data nodes, stored as a B-tree (see \autoref{sec:design_btree}).
 
         The metadata is required to make a file understandable to Linux. It is
         also very simple to store as it has a known size and layout (a simple c
@@ -296,13 +297,13 @@
         deemed to be less code to store this information than to recalculate it
         each time. As an added benefit, this removes a slight inefficiency.
 
-    \section{B-tree}
-        \label{sec_design_btree}
+    \section{Use of B-trees}
+        \label{sec:design_btree}
 
         Despite its ubiquity, the B-tree is not the only choice for storing
         data blocks for an inode. Simpler techniques have historically been
         used. Originally, UFS and FFS used a generic tree of staggered
-        indirection (\ref{sec_UFS} and \ref{sec_FFS}). Another, more well known
+        indirection (\autoref{sec:UFS} and \autoref{sec:FFS}). Another, more well known
         one, was the chain of clusters (effectively a linked list) used by
         FAT32 \cite{fat32}.
 
@@ -311,7 +312,7 @@
         difficult to reason with on random accesses and performance was also
         abysmall (something FAT32 has always struggled with). Because of this
         it was decided to use a \bplustree from an external implementation. The
-        B-tree is much more suited for this task (\ref{sec_btree}) and supports
+        B-tree is much more suited for this task (\autoref{sec:btree}) and supports
         standard operations like insert, delete and lookup natively and
         performanlty.
 
@@ -350,28 +351,28 @@
         it a pleasure to work with. There is only one issue that is do with the
         kernel's relatively restrictive GPLv2 licence, which this code is
         licenced under. To resolve this the project adopts the GPLv2 as
-        discussed in appendix \ref{app_licence}.
+        discussed in \autoref{app:licence}.
 
     \section{Data integrity}
-        \label{sec_data_integrity}
+        \label{sec:data_integrity}
 
         The aim is to achieve data integrity with a "RAID with checksums"
         approach. The combination is required as RAID alone cannot be relied
-        upon for data integrity (\ref{sec_RAID_problems}) and checksums
+        upon for data integrity (\autoref{sec:RAID_problems}) and checksums
         themselves do not provide redundancy.
 
         First, the checksumming is necessary to combat silent drive
-        unreliability (see \ref{sec_reliability}). There are two choices for
+        unreliability (see \autoref{sec:reliability}). There are two choices for
         where this can happen: at the data structure level or at the block
         level. If done at the data structure level (i.e. every "pointer" would
-        also include a checksum of its data), like EXT4 (\ref{sec_ext4}, then
+        also include a checksum of its data), like \nameref{sec:ext4}, then
         there is a benefit that the data and its checksum are spatially distant
-        (a provision ZFS has \ref{sec_ZFS}). However, this approach adds
+        (a provision \nameref{sec:ZFS} has). However, this approach adds
         significant complexity to make sure checks are performed everywhere. If
         done at the block level, then the rest of the filesystem can be
         ignorant about the existance of checksums and carry on as normal,
         reducing the complexity. Since this filesystem does not implement a
-        tree of blocks, like ZFS (\ref{sec_ZFS}) does, this has the drawback
+        tree of blocks, like \nameref{sec:ZFS} does, this has the drawback
         that checksums are local to the data they protect. However,
         implemneting this is very trivial as it only needs to extend the block
         level interface and the entirity of the rest of the design can remain
@@ -420,7 +421,7 @@
         on the checksumming blocks as they are the only blocks containing data
         (in the form of checksums) and checksums of the same data on the same
         block. Even though errors tend to be on adjacent cells
-        (\ref{sec_reliability}), the cell's placement could be such that it
+        (\autoref{sec:reliability}), the cell's placement could be such that it
         affects both items.
 
         % TODO: that facebook large scale study idk if cited here. Check i've cited it right
@@ -463,7 +464,7 @@
         bit manipulation so the security is sufficent.
 
         Then, for the choice of RAID level, there are many options discussed in
-        \ref{sec_RAID}. All have various performance profiles and offer
+        \autoref{sec:RAID}. All have various performance profiles and offer
         protection against various numbers of drive failures. However, for all
         intents and purposes they are interchangable - no matter the level, the
         result is a contiguous pool of redundant storage. So, to once again
@@ -499,7 +500,7 @@
         filesystem so that it can still be separated without requiring major
         code reworks.
 
-    \section{code management}
+    \section{Code management}
 
         This project was developed with the help of git. It was used for the
         purpose of tracking progress and changes of the project as well as

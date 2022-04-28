@@ -1,9 +1,10 @@
 \chapter{Discussion and Conclusion}
 
-    \section{the implementation}
+    \section{The implementation}
+        \label{sec:implementation_discussion}
 
         Modern filesystems' complexity is very high and the performance
-        analaysys (\ref{sec_benchmark} and \ref{sec_perf}) show that it is
+        analaysys (\autoref{sec:benchmark} and \autoref{sec:perf}) show that it is
         justified. Each seemingly small addition has a large impact on some
         workload. Provided enough such features are included, most workloads
         are efficient. There is no silver bullet feature that magically makes a
@@ -12,17 +13,17 @@
         there are three features that cover a wide range of workloads and can
         bring performance most of the way there.
 
-        First is the use of B-trees. As we have already seen (\ref{sec_btree})
+        First is the use of B-trees. As we have already seen (\autoref{sec:btree})
         they are well established and the sequentail read performance of this
         filesystem shows it is competitive.
 
         Second is the use of extents, which have been included as far back as
         \citeyear{LFS}. This filesystem does not include them under the
         assumption that SSDs can handle lots of random accesses well (discussed
-        in \ref{sec_block_size}). This, however, introduces an unforseen
+        in \autoref{sec:block_size}). This, however, introduces an unforseen
         problem. Not collating chunks of storage means each one must be indexed
         independently. The index will not be large per gigabyte (assuming 8
-        byte pointers, the \numprint{200000} blocks (\ref{sec_perf}) require
+        byte pointers, the \numprint{200000} blocks (\autoref{sec:perf}) require
         about 2 MiB which arranged in a B-tree with 4096 byte nodes will only
         need one extra node to complete the tree) its space overhead is
         neglegible so it can be ignored. However, managing a tree of this size
@@ -63,11 +64,11 @@
         not production readiness.
 
         With this in mind, the myriad of features and tens of thousands of
-        lines of code in ext4 (\ref{sec_ext4}) fall into place. It is a huge
+        lines of code in \nameref{sec:ext4} fall into place. It is a huge
         project developed by many people over a very long time. A modern
         performant filesystem cannot be simple by design nor by implementation
-        and a simple filesystem cannot be performant. The times of UFS
-        (\ref{sec_UFS}) are long gone and modern computer systems are
+        and a simple filesystem cannot be performant. The times of
+        \nameref{sec:UFS} are long gone and modern computer systems are
         inherently complex.
 
     \section{Did this solve the problem? (Outcome)}
@@ -91,7 +92,7 @@
         mind. It also provides the safety of RAID without a lengthy
         cost-benefit analysis of different techniques to mitigate the various
         problems and the drawbacks that might come with those mitifations
-        (\ref{sec_RAID_problems}).
+        (\autoref{sec:RAID_problems}).
 
         For laptops this filesystem is of limited use. The trend towards low
         profile and minimalistic devices makes adding an extra drive cost and
@@ -105,7 +106,7 @@
         sense. These machines are bulky enough to house several drives and
         accommodate any redundancy setup that may be desired. The lower
         administion overhead can help otherwise sceptical users to the
-        complexity of solutions like ZFS (\ref{sec_ZFS}) make the leap add some
+        complexity of solutions like \nameref{sec:ZFS} make the leap add some
         much needed integrity to their storage. Especially for office use the
         extra integrity can be useful in mission critical environments where
         corrupted files can cost many times more than the hardware requirement
@@ -141,12 +142,12 @@
 
     \section{Unexpected benefits of the methodology}
 
-        The choice of methodology (\ref{sec_methodology}) greatly benefited
+        The choice of methodology (\autoref{sec:methodology}) greatly benefited
         this project. The aim for an always working prototype lead to many
         issues being timely discovered and desgin altered before too much
         momentum had been built up. There were two notable examples for this:
-        the everything is a file phylosophy (\ref{sec_files}) and the linked
-        list method for storing file data (\ref{sec_design_btree}).
+        the everything is a file phylosophy (\autoref{sec:files}) and the linked
+        list method for storing file data (\autoref{sec:design_btree}).
 
         Storing all metadata as a file presented an interesting circular
         problem: the routine to write a file depended on a routine to extend a
@@ -216,7 +217,7 @@
         interesting topic for consideration.
 
         First, the filesystem can have the shortcomings discussed in
-        \ref{sec_implementation_discussion} addressed. Namely, extents can be
+        \autoref{sec:implementation_discussion} addressed. Namely, extents can be
         added and access routines optimised to not split big accesses into
         small ones. Some basic caching in those routines can greatly benefit
         performance too.
@@ -227,8 +228,8 @@
         suit the particular need of the project, memeory usage optimisations
         and multithreading support will go a long way for production readiness.
 
-        Then, less clear-cut features can be considered. Notably, ZFS's
-        (\ref{sec_ZFS}) tree of blocks can be considered for additional
+        Then, less clear-cut features can be considered. Notably,
+        \nameref{sec:ZFS}'s tree of blocks can be considered for additional
         security. Also, for single-drive systems, on-disk redundancy (in a RAID
         5 like arrangement) or sophisticated multi-bit error correcting codes
         may be more suitable for that segment. These can protect against
@@ -237,7 +238,7 @@
 
         % things like trees in the free list and more complex allocator, trees in dirs, etc
 
-        Finally, as noted in \ref{sec_implementation_discussion}, further
+        Finally, as noted in \autoref{sec:implementation_discussion}, further
         research into extents on SSDs is possible. They are evidently suitable
         for such a storage medium but were not developed for it. A better
         understanding of why this is the case can help filesystem developers

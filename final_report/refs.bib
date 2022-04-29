@@ -54,6 +54,13 @@
 	year         = 1996,
 	pages        = 15,
 }
+@article{fat32,
+    author      = {},
+    title       = {},
+    year        = 2000,
+    pages       = 35,
+    language    = {en}
+}
 @article{ZFS_reliability,
 	title        = {Reliability Analysis of ZFS},
 	author       = {Kadav, Asim and Rajimwale, Abhishek},
@@ -283,7 +290,6 @@
 	collection   = {Lecture Notes in Computer Science},
 	language     = {en}
 }
-
 @inbook{sha2_analysis,
 	title        = {Analysis of SHA-512/224 and SHA-512/256},
 	author       = {Dobraunig, Christoph and Eichlseder, Maria and Mendel, Florian},
@@ -309,187 +315,275 @@
 	pages        = 37,
 	language     = {en}
 }
+@inbook{SHA_collision,
+	title        = {The First Collision for Full SHA-1},
+	author       = {Stevens, Marc and Bursztein, Elie and Karpman, Pierre and Albertini, Ange and Markov, Yarik},
+	year         = 2017,
+	booktitle    = {Advances in Cryptology – CRYPTO 2017},
+	publisher    = {Springer International Publishing},
+	address      = {Cham},
+	series       = {Lecture Notes in Computer Science},
+	volume       = 10401,
+	pages        = {570–596},
+	doi          = {10.1007/978-3-319-63688-7_19},
+	isbn         = {978-3-319-63687-0},
+	url          = {http://link.springer.com/10.1007/978-3-319-63688-7_19},
+	editor       = {Katz, Jonathan and Shacham, Hovav},
+	collection   = {Lecture Notes in Computer Science},
+	language     = {en}
+}
 
-@misc{Debian_filesystem,
-	url			= https://wiki.debian.org/FileSystem
+@manual{Debian_filesystem,
+    title       = {FileSystem},
+    organization= {Debian wiki},
+	url			= {https://wiki.debian.org/FileSystem}
 }
-@misc{RedHat_filesystem,
-    url         = https://access.redhat.com/documentation/en-us/red_hat_enterprise_linux/6/html/performance_tuning_guide/s-storage-fs
+@manual{RedHat_filesystem,
+    title       = {FILE SYSTEMS},
+    organization= {Red Hat customer portal},
+    url         = {https://access.redhat.com/documentation/en-us/red_hat_enterprise_linux/6/html/performance_tuning_guide/s-storage-fs}
 }
-@misc{ext4_mailing_list,
-    url         = https://www.spinics.net/lists/linux-ext4/
+@proceedings{ext4_mailing_list,
+    title       = {Linux Ext4 Filesystem Development},
+    organization= {Linux developer community},
+    url         = {https://www.spinics.net/lists/linux-ext4/}
+}
+@manual{perf,
+    title       = {perf: Linux profiling with performance counters},
+    organization= {Linux developer community},
+	url         = {https://perf.wiki.kernel.org/index.php/Main_Page}
 }
 @misc{ext4_origin,
-    url         = http://www.h-online.com/open/features/Kernel-Log-Higher-and-Further-The-innovations-of-Linux-2-6-28-746805.html
+    title       = {ext4: Rename ext4dev to ext4},
+    author      = {Theodore Ts'o},
+    year        = 2008,
+    month       = {Oct},
+    journal     = {Linux kernel maling list},
+    url         = {https://lkml.org/lkml/2008/10/9/32},
 }
 @misc{Linus_ECC_rant,
+    title       = {Ryzen 9 5000 series processor},
+    author      = {Linus Torvalds},
+    year        = 2021,
+    month       = {Jan},
+    journal     = {real world technologies forum},
     url         = {https://www.realworldtech.com/forum/?threadid=198497&curpostid=198647}
 }
 @misc{never_break_userspace,
-    url         = https://www.lkml.org/lkml/2012/12/23/75
+    title       = {Re: [Regression w/ patch] Media commit causes user space to misbahave (was: Re: Linux 3.8-rc1)},
+    author      = {Linus Torvalds},
+    year        = 2012,
+    month       = {Dec},
+    journal     = {Linux kernel maling list},
+    url         = {https://www.lkml.org/lkml/2012/12/23/75}
 }
-@misc{TrueNAS_hardware_guide,
-    url         = https://www.truenas.com/docs/core/gettingstarted/corehardwareguide/
+@manual{TrueNAS_hardware_guide,
+    title       = {CORE Hardware Guide},
+    organization= {TrueNAS documentation hub},
+    url         = {https://www.truenas.com/docs/core/gettingstarted/corehardwareguide/}
 }
 @misc{LTT_data_loss,
+    title       = {Our data is GONE... Again - Petabyte Project Recovery Part 1},
+    author      = {Linus Tech Tips},
+    year        = 2022,
+    month       = {Jan},
     url         = {https://www.youtube.com/watch?v=Npu7jkJk5nM}
 }
-@misc{LWN_md_journal,
-    url         = https://lwn.net/Articles/665299/
+@article{LWN_md_journal,
+    title       = {A journal for MD/RAID5},
+    author      = {Neil Brown},
+    year        = 2015,
+    month       = {Nov},
+    journal     = {LWN.net},
+    url         = {https://lwn.net/Articles/665299/}
 }
-@misc{partial_parity_log,
-    url         = https://www.kernel.org/doc/html/latest/driver-api/md/raid5-ppl.html
+@manual{Linux_source,
+    title       = {The Linux Kernel Archives},
+    organization= {The Linux foundation},
+    url         = {https://www.kernel.org/}
 }
-@misc{ext4_docs,
-    url         = https://www.kernel.org/doc/html/latest/filesystems/ext4/index.html
+@manual{ext4_docs,
+    title       = {ext4 Data Structures and Algorithms},
+    organization= {The Linux Kernel documentation},
+    url         = {https://www.kernel.org/doc/html/latest/filesystems/ext4/index.html}
 }
-@misc{TLDP_proc_access,
-    url         = https://tldp.org/HOWTO/Linux+IPv6-HOWTO/ch11s01.html
+@manual{Linux_howto,
+    title       = {HOWTO do Linux kernel development},
+    organization= {The Linux Kernel documentation},
+    url         = {https://www.kernel.org/doc/html/v4.16/process/howto.html}
 }
-@misc{kernelnewbies_developer,
-    url         = https://kernelnewbies.org/KernelDevViewpoint
+@manual{partial_parity_log,
+    title       = {Partial Parity Log},
+    organization= {The Linux Kernel documentation},
+    url         = {https://www.kernel.org/doc/html/latest/driver-api/md/raid5-ppl.html}
 }
-@misc{Linux_howto,
-    url         = https://www.kernel.org/doc/html/v4.16/process/howto.html
+@manual{Linux_stable_api,
+    title       = {The Linux Kernel Driver Interface},
+    organization= {The Linux Kernel documentation},
+    url         = {https://www.kernel.org/doc/html/latest/process/stable-api-nonsense.html}
 }
-@misc{Linux_source,
-    url         = https://elixir.bootlin.com/linux/v5.18-rc1
+@manual{Linux_VFS_cache,
+    title       = {The Linux Kernel's VFS Layer},
+    organization= {The Linux Kernel documentation},
+    url         = {https://www.kernel.org/doc/html/latest/filesystems/vfs.html}
 }
-@misc{man_vDSO,
-    url         = https://man7.org/linux/man-pages/man7/vdso.7.html
+@manual{ZFS_docs,
+    title       = {OpenZFS Documentation},
+    organization= {OpenZFS},
+    url         = {https://openzfs.github.io/openzfs-docs/}
 }
-@misc{Linux_context_switch_overhead,
-    url         = https://eli.thegreenplace.net/2018/measuring-context-switching-and-memory-overheads-for-linux-threads/
+@manual{TLDP_proc_access,
+    title       = {How to access the /proc-filesystem},
+    organization= {The Linus Documentation Project},
+    url         = {https://tldp.org/HOWTO/Linux+IPv6-HOWTO/ch11s01.html}
 }
-@misc{shared_libraries,
-    url         = https://tldp.org/HOWTO/Program-Library-HOWTO/shared-libraries.html
+@manual{kernelnewbies_developer,
+    title       = {Kernel Dev Viewpoint},
+    organization= {Kernel Newbies},
+    url         = {https://kernelnewbies.org/KernelDevViewpoint}
 }
-@misc{FUSE,
-    url         = https://www.kernel.org/doc/html/latest/filesystems/fuse.html
+@manual{man_vDSO,
+    title       = {vdso(7)},
+    organization= {Linux man-pages},
+    url         = {https://man7.org/linux/man-pages/man7/vdso.7.html}
+}
+@manual{man_mkfs,
+    title       = {mkfs(8)},
+    organization= {Linux man-pages},
+    url         = {https://linux.die.net/man/8/mkfs}
+}
+@article{Linux_context_switch_overhead,
+    title       = {Measuring context switching and memory overheads for Linux threads},
+    author      = {Eli Bendersky},
+    year        = 2018,
+    month       = {Sep},
+    url         = {https://eli.thegreenplace.net/2018/measuring-context-switching-and-memory-overheads-for-linux-threads/}
+}
+@manual{shared_libraries,
+    title       = {Shared Libraries},
+    organization= {The Linus Documentation Project},
+    url         = {https://tldp.org/HOWTO/Program-Library-HOWTO/shared-libraries.html}
+}
+@manual{FUSE,
+    title       = {FUSE},
+    organization= {The Linux Kernel documentation},
+    url         = {https://www.kernel.org/doc/html/latest/filesystems/fuse.html}
 }
 @misc{GitHub_btree,
-    url         = https://github.com/tidwall/btree.c
+    title       = {btree.c},
+    author      = {Josh Baker},
+    url         = {https://github.com/tidwall/btree.c}
 }
-@misc{SQLite_btree,
-    url         = https://sqlite.org/btreemodule.html
+@manual{SQLite_btree,
+    title       = {SQLite B-Tree Module},
+    organization= {SQLite},
+    url         = {https://sqlite.org/btreemodule.html}
 }
-@misc{random_btree,
-    url         = http://fallabs.com/tokyocabinet/spex-en.html
+@manual{random_btree,
+    title       = {Fundamental Specifications of Tokyo Cabinet Version 1},
+    organization= {FAL Labs},
+    url         = {http://fallabs.com/tokyocabinet/spex-en.html}
 }
-@misc{man_mkfs,
-    url         = https://linux.die.net/man/8/mkfs
+@manual{HFSplus,
+    title       = {HFS Plus Volume Format},
+    organization= {Apple inc.},
+    url         = {https://developer.apple.com/library/archive/technotes/tn/tn1150.html}
 }
-@misc{Linux_dev_count,
-    url         = http://www.remword.com/kps_result/5.17_whole.html
+@proceedings{Backblaze_stats,
+    title       = {Hard Drive Data and Stats},
+    organization= {Backblaze inc.},
+    url         = {https://www.backblaze.com/b2/hard-drive-test-data.html}
 }
-@misc{Linux_dev_process,
-    url         = https://www.kernel.org/doc/html/latest/process/2.Process.html
+@manual{TrueNAS_enterprise,
+    title       = {TrueNAS enterprise},
+    organization= {iXsystems inc.},
+    url         = {https://www.truenas.com/truenas-enterprise/}
 }
-@misc{Linux_stable_api,
-    url         = https://www.kernel.org/doc/html/latest/process/stable-api-nonsense.html
+@manual{Intel_Optane,
+    title       = {Intel® Optane™ Memory - Responsive Memory, Accelerated Performance},
+    organization= {Intel corp.},
+    url         = {https://www.intel.com/content/www/us/en/products/details/memory-storage/optane-memory.html}
 }
-@misc{SSHFS,
-    url         = https://github.com/libfuse/sshfs
-}
-@misc{HFSplus,
-    url         = https://developer.apple.com/library/archive/technotes/tn/tn1150.html
-}
-@misc{Backblaze_stats,
-    url         = https://www.backblaze.com/b2/hard-drive-test-data.html
-}
-@misc{Linux_VFS_cache,
-    url         = https://www.usenix.org/legacy/publications/library/proceedings/usenix01/full_papers/kroeger/kroeger_html/node8.html
-}
-@misc{TrueNAS_enterprise,
-    url         = https://www.truenas.com/truenas-enterprise/
-}
-@misc{Intel_Optane,
-    url         = https://www.intel.com/content/www/us/en/products/details/memory-storage/optane-memory.html
-}
-@misc{drive_atomicity,
+@article{drive_atomicity,
+    title       = {Failure-Atomic file updates for Linux},
+    author      = {Christoph Hellwig},
+    year        = 2017,
+    month       = {Nov},
+    journal     = {Linux Piter},
     url         = {https://www.youtube.com/watch?v=FmF9VNEhUrg&t=374s}
 }
-
-@misc{ZFS_overhead,
-    url         = https://wintelguy.com/2017/zfs-storage-overhead.html
+@manual{ZFS_overhead,
+    title       = {ZFS Storage Overhead},
+    organization= {Wintel guy},
+    url         = {https://wintelguy.com/2017/zfs-storage-overhead.html}
 }
-
-@misc{ZFS_docs,
-    url         = https://openzfs.github.io/openzfs-docs/
+@manual{hash_stats,
+	title       = {eBACS: ECRYPT Benchmarking of Cryptographic Systems},
+    organization= {Virtual Applications and Implementations Research Lab},
+    url         = {https://bench.cr.yp.to/results-hash.html}
 }
-
-@misc{SHA_collision,
-    url         = https://security.googleblog.com/2017/02/announcing-first-sha1-collision.html,
+@article{servethehome_review,
+    title       = {HP EX900 1TB NVMe SSD Review},
+    author      = {Will Taillac},
+    year        = 2022,
+    month       = {Apr},
+    journal     = {servethehome.com},
+    url         = {https://www.servethehome.com/hp-ex900-1tb-nvme-ssd-review/,}
 }
-
-@misc{hash_stats,
-    url         = https://bench.cr.yp.to/results-hash.html,
+@article{tomshardware_review,
+    title       = {Samsung 980 Pro M.2 NVMe SSD Review: Redefining Gen4 Performance},
+    author      = {Sean Webster},
+    year        = 2021,
+    month       = {Feb},
+    journal     = {tomshardware.com},
+    url         = {https://www.tomshardware.com/uk/reviews/samsung-980-pro-m-2-nvme-ssd-review/,}
 }
-
-@misc{servethehome_review,
-    url         = https://www.servethehome.com/hp-ex900-1tb-nvme-ssd-review/,
-}
-
-@misc{tomshardware_review,
-    url         = https://www.tomshardware.com/uk/reviews/samsung-980-pro-m-2-nvme-ssd-review/,
-}
-
-@misc{fio,
-	url          = {https://fio.readthedocs.io/en/latest/fio_doc.html}
-}
-
-@misc{perf,
-	url          = {https://perf.wiki.kernel.org/index.php/Main_Page}
-}
-
-@misc{m1_ultra_controller,
-	url          = {https://twitter.com/marcan42/status/1506022589357260801}
-}
-
-@misc{scrubbin,
-	url          = {https://www.truenas.com/docs/core/tasks/scrubtasks/},
-}
-
-@misc{agile,
-	url          = {https://agilemanifesto.org/},
-}
-
 @misc{ssd_sales,
-	url          = {https://www.tomshardware.com/uk/news/ssd-market-shares-q1-2021-trendfocus},
+    title       = {SSDs Outsell HDDs in Unit Sales 3:2: 99 Million Vs. 64 Million in Q1},
+    author      = {Anton Shilov},
+    year        = 2021,
+    month       = {May},
+    journal     = {tomshardware.com},
+	url         = {https://www.tomshardware.com/uk/news/ssd-market-shares-q1-2021-trendfocus},
 }
-
-@misc{Backblaze_321,
-	url          = {https://www.backblaze.com/blog/the-3-2-1-backup-strategy/},
+@manual{fio,
+    title       = {fio - Flexible I/O tester rev. 3.27},
+    author      = {Jens Axboe},
+	url         = {https://fio.readthedocs.io/en/latest/fio_doc.html}
 }
-
-@misc{icloud,
-	url          = {https://support.apple.com/en-gb/guide/icloud/mm74e822f6de/icloud},
+@misc{m1_ultra_controller,
+    author      = {Hector Martin},
+    nameaddon   = {@marcan42},
+    year        = 2022,
+    month       = {Mar},
+	url         = {https://twitter.com/marcan42/status/1506022589357260801}
 }
-
-@misc{gdrive,
-	url          = {https://support.google.com/drive/answer/6305834?hl=en&co=GENIE.Platform%3DDesktop},
+@article{Backblaze_321,
+    title       = {The 3-2-1 Backup Strategy},
+    author      = {Backblaze inc.},
+    year        = 2015,
+    month       = {Apr},
+	url         = {https://www.backblaze.com/blog/the-3-2-1-backup-strategy/},
 }
-
-@misc{dropbox,
-	url          = {https://www.dropbox.com/},
+@manual{icloud,
+    title       = {iCloud User Guide},
+    organization= {Apple inc.},
+	url         = {https://support.apple.com/en-gb/guide/icloud/mm74e822f6de/icloud},
 }
-
-@misc{git,
-	url          = {https://git-scm.com/},
+@manual{gdrive,
+    title       = {Manage \& restore your mobile backups in Google Drive},
+    organization= {Google LLC},
+	url         = {https://support.google.com/drive/answer/6305834?hl=en&co=GENIE.Platform%3DDesktop},
 }
-
-@misc{source_repository,
-	url          = {https://github.com/Loosper/thesis},
+@manual{dropbox,
+    title       = {Dropbox},
+    organization= {Dropbox inc.},
+	url         = {https://www.dropbox.com/},
 }
-
-@misc{zotero,
-	url          = {https://www.zotero.org/},
-}
-
-@article{fat32,
-    year         = 2000,
-    pages        = 35,
-    language     = {en}
+@manual{zotero,
+    title       = {Zotero},
+    organization= {Corporation for Digital Scholarship},
+	url         = {https://www.zotero.org/},
 }
 misc{io_uring,
 	title        = {IO uring},
@@ -586,3 +680,21 @@ article{Bairavasundaram_Goodson_Pasupathy_Schindler_2007,
 	pages        = 12,
 }
 
+misc{scrubbing,
+	url          = {https://www.truenas.com/docs/core/tasks/scrubtasks/},
+}
+misc{agile,
+	url          = {https://agilemanifesto.org/},
+}
+misc{git,
+	url          = {https://git-scm.com/},
+}
+misc{Linux_dev_count,
+    url         = {http://www.remword.com/kps_result/5.17_whole.html}
+}
+misc{Linux_dev_process,
+    url         = {https://www.kernel.org/doc/html/latest/process/2.Process.html}
+}
+misc{SSHFS,
+    url         = {https://github.com/libfuse/sshfs}
+}

@@ -59,23 +59,9 @@
 	author       = {Kadav, Asim and Rajimwale, Abhishek},
 	pages        = 10,
 }
-@inproceedings{RAID,
-	title        = {A case for redundant arrays of inexpensive disks (RAID)},
-	author       = {Patterson, David A. and Gibson, Garth and Katz, Randy H.},
-	year         = 1988,
-	booktitle    = {Proceedings of the 1988 ACM SIGMOD international conference on Management of data  - SIGMOD ’88},
-	publisher    = {ACM Press},
-	pages        = {109–116},
-	doi          = {10.1145/50202.50214},
-	isbn         = {978-0-89791-268-6},
-	url          = {http://portal.acm.org/citation.cfm?doid=50202.50214},
-	place        = {Chicago, Illinois, United States},
-}
-@article{soft_updates,
-    title        = {Metadata Update Performance in File Systems},
-    author       = {Ganger, Gregory R and Patt, Yale N},
-    year         = 1994,
-    pages        = 12,
+@misc{ZFS_spec,
+	year         = 2006,
+	url          = {http://www.giis.co.in/Zfs_ondiskformat.pdf}
 }
 @misc{UNIX_implementation,
 	title        = {UNIX implementation},
@@ -92,9 +78,41 @@
 	year         = 1988,
 	url          = {https://www2.eecs.berkeley.edu/Pubs/TechRpts/1988/CSD-88-467.pdf}
 }
-@misc{btree_ubiquitous,
-	year         = 1979,
-	url          = {http://carlosproal.com/ir/papers/p121-comer.pdf}
+@article{ARC,
+	title        = {ARC: A SELF-TUNING, LOW OVERHEAD REPLACEMENT CACHE},
+	author       = {Francisco, San},
+	pages        = 17,
+}
+@inproceedings{RAID,
+	title        = {A case for redundant arrays of inexpensive disks (RAID)},
+	author       = {Patterson, David A. and Gibson, Garth and Katz, Randy H.},
+	year         = 1988,
+	booktitle    = {Proceedings of the 1988 ACM SIGMOD international conference on Management of data  - SIGMOD ’88},
+	publisher    = {ACM Press},
+	pages        = {109–116},
+	doi          = {10.1145/50202.50214},
+	isbn         = {978-0-89791-268-6},
+	url          = {http://portal.acm.org/citation.cfm?doid=50202.50214},
+	place        = {Chicago, Illinois, United States},
+}
+@book{2D_RAID,
+	title        = {DSSD: Scalable High Performance FLASH Systems},
+	author       = {InsideHPC Report},
+	year         = 2016,
+	month        = {May},
+	url          = {https://www.youtube.com/watch?v=1xurec_UO60},
+}
+@article{RAID6,
+	title        = {The mathematics of RAID-6},
+	author       = {Anvin, H Peter},
+	pages        = 9,
+	language     = {en}
+}
+@article{soft_updates,
+    title        = {Metadata Update Performance in File Systems},
+    author       = {Ganger, Gregory R and Patt, Yale N},
+    year         = 1994,
+    pages        = 12,
 }
 @article{journaling_vs_soft_updates,
 	title        = {JOURNALING VERSUS SOFT UPDATES: ASYNCHRONOUS META-DATA PROTECTION IN FILE SYSTEMS},
@@ -103,6 +121,50 @@
     },
 	year         = 2000,
 	pages        = 15
+}
+@misc{btree_ubiquitous,
+	year         = 1979,
+	url          = {http://carlosproal.com/ir/papers/p121-comer.pdf}
+}
+@article{HTree,
+	title        = {A Directory Index for Ext2},
+	author       = {Phillips, Daniel},
+	year         = 2002,
+	pages        = 16
+}
+@misc{Backblaze_arch,
+	year         = 2019,
+	month        = {Jun},
+	journal      = {Backblaze Blog | Cloud Storage & Cloud Backup},
+	url          = {https://www.backblaze.com/blog/vault-cloud-storage-architecture/},
+}
+@article{ext4_space_maps,
+        title        = {(EXT4 spacemaps) Taking Linux Filesystems to the Space Age: Space Maps in Ext4},
+        author       = {Kadekodi, Saurabh and Jain, Shweta},
+        pages        = 14,
+}
+@article{contents_study,
+	title        = {A Large-Scale Study of File-System Contents},
+	author       = {Douceur, John R and Bolosky, William J},
+	year         = 1999,
+	pages        = 12,
+	language     = {en}
+}
+@article{hard_drive_failures,
+	title        = {Failure Trends in a Large Disk Drive Population},
+	author       = {Pinheiro, Eduardo and Weber, Wolf-Dietrich and Barroso, Luiz Andre},
+	year         = 2007,
+	pages        = 13,
+}
+@article{ssd_rowhammer,
+	title        = {
+		From random block corruption to privilege escalation:  A filesystem attack vector for rowhammer-like attacks
+	},
+	author       = {
+		Kurmus, Anil and Ioannou, Nikolas and Neugschwandtner, Matthias and Papandreou, Nikolaos and Parnell, Thomas
+	},
+	pages        = 9,
+	language     = {en}
 }
 @article{data_corruption_storage_stack,
 	title        = {An analysis of data corruption in the storage stack},
@@ -137,37 +199,116 @@
 	year         = 2016,
 	pages        = 15,
 }
-@article{ARC,
-	title        = {ARC: A SELF-TUNING, LOW OVERHEAD REPLACEMENT CACHE},
-	author       = {Francisco, San},
-	pages        = 17,
+@article{flash_error_manual,
+	title        = {Errors in Flash-Memory-Based Solid-State Drives: Analysis, Mitigation, and Recovery},
+	author       = {Cai, Yu and Ghose, Saugata and Haratsch, Erich F. and Luo, Yixin and Mutlu, Onur},
+	year         = 2018,
+	month        = {Jan},
+	journal      = {arXiv:1711.11427 [cs]},
+	url          = {http://arxiv.org/abs/1711.11427},
+	note         = {arXiv: 1711.11427},
+	language     = {en}
 }
-@book{2D_RAID,
-	title        = {DSSD: Scalable High Performance FLASH Systems},
-	author       = {InsideHPC Report},
-	year         = 2016,
-	month        = {May},
-	url          = {https://www.youtube.com/watch?v=1xurec_UO60},
+@INPROCeedings{bit_error_mlc,
+	title        = {Bit error rate in NAND Flash memories},
+	author       = {Mielke, Neal and Marquart, Todd and Wu, Ning and Kessenich,
+	Jeff and Belgal, Hanmant and Schares, Eric and Trivedi, Falgun and Goodness,
+	Evan and Nevill, Leland R.
+	},
+	year         = 2008,
+	month        = {Apr},
+	booktitle    = {2008 IEEE International Reliability Physics Symposium},
+	pages        = {9–19},
+	doi          = {10.1109/RELPHY.2008.4558857},
+	issn         = {1938-1891},
 }
-@article{HTree,
-	title        = {A Directory Index for Ext2},
-	author       = {Phillips, Daniel},
-	year         = 2002,
-	pages        = 16
+@inproceedings{bit_error_qlc,
+	title        = {Open Block Characterization and Read Voltage Calibration of 3D QLC NAND Flash},
+	author       = {Papandreou, Nikolaos and Pozidis, Haralampos and Ioannou,
+		Nikolas and Parnell, Thomas and Pletka, Roman and Stanisavljevic, Milos and
+		Stoica, Radu and Tomic, Sasa and Breen, Patrick and Tressler, Gary and Fry,
+		Aaron and Fisher, Timothy and Walls, Andrew
+	},
+	year         = 2020,
+	month        = {Apr},
+	booktitle    = {2020 IEEE International Reliability Physics Symposium (IRPS)},
+	pages        = {1–6},
+	doi          = {10.1109/IRPS45951.2020.9129620},
+	issn         = {1938-1891},
 }
-@misc{Backblaze_arch,
-	year         = 2019,
-	month        = {Jun},
-	journal      = {Backblaze Blog | Cloud Storage & Cloud Backup},
-	url          = {https://www.backblaze.com/blog/vault-cloud-storage-architecture/},
+@article{canary,
+	title        = {StackGuard: Automatic Adaptive Detection and Prevention of Buffer-Overflow Attacks},
+	author       = {Cowan, Crispan and Pu, Calton and Maier, Dave and Walpole, Jonathan and Bakke, Peat},
+	pages        = 16,
+	language     = {en}
+}
+@article{embedded_checksums,
+	title        = {The Effectiveness of Checksums for Embedded Control Networks},
+	author       = {Maxino, T.C. and Koopman, P.J.},
+	year         = 2009,
+	month        = {Jan},
+	journal      = {IEEE Transactions on Dependable and Secure Computing},
+	volume       = 6,
+	number       = 1,
+	pages        = {59–72},
+	doi          = {10.1109/TDSC.2007.70216},
+	issn         = {1545-5971},
+	language     = {en}
+}
+@book{sha1,
+	title        = {US Secure Hash Algorithm 1 (SHA1)},
+	author       = {Eastlake 3rd, Donald E. and Jones, Paul},
+	year         = 2001,
+	month        = {Sep},
+	number       = {RFC 3174},
+	doi          = {10.17487/RFC3174},
+	url          = {https://datatracker.ietf.org/doc/rfc3174},
+	type         = {Request for Comments},
+	institution  = {Internet Engineering Task Force}
+}
+@inbook{sha2_security,
+	title        = {Converting Meet-In-The-Middle Preimage Attack into Pseudo Collision Attack: Application to SHA-2},
+	author       = {Li, Ji and Isobe, Takanori and Shibutani, Kyoji},
+	year         = 2012,
+	booktitle    = {Fast Software Encryption},
+	publisher    = {Springer Berlin Heidelberg},
+	address      = {Berlin, Heidelberg},
+	series       = {Lecture Notes in Computer Science},
+	volume       = 7549,
+	pages        = {264–286},
+	doi          = {10.1007/978-3-642-34047-5_16},
+	isbn         = {978-3-642-34046-8},
+	url          = {http://link.springer.com/10.1007/978-3-642-34047-5_16},
+	editor       = {Canteaut, Anne},
+	collection   = {Lecture Notes in Computer Science},
+	language     = {en}
 }
 
-@article{ext4_space_maps,
-        title        = {(EXT4 spacemaps) Taking Linux Filesystems to the Space Age: Space Maps in Ext4},
-        author       = {Kadekodi, Saurabh and Jain, Shweta},
-        pages        = 14,
+@inbook{sha2_analysis,
+	title        = {Analysis of SHA-512/224 and SHA-512/256},
+	author       = {Dobraunig, Christoph and Eichlseder, Maria and Mendel, Florian},
+	year         = 2015,
+	booktitle    = {Advances in Cryptology – ASIACRYPT 2015},
+	publisher    = {Springer Berlin Heidelberg},
+	address      = {Berlin, Heidelberg},
+	series       = {Lecture Notes in Computer Science},
+	volume       = 9453,
+	pages        = {612–630},
+	doi          = {10.1007/978-3-662-48800-3_25},
+	isbn         = {978-3-662-48799-0},
+	url          = {http://link.springer.com/10.1007/978-3-662-48800-3_25},
+	editor       = {Iwata, Tetsu and Cheon, Jung Hee},
+	collection   = {Lecture Notes in Computer Science},
+	language     = {en}
 }
-
+@article{sha3,
+	title        = {Federal Information},
+	author       = {Foti, Jim},
+	year         = 2015,
+	month        = {Aug},
+	pages        = 37,
+	language     = {en}
+}
 
 @misc{Debian_filesystem,
 	url			= https://wiki.debian.org/FileSystem
@@ -350,37 +491,18 @@
     pages        = 35,
     language     = {en}
 }
-
-
-inproceedings{Amdahl_law,
-	title        = {Validity of the single processor approach to achieving large scale computing capabilities},
-	author       = {Amdahl, Gene M.},
-	year         = 1967,
-	booktitle    = {Proceedings of the April 18-20, 1967, spring joint computer conference on - AFIPS ’67 (Spring)},
-	publisher    = {ACM Press},
-	pages        = 483,
-	doi          = {10.1145/1465482.1465560},
-	url          = {http://portal.acm.org/citation.cfm?doid=1465482.1465560},
-	place        = {Atlantic City, New Jersey}
-}
-article{Patterson_Brown_Broadwell_Candea_Chen_Cutler_Enriquez_Fox_Kıcıman_Merzbacher_etal._2002,
-	title        = {Recovery Oriented Computing (ROC): Motivation, Definition, Techniques, and Case Studies},
-	author       = {Patterson, David and Brown, Aaron and Broadwell, Pete and
-		Candea, George and Chen, Mike and Cutler, James and Enriquez, Patricia and Fox,
-		Armando and Kıcıman, Emre and Merzbacher, Matthew and Oppenheimer, David and
-		Sastry, Naveen and Tetzlaff, William and Traupman, Jonathan and Treuhaft,
-		Noah
-	},
-	year         = 2002,
-	pages        = 16,
+misc{io_uring,
+	title        = {IO uring},
+	author       = {Axboe, Jens},
+	year         = 2019,
+	month        = {Oct},
+	url          = {https://kernel.dk/io_uring.pdf}
 }
 misc{AdreamofanultimateOS_1995,
 	year         = 1995,
 	url          = {https://okmij.org/ftp/papers/DreamOSPaper.html}
 }
-misc{Ext4DiskLayout-Ext4,
-	url          = {https://ext4.wiki.kernel.org/index.php/Ext4_Disk_Layout#Inode_Table}
-}
+this is good to cite in ssd failure chapter
 inproceedings{Alter_Xue_Dimnaku_Smirni_2019,
 	title        = {SSD failures in the field: symptoms, causes, and prediction models},
 	author       = {Alter, Jacob and Xue, Ji and Dimnaku, Alma and Smirni, Evgenia},
@@ -394,23 +516,12 @@ inproceedings{Alter_Xue_Dimnaku_Smirni_2019,
 	url          = {https://dl.acm.org/doi/10.1145/3295500.3356172},
 	place        = {Denver Colorado},
 }
-article{Bairavasundaram_Goodson_Pasupathy_Schindler_2007,
-	title        = {An Analysis of Latent Sector Errors in Disk Drives},
-	author       = {Bairavasundaram, Lakshmi N and Goodson, Garth R and Pasupathy, Shankar and Schindler, Jiri},
-	year         = 2007,
-	pages        = 12,
-}
+
 article{Bonwick_Microsystems_1992,
 	title        = {(!) The Slab Allocator: An Object-Caching Kernel Memory Allocator},
 	author       = {Bonwick, Jeff and Microsystems, Sun},
 	year         = 1992,
 	pages        = 12,
-}
-article{Chao_English_Jacobson_Stepanov_Wilkes_1992,
-	title        = {Mime: a high performance parallel storage device with strong recovery guarantees},
-	author       = {Chao, Chia and English, Robert and Jacobson, David and Stepanov, Alexander and Wilkes, John},
-	year         = 1992,
-	pages        = 20,
 }
 article{Cole_2000,
 	title        = {Estimating Drive Reliability in Desktop Computers and Consumer Electronics Systems},
@@ -418,61 +529,7 @@ article{Cole_2000,
 	year         = 2000,
 	pages        = 8
 }
-article{Hagmann_1987,
-	title        = {(!) Reimplementingthe CedarFile System Using Loggingand GroupCommit},
-	author       = {Hagmann, Robert},
-	year         = 1987,
-	pages        = 8,
-}
-article{Hilgert_Lambertz_Plohmann_2017,
-	title        = {Extending The Sleuth Kit and its underlying model for pooled storage file system forensic analysis},
-	author       = {Hilgert, Jan-Niclas and Lambertz, Martin and Plohmann, Daniel},
-	year         = 2017,
-	month        = {Aug},
-	journal      = {Digital Investigation},
-	volume       = 22,
-	pages        = {S76–S85},
-	doi          = {10.1016/j.diin.2017.06.003},
-}
-article{Kadav_Balakrishnan_2010,
-	title        = {Differential RAID: Rethinking RAID for SSD Reliability},
-	author       = {Kadav, Asim and Balakrishnan, Mahesh},
-	year         = 2010,
-	pages        = 5,
-}
-article{Kazar_Leverett_Anderson_Apostolides_Bottos_Chutani_Everhart_Mason_Tu_Zayas_1990,
-	title        = {DEcorum File System Architectural Overview},
-    author       = {Kazar, Michael L and Leverett, Bruce W and Anderson, Owen T
-        and Apostolides, Vasilis and Bottos, Beth A and Chutani, Sailesh and
-            Everhart, Craig F and Mason, W Anthony and Tu, Shu-Tsui and Zayas,
-        Edward R
-    },
-	year         = 1990,
-	pages        = 14,
-}
-article{Mckusick_2007,
-	title        = {a brief history of the BSD Fast File System},
-	author       = {Mckusick, Marshall Kirk},
-	year         = 2007,
-	volume       = 32,
-	number       = 3,
-	pages        = 10
-}
-article{McKusick_Karels_Bostic_1990,
-	title        = {A Pageable Memory Based Filesystem},
-	author       = {McKusick, Marshall Kirk and Karels, Michael J and Bostic, Keith},
-	year         = 1990,
-	pages        = 8,
-}
-book{McKusick_Neville-Neil_Watson_2015,
-	title        = {The design and implementation of the FreeBSD operating system},
-	author       = {McKusick, Marshall Kirk and Neville-Neil, George V. and Watson, Robert N. M.},
-	year         = 2015,
-	publisher    = {Addison Wesley},
-	isbn         = {978-0-321-96897-5},
-	place        = {Upper Saddle River, NJ},
-	edition      = {Second edition}
-}
+ditto
 inproceedings{Narayanan_Wang_Jeon_Sharma_Caulfield_Sivasubramaniam_Cutler_Liu_Khessib_Vaid_2016,
 	title        = {SSD Failures in Datacenters: What? When? and Why?},
     author       = {Narayanan, Iyswarya and Wang, Di and Jeon, Myeongjae and
@@ -490,98 +547,13 @@ inproceedings{Narayanan_Wang_Jeon_Sharma_Caulfield_Sivasubramaniam_Cutler_Liu_Kh
 	url          = {https://dl.acm.org/doi/10.1145/2928275.2928278},
 	place        = {Haifa Israel},
 }
-
-@article{hard_drive_failures,
-	title        = {Failure Trends in a Large Disk Drive Population},
-	author       = {Pinheiro, Eduardo and Weber, Wolf-Dietrich and Barroso, Luiz Andre},
-	year         = 2007,
-	pages        = 13,
-}
-
 article{Schroeder_Gibson_2007,
 	title        = {Disk failures in the real world: What does an MTTF of 1,000,000 hours mean to you?},
 	author       = {Schroeder, Bianca and Gibson, Garth A},
 	year         = 2007,
 	pages        = 16,
 }
-article{Seltzer_Smith_Balakrishnan_Chang_McMains_Padmanabhan_1995,
-	title        = {(FFS vs LFS) File System Logging Versus Clustering: A Performance Comparison},
-
-    author       = {Seltzer, Margo and Smith, Keith A and Balakrishnan, Hari
-        and Chang, Jacqueline and McMains, Sara and Padmanabhan, Venkata
-    },
-	year         = 1995,
-	pages        = 16,
-}
-book{Stonebraker_1987,
-	title        = {(!) The Design of the POSTGRES Storage System:},
-	author       = {Stonebraker, Michael},
-	year         = 1987,
-	month        = {Feb},
-	doi          = {10.21236/ADA187244},
-	url          = {http://www.dtic.mil/docs/citations/ADA187244},
-	place        = {Fort Belvoir, VA},
-	institution  = {Defense Technical Information Center}
-}
-article{Yang_Gao_Luo_Wu_2010,
-	title        = {Analysis and Implementation of UFS File System Based on Computer Forensics},
-	author       = {Yang, Lei and Gao, Qin Quan and Luo, De Lin and Wu, Shun Xiang},
-	year         = 2010,
-	month        = {Nov},
-	journal      = {Applied Mechanics and Materials},
-	volume       = 39,
-	pages        = {186–191},
-	doi          = {10.4028/www.scientific.net/AMM.39.186},
-	issn         = {1662-7482},
-}
-misc{Databasemachine:anideawhosetimehaspassed?_1983,
-	year         = 1983,
-	url          = {https://minds.wisconsin.edu/bitstream/handle/1793/58446/TR504.pdf?sequence=1&isAllowed=y}
-}
-misc{ConcurrencycontrolandrecoveryinDBsystems_1987,
-	year         = 1987,
-	url          = {https://courses.cs.washington.edu/courses/cse490h/11wi/CSE490H_files/CSE550BHG-Ch7.pdf}
-}
-misc{Theepisodefilesystem_1992,
-	year         = 1992,
-	url          = {https://citeseerx.ist.psu.edu/viewdoc/download?doi=10.1.1.37.6439&rep=rep1&type=pdf}
-}
-misc{Animplementationofalog-structuredFSforUNIX_1993,
-	year         = 1993,
-	url          = {https://www.usenix.org/legacy/publications/library/proceedings/sd93/seltzer.pdf}
-}
-misc{AvoidingaDataCrunch_2000,
-	year         = 2000,
-	journal      = {Scientific American},
-	doi          = {10.1038/scientificamerican0500-58},
-	url          = {https://www.scientificamerican.com/article/avoiding-a-data-crunch/},
-	abstractnote = {Scientific American is the essential guide to the most awe-inspiring advances in science and technology, explaining how they change our understanding of the world and shape our lives.,}
-}
-
-@misc{ZFS_spec,
-	year         = 2006,
-	url          = {http://www.giis.co.in/Zfs_ondiskformat.pdf}
-}
-
-misc{LocalityandTheFastFileSystem_2008,
-	year         = 2008,
-	url          = {https://pages.cs.wisc.edu/~remzi/OSTEP/file-ffs.pdf}
-}
-article{FFS/LFScomparison_2020,
-	year         = 2020,
-	month        = {Aug},
-	journal      = {ACM Transactions on Computer Systems},
-	volume       = 2,
-	number       = 3,
-	pages        = {181–197},
-	doi          = {10.1145/989.990},
-	issn         = {0734-2071, 1557-7333}
-}
-misc{RealWorldTechnologies-Forums-Thread,
-	url          = {https://www.realworldtech.com/forum/?threadid=198497&curpostid=198647}
-}
-
-@inproceedings{GFS,
+inproceedings{GFS,
 	title        = {The Google File System},
 	author       = {Ghemawat, Sanjay and Gobioff, Howard and Leung, Shun-Tak},
 	year         = 2003,
@@ -595,56 +567,6 @@ book{PapersWeLove_2015,
 	month        = {Oct},
 	url          = {https://www.youtube.com/watch?v=UQVd9mZr-jI},
 }
-
-https://archive.fosdem.org/2019/schedule/event/zfs_caching/
-https://www.truenas.com/docs/core/tasks/scrubtasks/
-% chekcsums used: https://openzfs.github.io/openzfs-docs/Basic%20Concepts/Checksums.html
-% some zfs overhead measurements: https://wintelguy.com/2017/zfs-storage-overhead.html
-% speed of checksums: https://bench.cr.yp.to/results-hash.html#amd64-skylake
-
-@article{embedded_checksums,
-	title        = {The Effectiveness of Checksums for Embedded Control Networks},
-	author       = {Maxino, T.C. and Koopman, P.J.},
-	year         = 2009,
-	month        = {Jan},
-	journal      = {IEEE Transactions on Dependable and Secure Computing},
-	volume       = 6,
-	number       = 1,
-	pages        = {59–72},
-	doi          = {10.1109/TDSC.2007.70216},
-	issn         = {1545-5971},
-	language     = {en}
-}
-
-@INPROCeedings{bit_error_mlc,
-	title        = {Bit error rate in NAND Flash memories},
-	author       = {Mielke, Neal and Marquart, Todd and Wu, Ning and Kessenich,
-	Jeff and Belgal, Hanmant and Schares, Eric and Trivedi, Falgun and Goodness,
-	Evan and Nevill, Leland R.
-	},
-	year         = 2008,
-	month        = {Apr},
-	booktitle    = {2008 IEEE International Reliability Physics Symposium},
-	pages        = {9–19},
-	doi          = {10.1109/RELPHY.2008.4558857},
-	issn         = {1938-1891},
-}
-
-@inproceedings{bit_error_qlc,
-	title        = {Open Block Characterization and Read Voltage Calibration of 3D QLC NAND Flash},
-	author       = {Papandreou, Nikolaos and Pozidis, Haralampos and Ioannou,
-		Nikolas and Parnell, Thomas and Pletka, Roman and Stanisavljevic, Milos and
-		Stoica, Radu and Tomic, Sasa and Breen, Patrick and Tressler, Gary and Fry,
-		Aaron and Fisher, Timothy and Walls, Andrew
-	},
-	year         = 2020,
-	month        = {Apr},
-	booktitle    = {2020 IEEE International Reliability Physics Symposium (IRPS)},
-	pages        = {1–6},
-	doi          = {10.1109/IRPS45951.2020.9129620},
-	issn         = {1938-1891},
-}
-
 WAT: i must have referenced this somewehre? what happened?
 article{Cai_Ghose_Haratsch_Luo_Mutlu_2018,
 	title        = {Errors in Flash-Memory-Based Solid-State Drives: Analysis, Mitigation, and Recovery},
@@ -656,113 +578,11 @@ article{Cai_Ghose_Haratsch_Luo_Mutlu_2018,
 	note         = {arXiv: 1711.11427},
 	language     = {en}
 }
-
-@article{flash_error_manual,
-	title        = {Errors in Flash-Memory-Based Solid-State Drives: Analysis, Mitigation, and Recovery},
-	author       = {Cai, Yu and Ghose, Saugata and Haratsch, Erich F. and Luo, Yixin and Mutlu, Onur},
-	year         = 2018,
-	month        = {Jan},
-	journal      = {arXiv:1711.11427 [cs]},
-	url          = {http://arxiv.org/abs/1711.11427},
-	note         = {arXiv: 1711.11427},
-	language     = {en}
-}
-
-@misc{io_uring,
-	title        = {IO uring},
-	author       = {Axboe, Jens},
-	year         = 2019,
-	month        = {Oct},
-	url          = {https://kernel.dk/io_uring.pdf}
-}
-
-@inbook{sha2_security,
-	title        = {Converting Meet-In-The-Middle Preimage Attack into Pseudo Collision Attack: Application to SHA-2},
-	author       = {Li, Ji and Isobe, Takanori and Shibutani, Kyoji},
-	year         = 2012,
-	booktitle    = {Fast Software Encryption},
-	publisher    = {Springer Berlin Heidelberg},
-	address      = {Berlin, Heidelberg},
-	series       = {Lecture Notes in Computer Science},
-	volume       = 7549,
-	pages        = {264–286},
-	doi          = {10.1007/978-3-642-34047-5_16},
-	isbn         = {978-3-642-34046-8},
-	url          = {http://link.springer.com/10.1007/978-3-642-34047-5_16},
-	editor       = {Canteaut, Anne},
-	collection   = {Lecture Notes in Computer Science},
-	language     = {en}
-}
-
-@inbook{sha2_analysis,
-	title        = {Analysis of SHA-512/224 and SHA-512/256},
-	author       = {Dobraunig, Christoph and Eichlseder, Maria and Mendel, Florian},
-	year         = 2015,
-	booktitle    = {Advances in Cryptology – ASIACRYPT 2015},
-	publisher    = {Springer Berlin Heidelberg},
-	address      = {Berlin, Heidelberg},
-	series       = {Lecture Notes in Computer Science},
-	volume       = 9453,
-	pages        = {612–630},
-	doi          = {10.1007/978-3-662-48800-3_25},
-	isbn         = {978-3-662-48799-0},
-	url          = {http://link.springer.com/10.1007/978-3-662-48800-3_25},
-	editor       = {Iwata, Tetsu and Cheon, Jung Hee},
-	collection   = {Lecture Notes in Computer Science},
-	language     = {en}
-}
-
-@article{ssd_rowhammer,
-	title        = {
-		From random block corruption to privilege escalation:  A filesystem attack vector for rowhammer-like attacks
-	},
-	author       = {
-		Kurmus, Anil and Ioannou, Nikolas and Neugschwandtner, Matthias and Papandreou, Nikolaos and Parnell, Thomas
-	},
-	pages        = 9,
-	language     = {en}
-}
-
-@article{RAID6,
-	title        = {The mathematics of RAID-6},
-	author       = {Anvin, H Peter},
-	pages        = 9,
-	language     = {en}
-}
-
-@article{contents_study,
-	title        = {A Large-Scale Study of File-System Contents},
-	author       = {Douceur, John R and Bolosky, William J},
-	year         = 1999,
+consider citing this in into
+article{Bairavasundaram_Goodson_Pasupathy_Schindler_2007,
+	title        = {An Analysis of Latent Sector Errors in Disk Drives},
+	author       = {Bairavasundaram, Lakshmi N and Goodson, Garth R and Pasupathy, Shankar and Schindler, Jiri},
+	year         = 2007,
 	pages        = 12,
-	language     = {en}
-}
-
-@article{canary,
-	title        = {StackGuard: Automatic Adaptive Detection and Prevention of Buffer-Overflow Attacks},
-	author       = {Cowan, Crispan and Pu, Calton and Maier, Dave and Walpole, Jonathan and Bakke, Peat},
-	pages        = 16,
-	language     = {en}
-}
-
-@book{sha1,
-	title        = {US Secure Hash Algorithm 1 (SHA1)},
-	author       = {Eastlake 3rd, Donald E. and Jones, Paul},
-	year         = 2001,
-	month        = {Sep},
-	number       = {RFC 3174},
-	doi          = {10.17487/RFC3174},
-	url          = {https://datatracker.ietf.org/doc/rfc3174},
-	type         = {Request for Comments},
-	institution  = {Internet Engineering Task Force}
-}
-
-@article{sha3,
-	title        = {Federal Information},
-	author       = {Foti, Jim},
-	year         = 2015,
-	month        = {Aug},
-	pages        = 37,
-	language     = {en}
 }
 

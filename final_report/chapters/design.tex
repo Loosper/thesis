@@ -162,7 +162,7 @@
         them as they significantly increase implementation complexity. Other
         features that may necessitate them like tree based space tracking (see
         \autoref{sec:free_list}), more involved allocation algorithms like those in
-        \nameref{sec:ext4} or \citeauthor{ext4_space_maps}'s space tracking
+        \nameref{sec:ext4} or \cauthor{ext4_space_maps}'s space tracking
         proposal will not be included so the use of extents is not necessary.
 
         There is a single provision for increasing data locality - to have a
@@ -438,7 +438,7 @@
         for error correction (described below) so an error correcting code
         (like BCH) is unnecessary. Then only for detection Adler and Fletcher
         checksums perform worse than good CRCs for a given number of bit errors
-        \citeauthor{embedded_checksums}. Finally, the most common CRCs (eg.
+        \cauthor{embedded_checksums}. Finally, the most common CRCs (eg.
         CRC32) produce short check sequences (32 bits for CRC32). A best case
         scenario will have a probability of undetected errors of
         $\frac{1}{2^k}$ where k is the length of the checksum
@@ -509,7 +509,7 @@
         collect citations, although this was not checked into version control
         directly. Instead references were gradually commited as they were
         relevant and backups of the library were kept separate. A mirror of
-        the source code is available on GitHub at \cite{source_repository}.
+        the source code is available on GitHub at \url{https://github.com/Loosper/thesis}.
 
         Throughout the project changes were commited at regular intervals.
         Commits tried to be have self contained changes and be semantically
@@ -523,7 +523,7 @@
         filesystem builds the whole project. It containts rules such that files
         could be added without modifying it. Source code was separated into
         headers and sources. This is a common practice (Linux
-        \cite{Linux_source} for example does it) to keep headers which
+        for example does it) to keep headers which
         frequently depend on each other close together for easier editting,
         while source code is separate so that the object files it produces do
         not pollute the namespace too much.

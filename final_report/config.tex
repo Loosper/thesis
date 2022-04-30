@@ -8,19 +8,18 @@
 \usepackage{epsfig,graphics}
 \usepackage{graphicx}
 \usepackage{titlesec}
-\usepackage{hyperref}
+\usepackage[breaklinks, hidelinks]{hyperref}
 \usepackage{pgfplots}
 \usepackage{listings}
 \usepackage{numprint}
+\usepackage[numbers]{natbib}
+% \usepackage{refcheck}
+\usepackage{chngcntr}
+\usepackage{tikz}
+\usetikzlibrary{shapes}
 
-\hypersetup{
-    colorlinks,
-    citecolor=black,
-    filecolor=black,
-    linkcolor=black,
-    urlcolor=black
-}
-
+% make figures and listings start from 1 instead of with chapter number
+\counterwithout{figure}{chapter}
 \npthousandsep{\,}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -55,8 +54,8 @@
 \newcommand{\monospace}{\texttt}
 \newcommand{\syscall}[1]{\monospace{#1()}}
 % TODO: make these work properly
-\newcommand{\citeauthor}[1]{\cite{#1}-author}
-\newcommand{\citeyear}[1]{\cite{#1}-year}
+\newcommand{\cauthor}[1]{\citeauthor{#1} \cite{#1}}
+\newcommand{\cyear}[1]{\citeyear{#1} \cite{#1}}
 \newcommand{\bplustree}{B\textsuperscript{+}-tree}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -83,7 +82,7 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Bibliography style: choose one and make sure you have the relevant .bst file
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\bibliographystyle{abbrv}
+\bibliographystyle{plainnat}
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

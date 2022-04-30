@@ -156,7 +156,7 @@
         \subsection{FFS}
             \label{sec:FFS}
 
-            \citeauthor{FFS} proposed many improvements to increase
+            \cauthor{FFS} proposed many improvements to increase
             performance. For a start, block size was increased 8 fold from 512
             bytes to 4096 (or even 8192). This improves locality and
             performance pretty much for free. This is because a larger block
@@ -174,7 +174,7 @@
             scrambling of logically sequential entries that further degrade
             performance.
 
-            The result was that \citeauthor{FFS} measured an increase in disk
+            The result was that \cauthor{FFS} measured an increase in disk
             bandwidth utilisation of about an order of magnitude without an
             increase in wasted space.
 
@@ -187,7 +187,7 @@
         \subsection{LFS}
             \label{sec:LFS}
 
-            With advances in software and hardware, by \citeyear{IO_bottleneck}
+            With advances in software and hardware, by \cyear{IO_bottleneck}
             file access and reliability patterns became apparent. Especially
             for office use, small reads and writes dominated the workload. Like
             in \hyperref[sec:UFS]{UFS} and \nameref{sec:FFS}, the mechanical
@@ -196,14 +196,14 @@
             a substantial improvement, which has been wildly used since
             \cite{IO_bottleneck, Linux_VFS_cache}.
 
-            However, \citeauthor{IO_bottleneck} points out some issues with
+            However, \cauthor{IO_bottleneck} points out some issues with
             such an approach: a system crash or a power outage puts the
             contents of such a cache in jeopardy. This is not a problem for a
             read cache, but a write cache loss can be catastraphic. This brings
             reliability into the picture and balancing it with performance
             becomes a key factor.
 
-            Further, \citeauthor{IO_bottleneck} argues that such caching shifts
+            Further, \cauthor{IO_bottleneck} argues that such caching shifts
             the IO pattern from mostly random reads to mostly writes in
             occasional big bursts of relatively large amount of data.
             Maintaining the popular layout of filesystems so far does not make
@@ -213,7 +213,7 @@
             together, utilises the burst nature of writes and recovery is easy
             - only the end may get corrupted \cite{IO_bottleneck}.
 
-            \citeauthor{LFS}, reiterates the necessity of asynchronous writes
+            \cauthor{LFS}, reiterates the necessity of asynchronous writes
             (and therefore a cache). In his LFS, based on \cite{IO_bottleneck},
             the inode structure is kept exactly the same as in FFS (including
             the data block arrangement), but its layout policy was redically
@@ -277,7 +277,7 @@
             or nothing operation, limiting the impact of a crash to only some
             data loss that hasn't had the time to be commited to disk.
 
-    \section{he B-tree}
+    \section{The B-tree}
         \label{sec:btree}
 
         B-trees are a de facto standard for file organisation
@@ -290,13 +290,14 @@
         neatly into their access patterns.
 
         % TODO: prime candidate for graphics
-        As explained by \citeauthor{btree_ubiquitous}, B-trees are a
+        As explained by \cauthor{btree_ubiquitous}, B-trees are a
         generalisation of binary search trees. Each node can contain any fixed
         maximum number of keys (instead of the one for a binary tree) and the
         same number plus one children. Keys are integers and are kept sorted
         within a node. Children are assigned to parents such that all of the
         keys in a child node lie between two adjacent keys in the parent (or
-        just one in case it is located at either end). Nodes do not have to be
+        just one in case it is located at either end). \autoref{fig:btree}
+        shows an example of this arrangement. Nodes do not have to be
         full, although non-leaves are kept at least $1/2$ full. When a node
         fills up it is split into two equal parts plus the middle key. The
         middle key is inserted into the parent to act as a separator while the
@@ -344,8 +345,8 @@
         \cite{Debian_filesystem} and Red Hat \cite{RedHat_filesystem}. It is
         actively maintained \cite{ext4_mailing_list}, with the latest Linux
         release (5.17) adding 74 commits to it \footnote{\monospace{git log
-        --numstat v5.16..v5.17 fs/ext4})}. It has existed since 2006
-        \cite{ext4_origin} and it is about \numprint{60000} lines of code
+        --numstat v5.16..v5.17 fs/ext4})}. It has existed since \cyear{ext4_origin}
+        and it is about \numprint{60000} lines of code
         \footnote{\monospace{cloc fs/ext4}} so it is very mature. Finally,
         unlike its most direct competitiors by the likes of Windows' NTFS and
         MacOS' APFS, it is free and open source, so code and documentation are
@@ -417,7 +418,7 @@
             ensure consistency \cite{soft_updates} and journaling where
             metadata is written to a small LFS style log before entering the
             filesystem proper \cite{ext4_docs}. Pros and cons differ and
-            \citeauthor{journaling_vs_soft_updates} presents a thorough
+            \cauthor{journaling_vs_soft_updates} presents a thorough
             comparison. The ext familiy settled on journaling.
 
             Another reliability feature is that all ext4 data structures are
@@ -466,7 +467,7 @@
             independently maintained. Otherwise data loss is always at risk.
 
             SSDs and flash storage in general are a similar story. As
-            \citeauthor{2D_RAID} puts it: "Flash is basically garbage. It
+            \cauthor{2D_RAID} puts it: "Flash is basically garbage. It
             barely works. We tolerate it because it is fast". SSDs employ
             similar techniques as spinning hard drives and suffer similar
             problems as them \cite{flash_large_scale, flash_reliability}. Their
@@ -477,22 +478,22 @@
             One way to measure these failures is with the raw bit error rate
             (RBER). The RBER is defined as the number of currupted bits per the
             number of total bits read \cite{flash_reliability}.
-            \citeauthor{flash_reliability} takes measurements over a vast
+            \cauthor{flash_reliability} takes measurements over a vast
             number of drives with single-level cell (SLC, 1 bit per memory
             cell) and multi-level cell (MLC, 2 bits) chips. They measure RBERs
-            between $10^{-8}$ and $10^{-5}$. \citeauthor{bit_error_mlc} finds
-            similar rates for MLC. On the other hand \citeauthor{bit_error_qlc}
+            between $10^{-8}$ and $10^{-5}$. \cauthor{bit_error_mlc} finds
+            similar rates for MLC. On the other hand \cauthor{bit_error_qlc}
             finds that triple-level cell (TLC) and quad-level cell (QLC) flash
             suffer RBER rates of around $10^{-3}$ and $10^{-2}$ respectively.
-            Although \citeauthor{flash_reliability} also notes that RBER rates
+            Although \cauthor{flash_reliability} also notes that RBER rates
             are a poor indicator of unrecoverable errors it puts an upper bound
             on their likelyhood.
 
             As a result we can expect a worst case failure rate of a few bits
-            per kilobyte of data read. As \citeauthor{flash_reliability} and
-            \citeauthor{flash_large_scale} note, these failures are not uniform
+            per kilobyte of data read. As \cauthor{flash_reliability} and
+            \cauthor{flash_large_scale} note, these failures are not uniform
             and change with SSD age and wear. With further analysis from
-            \citeauthor{flash_error_manual} it is apparent that this is due to
+            \cauthor{flash_error_manual} it is apparent that this is due to
             a wide range of physical phenomena. However, it becomes apparent
             that these errors are relatively isolated from each other where
             only adjacent cells can affect each other due to the way cells

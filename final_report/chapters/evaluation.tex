@@ -4,11 +4,11 @@
         \label{sec:benchmark}
 
         Benchmarking a file system involves many aspects and different authors
-        have done it in varying ways over the years. \citeauthor{FFS} measures
-        raw throughput of data while \citeauthor{LFS} recorgnise both small
+        have done it in varying ways over the years. \cauthor{FFS} measures
+        raw throughput of data while \cauthor{LFS} recorgnise both small
         reads and writes as well as long sustained accesses.  On the other
-        hand, \citeauthor{soft_updates} looks at speed of metadata access and
-        modificaiton and \citeauthor{ext4_space_maps} uses a small file
+        hand, \cauthor{soft_updates} looks at speed of metadata access and
+        modificaiton and \cauthor{ext4_space_maps} uses a small file
         benchmark that simulates an email server. Finally, Google use a hybrid
         approach where they try a large variety of real world representative
         data with a large distribution of sizes. In the mean time popular
@@ -50,7 +50,7 @@
         % metadata - likely to indicate search
 
         To measure these a utility written by the author of the new Linux
-        system call interface io\_uring, \citeauthor{IO_uring}, is used - fio
+        system call interface io\_uring, \cauthor{IO_uring}, is used - fio
         \cite{fio}. A fio workload is devised to benchmark the highlighted
         points above: random accesses, sequential accesses and metadata
         modificaiton. This is implemented as 8 'jobs' - individual tasks that

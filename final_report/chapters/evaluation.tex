@@ -5,10 +5,10 @@
 
         Benchmarking a file system involves many aspects and different authors
         have done it in varying ways over the years. \cauthor{FFS} measures
-        raw throughput of data while \cauthor{LFS} recorgnise both small
+        raw throughput of data while \cauthor{LFS} recognise both small
         reads and writes as well as long sustained accesses.  On the other
         hand, \cauthor{soft_updates} looks at speed of metadata access and
-        modificaiton and \cauthor{ext4_space_maps} uses a small file
+        modification and \cauthor{ext4_space_maps} uses a small file
         benchmark that simulates an email server. Finally, Google use a hybrid
         approach where they try a large variety of real world representative
         data with a large distribution of sizes. In the mean time popular
@@ -18,17 +18,17 @@
         performance of drives. These last methods are a bit different in that
         they measure drive performance without usually varying the filesystem
         (or bypassing it altogether) but they are still show representative
-        results as they aim to find bottlenecks of drives and quanitfy the
+        results as they aim to find bottlenecks of drives and quantify the
         highest possible performance of likely use cases.
 
         Despite the variety of test methodologies two important metrics stand
         out: raw throughput and the number of individual requests they can
         fulfill. However, each must be measured under varying conditions as
-        unconspicuous factor may affect performance. Things like sequentially
+        inconspicuous factor may affect performance. Things like sequentially
         reading a large file may perform like a random access because its
         contents are stored in a chain of blocks like fat32 \cite{fat32}.
         Alternatively, random file accesses may be performant while metadata
-        are not due to a poor choice of data strctures in the directory
+        are not due to a poor choice of data structures in the directory
         representation for example. Even though metadata benchmarks are pure
         throughput tests they focus on the data structure implementation as an
         indicator of filesystem quality.
@@ -36,40 +36,41 @@
         To account for these quirks the devised test includes measures of pure
         workloads as well as varieties of them to represent the likely tasks
         for home or office use (\autoref{sec:problem}). These include the usual
-        large sequentail reads and writes as well as small and random accesses
+        large sequential reads and writes as well as small and random accesses
         to get a baseline. Then a very large access to control for things like
         caches that might be speeding things up. Finally, a metadata access of
         relatively small scale file creation and deletion to simulate a home
         user searching for a filename for example. We do not test for very
-        large directoies as those are likley to be rare in our use case
+        large directories as those are likely to be rare in our use case
         \cite{contents_study}.
 
         % might be good without these
-        % sequentail performance - very important but mostly bragging rights - most accesses are smaller
-        % random - realistic but over empahsised - say it's unlikey except in search
+        % sequential performance - very important but mostly bragging rights - most accesses are smaller
+        % random - realistic but over emphasised - say it's unlikely except in search
         % metadata - likely to indicate search
 
         To measure these a utility written by the author of the new Linux
         system call interface io\_uring, \cauthor{IO_uring}, is used - fio
         \cite{fio}. A fio workload is devised to benchmark the highlighted
         points above: random accesses, sequential accesses and metadata
-        modificaiton. This is implemented as 8 'jobs' - individual tasks that
-        fio completes. There are small (4KiB size) and large (1MiB) verisons
+        modification. This is implemented as 8 'jobs' - individual tasks that
+        fio completes. There are small (4KiB size) and large (1MiB) versions
         of each a read, a write and a combined test. Then a sequential
         read-read combo test of 1GB of data and finally creating and removing
-        100 files in a loop. Each of these tests is perfomerd in sequence for
+        100 files in a loop. Each of these tests is performed in sequence for
         20 seconds each.
 
 		% possibly citations here?
-        All tests are perfomerd using the same hardware and sofware setup: a
+        % explain that NTFS is not a UNIX fs but may be good to see some results
+        All tests are performed using the same hardware and software setup: a
         loopback device is set up using a regular file on the filesystem as a
         backing store. The drive is a "SAMSUNG MZVLB1T0HBLR-000L7" high speed
         NVMe drive tested on an AMD Ryzen 7 PRO 4750U CPU. The test was ran 3
         times and average values were taken. As controls two more filesystems
         were tested: ext4 (\autoref{sec:ext4}) and ntfs (with the ntfs-3g driver).
-        They represent the modern defauls on two of the most popular operating
+        They represent the modern defaults on two of the most popular operating
         systems used today and are the most likely candidates for a user to
-        compare against. For concsistency, all tests were performed by
+        compare against. For consistency, all tests were performed by
         completely wiping each drive before commencing the benchmark.
 
 
@@ -77,7 +78,7 @@
 
         The results of this benchmark are in \autoref{fig:benchmark}.
         Combined read and write tests have the read and write components added
-        toghether in the summary. The raw output for the graph can be found in
+        together in the summary. The raw output for the graph can be found in
         \autoref{app:benchmark}.
 
         % \begin{wrapfigure}{L}{0.2\textwidth}
@@ -105,12 +106,12 @@
         This is not surprising, as the code paths they take are similar. Each
         access needs to have its destination resolved and then data written in
         the same way. Interestingly, however, sequential reads are about an
-        order of magnitude higher than the overall perfomance of the
+        order of magnitude higher than the overall performance of the
         filesystems and the corresponding sequential writes. This cannot be
         attributed to drive access assymetry, as the difference tends to be
         linear in SSDs \cite{servethehome_review}. Ext4 handles both workloads
-        identially, supporting this idea. To confirm this, and investigate the
-        cause, profiling analysys is performed in \autoref{sec:perf}.
+        identically, supporting this idea. To confirm this, and investigate the
+        cause, profiling analysis is performed in \autoref{sec:perf}.
 
         The large file access is in line with the combined sequential test
         indicating that further increasing the work load does not reduce
@@ -119,14 +120,14 @@
         small directories, a linear search does not make a big enough time
         contribution to outweighs other operations.
 
-    \section{Profiling analysys}
+    \section{Profiling analysis}
         \label{sec:perf}
 
         To investigate the reasons for the performance the filesystem was
         profiled with perf \cite{perf}. Perf is powerful Linux tool (part of
         the kernel) for program profiling. It can produce performance
         statistics for hardware (cache hits, idle CPU cycles etc) and for
-        sofware (call graphs, call frequency, work in each subroutine etc.).
+        software (call graphs, call frequency, work in each subroutine etc.).
 
         A profile was taken with \monospace{perf record -g <filesystem>}. For a
         workload, a full run of the benchmark was used (\autoref{sec:benchmark}).
@@ -135,7 +136,7 @@
         --no-children}. The output of these two commands can be found in
         \autoref{app:perf}.
 
-        Unsurpsiginly, most of the time is spent in the kernel (upwards of
+        Unsurprisingly, most of the time is spent in the kernel (upwards of
         90\%). However, looking into which subroutine enters the kernel (with
         \monospace{--children}) has interesting results. The biggest time
         consumer is, as expected the file access subroutine
@@ -155,7 +156,7 @@
         Instead, they receive it split up into chunks. Another factor is that
         these inefficient accesses are not cached in any way to speed up
         subsequent similar accesses. Then the logarithmic benefit of the B-tree
-        search is simply dwarfed by the sheer quanitfy which is performed. As a
+        search is simply dwarfed by the sheer quantify which is performed. As a
         result, even large sequential workloads behave like numerous random
         ones and a lot of performance is left on the table.
 
@@ -172,42 +173,42 @@
             \end{lstlisting}
         \end{figure}
 
-        Knowing this, explaining the sequential read anomally is not hard. With
+        Knowing this, explaining the sequential read anomaly is not hard. With
         this arrangement reading any file will always be faster than writing it
         due to a single factor - file expansion. By definition, when reading a
         file it cannot change its size. However, this does happen when writing
         it. Setting the file size in advance is not supported
         (\autoref{sec:operations}) so the only place this can happen is on file
         write. Since all blocks get handled individually, each time the file is
-        allocated the B-tree must be traveresed from the start. Then a
+        allocated the B-tree must be traversed from the start. Then a
         potentially linear allocation must also happen. What is worse is that
-        this happens on top of the traversal that has already been perfomerd to
+        this happens on top of the traversal that has already been performed to
         attempt to locate the block, resulting in an exponential time
         requirement. This stacks the penalty twice which reads simply do not
         do.
 
-        From this analaysys arises a corollary: allocation cannot be fast. And
+        From this analysis arises a corollary: allocation cannot be fast. And
         in fact this is the reason why even the largest test is relatively
         small for today's standards. Since all accesses are split into blocks
         and treated individually, allocating a gigabyte of space with 4096 byte
-        blocks requires an allocaiton for each or $2^{30} / 4096 \approx
+        blocks requires an allocation for each or $2^{30} / 4096 \approx
         \numprint{262000}$ calls to the allocation subroutine. Since it the
         free list is also linear, after a period of use the search for free
         blocks start to dominate the required time.
 
         % Analyse the free list, maybe the i-list?
-        % do a complexity analysys
+        % do a complexity analysis
 
         % Virtually all accesses in this filesystem require a file access,
-        % becasue their metadata is stored in files (\autoref{sec:files}). Since they
+        % because their metadata is stored in files (\autoref{sec:files}). Since they
         % are also accessed with these subroutines, all workloads behave
         % identically.
 
         The overall poor performance cannot be attributed to a single factor,
         however, instead being a combination of smaller things. First, the
         impact of the individual treatment of blocks propagates throughout the
-        filesystem, unituitively even in random accesses. This individuality
-        only directly impacts sequentail access, as previously described.
+        filesystem, unintuitively even in random accesses. This individuality
+        only directly impacts sequential access, as previously described.
         However, random accesses depend on lookups in the i-table, free list
         and directories which are themselves files. Accessing those is a
         sequential task but it performs in a random manner. So once again, the
@@ -217,11 +218,11 @@
     \section{Failure simulation}
 
         To simulate failures we use a similar approach to the benchmark. Once
-        again, we use fio. This time a 5 minute stress test is perfomerd. It
+        again, we use fio. This time a 5 minute stress test is performed. It
         has two jobs which run concurrently. The first one preforms the same
         1GB combined read and write load while the second one creates and
         removes 100 files repeatedly. While this test is running a script
-        (\monospace{insert\_failures.py}) goes over the a drive in the array
+        (\monospace{insert\_failures.py}) goes over a drive in the array
         and flips a random number of bits on each block up to a maximum of 100
         in an infinite loop.
 
@@ -274,7 +275,7 @@
         follow some patterns (\autoref{sec:reliability}) and are likely to have
         very few bits changed. Therefore for normal wear and tear the
         probability of a collision is likely to be much lower due to the
-        avalanching effect of the funciton, however, this has not been
+        avalanching effect of the function, however, this has not been
         theoretically verified and is not be relied upon.
 
         Unlike ZFS (\autoref{sec:ZFS}), this filesystem does not chain checksums.
@@ -282,7 +283,7 @@
         in such a way that the checksum is still valid. ZFS's chaining of
         hashes mitigates against this. However, the chance of this happening is
         astronomically low. As the errors are independent on SSDs
-        (\autoref{sec:reliability}) the likelyhood of that happening with SHA256
+        (\autoref{sec:reliability}) the likelihood of that happening with SHA256
         will be $2^{252}$. This is a valid issue to have with short (eg. CRC)
         checksums however with our long hashes this issue can be safely
         ignored. Regardless, the alternation of data and checksum accesses
@@ -295,16 +296,16 @@
         checksumming of the data provide a barrier to pulling off such an
         attack despite any ability for controlling failures the attacker might
         have. In effect this acts like stack canaries \cite{canary} as it is
-        an extra, unknown, value that is assumed to be difficult to acces and
+        an extra, unknown, value that is assumed to be difficult to access and
         predict by the attacker. We can conclude that since the checksum is at
-        least slightly separate its modificaiton will be extremely difficult
+        least slightly separate its modification will be extremely difficult
         and if it is possible, the security of the hash function can be relied
         upon.
 
     % \section{Technical evaluation?}
     % TODO: Appropriate technical and/or user evaluation.
     % Results clearly related to motivation/goals as appropriate
-    %     As noted in the performance analysys \autoref{sec:perf}, this filesystem's
+    %     As noted in the performance analysis \autoref{sec:perf}, this filesystem's
     %     performance is not on par with what is available. Separately, it
     %     experiences occasional crashes and instability, independently of the
     %     reliability mechanisms. As a proof of concept, this is deemed to be

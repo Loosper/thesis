@@ -8,7 +8,7 @@
 
     However, from very early on the hard drives these filesystems were designed
     to run on - spinning platters with mechanical actuators that would move
-    accross to find pieces of data - turned out to be not particularly reliable
+    across to find pieces of data - turned out to be not particularly reliable
     \cite{Backblaze_stats, hard_drive_failures, RAID,
     data_corruption_storage_stack}. As anyone with a car will testify, moving
     parts break and occasionally and need replacing. So do hard drives. They
@@ -38,7 +38,7 @@
     against all eventualities, like ZFS \cite{ZFS}.
 
     Regardless of which one is chosen, though, all have problems. RAID can
-    corrupt previously commited data on a system crash \cite{LWN_md_journal}.
+    corrupt previously committed data on a system crash \cite{LWN_md_journal}.
     Ext4 only checksums metadata and relies on the drive for the rest
     \cite{ext4_docs}. ZFS is unimaginably complex \cite{ZFS_spec} and requires
     specialist operating systems and hardware \cite{TrueNAS_hardware_guide}.
@@ -53,8 +53,8 @@
     a challenge for normal users. As a results those systems and users
     oftentimes remain with no data integrity guarantees.
 
-    This project propeses a filesystem design specifically for this awkwardly
-    positioned segment. It provides a prototype that integrate all essentail
+    This project proposes a filesystem design specifically for this awkwardly
+    positioned segment. It provides a prototype that integrate all essential
     features for high data integrity while being easy to use and deploy.
 
 \chapter{Background}
@@ -64,8 +64,8 @@
         For the past 50 years the UNIX style operating system has been one of
         the most prevalent operating system architectures out there. The
         original UNIX introduced a simple and elegant template which is still
-        with us to this day. It brough forward many novel ideas: wide hardware
-        compatibility, simple and powerful system calls, a powerfull shell,
+        with us to this day. It brought forward many novel ideas: wide hardware
+        compatibility, simple and powerful system calls, a powerful shell,
         minimal design and most importantly a file system \cite{UFS}. All these
         features are still with us, largely unmodified, to this day, although
         greatly improved upon.
@@ -92,7 +92,7 @@
         of files, called an i-list (or i-table more recently).
 
         Each entry in the i-list is an i-node (usually shortened to just
-        inode). The inode represents the file and is its header - it cointains
+        inode). The inode represents the file and is its header - it contains
         all metadata with pointers to the actual data.
 
         To make this flat list of files into a usable tree, special files are
@@ -100,24 +100,24 @@
         The directory is a file whose contents have a special format: a list of
         2-tuples, (name, i-number), which denote that file number
         \textit{i-number} can be found in this directory under name
-        \textit{name}. Directories are special in that they cannod be read and
+        \textit{name}. Directories are special in that they cannot be read and
         written to directly. Rather special system calls must be used for the
         operating system to report its contents. The exact method is slightly
-        involved and not relevant for this discussion, but it is sufficent to
-        say that there are simple library functions roughly equvalent to those
+        involved and not relevant for this discussion, but it is sufficient to
+        say that there are simple library functions roughly equivalent to those
         for normal files.
 
         File names are alphanumeric strings of any length. To denote that a
         file is contained within a directory, a single forward slash ("/") is
         used, meaning whatever is on its right is contained on the directory
         named on the left. This can be repeated an unlimited number of times.
-        The root directory has no name \textit{per se}, hence any path refering
+        The root directory has no name \textit{per se}, hence any path referring
         to it starts with a slash, for example \textit{/file/in/root} is a file
         called \textit{root} in a directoy \textit{it} itself contained in
-        directoy \textit{file} which is in the root of the filesystem.
+        directory \textit{file} which is in the root of the filesystem.
 
-        File number 1 is defined to be the the root directory (/) to bootrstrap
-        the search and inode 0 is definted to not exist.
+        File number 1 is defined to be the root directory (/) to bootstrap
+        the search and inode 0 is defined to not exist.
 
         An important, but not user visible detail is that the filesystem has a
         list of free blocks (called the free list), to denote which blocks are
@@ -179,7 +179,7 @@
             increase in wasted space.
 
             An important note is that cylinder groups include redundant copies
-            of various metadata to increase resiliance to data loss from damage
+            of various metadata to increase resilience to data loss from damage
             to the disk. This shows that reliability came into the picture very
             early in the history of UNIX like filesystems and the issue of data
             recovery was given active thought to.
@@ -192,14 +192,14 @@
             for office use, small reads and writes dominated the workload. Like
             in \hyperref[sec:UFS]{UFS} and \nameref{sec:FFS}, the mechanical
             nature of hard drives made such operations costly when performed in
-            a random manner. To imporove performance, caching is identified as
+            a random manner. To improve performance, caching is identified as
             a substantial improvement, which has been wildly used since
             \cite{IO_bottleneck, Linux_VFS_cache}.
 
             However, \cauthor{IO_bottleneck} points out some issues with
             such an approach: a system crash or a power outage puts the
             contents of such a cache in jeopardy. This is not a problem for a
-            read cache, but a write cache loss can be catastraphic. This brings
+            read cache, but a write cache loss can be catastrophic. This brings
             reliability into the picture and balancing it with performance
             becomes a key factor.
 
@@ -216,7 +216,7 @@
             \cauthor{LFS}, reiterates the necessity of asynchronous writes
             (and therefore a cache). In his LFS, based on \cite{IO_bottleneck},
             the inode structure is kept exactly the same as in FFS (including
-            the data block arrangement), but its layout policy was redically
+            the data block arrangement), but its layout policy was radically
             different. First, the i-list became a regular file, but instead of
             holding inodes, it held addresses to where they could be found. The
             inode itself and its data are laid our sequentially elsewhere to
@@ -225,7 +225,7 @@
             \textbf{extents} (analogous to segments in LFS) - which contain a
             single block of metadata that includes that information.  Special
             care is taken to maintain these chunks large. This is done to
-            reduce fragmentation and to allow a better likelyhood for
+            reduce fragmentation and to allow a better likelihood for
             sequential accesses. This idea for large extents remains with us
             today.
 
@@ -238,7 +238,7 @@
             \label{sec:WAFL}
 
             With time reliability became an ever growing concern, both from a
-            techincal and from a human perspective. The idea of snapshots
+            technical and from a human perspective. The idea of snapshots
             contributes to both of these.
 
             Snapshots are read-only copies of the entire file system. WAFL
@@ -248,14 +248,14 @@
             copied elsewhere to write to them. Snapshots are essentially
             pointers to blocks. CoW allows a new snapshot to consume extra
             space only for the difference with another snapshot. Block are
-            freeded after all references to them have been removed. This has
+            freed after all references to them have been removed. This has
             the added benefit that it avoids duplicating data to store the
             snapshots.
 
             Besides file versioning, snapshots are useful for backups on a live
             system, as creating them is pretty much much free (see below).
 
-            The way WAFL implemnts the CoW is by creating a tree of blocks,
+            The way WAFL implements the CoW is by creating a tree of blocks,
             where the root is a known fixed block. Then it has all metadata
             (like the free list) be a file too. The inodes of all of these
             files are stored in the inode list, itself a file, whose inode
@@ -263,7 +263,7 @@
             information required for the filesystem's operation is connected in
             a rooted tree and copying the root block makes a snapshot.
             Modifying any other block requires copying it to a new location
-            with the modificaiton only on the new copy and modifying the
+            with the modification only on the new copy and modifying the
             reference to it. Modifying the reference requires the same
             operation, which eventually bubbles up to the root block which can
             be modified in place.
@@ -275,7 +275,7 @@
             branch of the tree is complete. Writing a single block is assumed
             to be atomic \cite{drive_atomicity} so updating the root is an all
             or nothing operation, limiting the impact of a crash to only some
-            data loss that hasn't had the time to be commited to disk.
+            data loss that hasn't had the time to be committed to disk.
 
     \section{The B-tree}
         \label{sec:btree}
@@ -307,10 +307,10 @@
         forming which would increase its size.
 
         Typically, the capacity of a node is chosen such that it aligns with a
-        single block on disk. This way a node can be transfered to and from
+        single block on disk. This way a node can be transferred to and from
         memory in a single operation. Since blocks are large, nodes contain
         lots of keys so the tree ends up being rather shallow. In fact, if the
-        tree is maintaned balanced, it always has a depth logarithmically (of
+        tree is maintained balanced, it always has a depth logarithmically (of
         base the maximum number of keys in a node) proportional to the number
         of keys in the tree. This gives the shallowness property. Additionally,
         this means that relatively few accesses are needed to reach a leaf node
@@ -348,7 +348,7 @@
         --numstat v5.16..v5.17 fs/ext4})}. It has existed since \cyear{ext4_origin}
         and it is about \numprint{60000} lines of code
         \footnote{\monospace{cloc fs/ext4}} so it is very mature. Finally,
-        unlike its most direct competitiors by the likes of Windows' NTFS and
+        unlike its most direct competitors by the likes of Windows' NTFS and
         MacOS' APFS, it is free and open source, so code and documentation are
         readily available.
 
@@ -385,28 +385,28 @@
             allocation is delayed as long as possible, to ensure unwritten
             chunks can be coalesced into larger ones and laid out better. It
             also tries to keep the inode close to both its data and its parent
-            directoy on the presumption that they are related and accessing
+            directory on the presumption that they are related and accessing
             them in sequence is likely.
 
             A second trick is that the filesystem is split into large block
             groups in which the above rules are applied. A major exception is
-            that root directoy entries are spread out as much as possible to
+            that root directory entries are spread out as much as possible to
             encourage them to grow independent and reduce fragmentation.
 
             The final interesting technique is that ext4 uses extents which are
             a "range of contiguous physical blocks owned by a file"
             \cite{ext4_space_maps}. Using them allows to reduce the amount of
             necessary metadata for those large contiguous chunks within a block
-            group which imporoves performance, like in \nameref{sec:LFS}.
+            group which improves performance, like in \nameref{sec:LFS}.
 
         \subsection{Metadata integrity}
 
             System crashes are a consistent issue. Causes include dormant bugs
-            in the kernel, applications misbehvaing at critical moements or a
-            mundane improper shutdown. Addtionally, many machines lack the
-            hardware capabilities to detect or correct memoery errors, as Linus
+            in the kernel, applications misbehaving at critical moments or a
+            mundane improper shutdown. Additionally, many machines lack the
+            hardware capabilities to detect or correct memory errors, as Linus
             Torvalds notes \cite{Linus_ECC_rant}. As a result, even the best
-            code can be brought down by completely unforseeable events like bit
+            code can be brought down by completely unforeseeable events like bit
             flips due to a stray gamma rays.
 
             To that effect, system crashes are assumed to be inevitable and
@@ -419,7 +419,7 @@
             metadata is written to a small LFS style log before entering the
             filesystem proper \cite{ext4_docs}. Pros and cons differ and
             \cauthor{journaling_vs_soft_updates} presents a thorough
-            comparison. The ext familiy settled on journaling.
+            comparison. The ext family settled on journaling.
 
             Another reliability feature is that all ext4 data structures are
             checksummed wherever possible (exceptions are due to backwards
@@ -446,14 +446,14 @@
             relatively constant rates over large arrays \cite{Backblaze_stats}.
             Tools for monitoring drive health, like SMART, have been developed
             to combat the issue and are in general a good indicator for the
-            likelyhood of loss of the drive.
+            likelihood of loss of the drive.
 
             However, drive failure is not binary. They do not work flawlessly
             until such a time as to not work at all. Individual sectors develop
             errors over time, failing to be read or written to.  Drives try to
             combat the issue by keeping an array of spare sectors that replace
-            misbehvaing ones when detected. To determine if a sector is
-            misbehvaing in the first place, drives employ ECC codes
+            misbehaving ones when detected. To determine if a sector is
+            misbehaving in the first place, drives employ ECC codes
             \cite{data_corruption_storage_stack}.
 
             However, despite all the best efforts of drives and their
@@ -476,7 +476,7 @@
             accounted for outside the drive.
 
             One way to measure these failures is with the raw bit error rate
-            (RBER). The RBER is defined as the number of currupted bits per the
+            (RBER). The RBER is defined as the number of corrupted bits per the
             number of total bits read \cite{flash_reliability}.
             \cauthor{flash_reliability} takes measurements over a vast
             number of drives with single-level cell (SLC, 1 bit per memory
@@ -487,7 +487,7 @@
             suffer RBER rates of around $10^{-3}$ and $10^{-2}$ respectively.
             Although \cauthor{flash_reliability} also notes that RBER rates
             are a poor indicator of unrecoverable errors it puts an upper bound
-            on their likelyhood.
+            on their likelihood.
 
             As a result we can expect a worst case failure rate of a few bits
             per kilobyte of data read. As \cauthor{flash_reliability} and
@@ -510,13 +510,13 @@
             \label{sec:RAID}
 
             Non-volatile storage has historically been orders of magnitude
-            slower than volatile memory, like RAM, which is itslef much slower
+            slower than volatile memory, like RAM, which is itself much slower
             than CPUs and their caches \cite{IO_bottleneck}. Disk arrays are an
             attempt to increase IO performance and bridge that gap. Since
             drives are inherently unreliable (\autoref{sec:reliability}), putting
             many of them together exacerbates the problem. RAID (a redundant
             array of inexpensive disks) is one solution for the problem of
-            drive reliability \cite{RAID}. As its name suggests, RIAD adds
+            drive reliability \cite{RAID}. As its name suggests, RAID adds
             redundancy to disk arrays in different configurations. Popular
             arrangements are RAID levels 1, 4 and 5.
 
@@ -552,7 +552,7 @@
             However, they do not use conventional RAID.  Instead, they use
             custom software to split files into chunks, called "shards", which
             are then stored on normal ext4 filesystems with parity calculated
-            with a Reed-Solomon erasure code. The desgin is motivated by the
+            with a Reed-Solomon erasure code. The design is motivated by the
             good reliability and performance of ext4 and that inverting the
             usual order of replication and filesystem allows them to protect
             against filesystem corruption as well.
@@ -583,7 +583,7 @@
             (\autoref{sec:LFS}), operating systems have to perform a fine balancing
             act.
 
-            Linux in particular caches aggresively \cite{Linux_VFS_cache}.
+            Linux in particular caches aggressively \cite{Linux_VFS_cache}.
             Luckily, its VFS layer implements this in an abstract manner, so
             individual filesystems do not need to implement it themselves.
             Nevertheless, they frequently need to be aware of it and in rare
@@ -604,7 +604,7 @@
 
             In ZFS all blocks are checksummed \cite{ZFS}. This checksum is
             stored on any other block that saves a pointer to it. This way data
-            and error correction metadata are separated and the likelyhood of
+            and error correction metadata are separated and the likelihood of
             simultaneous corruption of both is reduced. Blocks are chained in a
             tree. The root of the tree is called the uberblock. Leaves of the
             tree contain data (inodes, their data, directories, etc). The
@@ -622,7 +622,7 @@
             a volume manager and implements pools. A pool is an array of vdevs
             (virtual devices) which provide storage. Their space is
             concatenated together and handed out to every different volume
-            (what ZFS calls an individual filesystem) on a per-reqest basis.
+            (what ZFS calls an individual filesystem) on a per-request basis.
 
             Vdevs exist to provide redundancy. A vdev is a node with 1 or more
             children. Children can be either drives or other vdevs. Vdevs come
@@ -672,7 +672,7 @@
             ZIL acts as a stopgap for writes (of both data and metadata) that
             have been accepted, cached and not flushed to disk yet. It is a
             log, similar to LFS, that records all writes in sequence until they
-            can be commited on disk. In the event of system failure uncommited
+            can be committed on disk. In the event of system failure uncommitted
             writes can be recovered.
 
             In summary, ZFS tries to account for \textit{every} eventuality and
@@ -704,7 +704,7 @@
         The issue is in the fact that writing a single block (or stripe) of
         data on a RAID 5 array requires at least two writes to two independent
         drives. The first is the actual block where the data is stored and the
-        second is its parity computed from it and all asociated blocks on other
+        second is its parity computed from it and all associated blocks on other
         drives. If the system were to experience any kind of failure in between
         these two writes then the array is left in an inconsistent state. The
         data on the non-parity disks will be correct but their parity will not
@@ -716,8 +716,8 @@
         issue. That can either be the block written just before the failure,
         resulting in reverting the write, or any of the related blocks,
         resulting in overwriting correct data. Even worse, if any drive fails
-        before the array can be rapaired, then one of these will happen
-        silently, depending on which drive fialed.
+        before the array can be repaired, then one of these will happen
+        silently, depending on which drive failed.
 
         The problem lies in the fact that the system cannot distinguish between
         these three options and the second one leads to data loss. The parity
@@ -727,10 +727,10 @@
         perspective. What is more, the data loss can be completely unrelated to
         the file, so a filesystem journal cannot hope to correct the issue.
 
+        % TODO: nice to haves
         % RAID-z fixes this. i need to argue why it's bad
         % insert reliability analysis of zfs in the zfs section?
         % https://web.archive.org/web/20141216015058/https://blogs.oracle.com/bonwick/en_US/entry/raid_z
-        % TODO:
         % Explain the extreme case?: a RIAD 1 mirror. If one is (silently) wrong,
         % which one can be trusted? Neither.
 
@@ -739,7 +739,7 @@
         partial parity log (PPL) \cite{partial_parity_log}. The journal uses a
         separate drive to store a journal of writes, much like the ZIL (in
         \autoref{sec:ZFS}), \nameref{sec:ext4} and \nameref{sec:LFS} and then
-        recover any uncommited changes on startup. Alternatively, the PPL
+        recover any uncommitted changes on startup. Alternatively, the PPL
         stores extra (partial) parity in the metadata area of parity drives,
         again allowing for recovery on startup.
 
@@ -761,31 +761,32 @@
         Due to its caching policy, main memory requirements are
         very high and not satisfying them can and will degrade performance.
         Workstation class devices are not dedicated file servers and rely on
-        their memory for other tasks - 3D morelling, rendering, compillation
+        their memory for other tasks - 3D modelling, rendering, compilation
         and so on. Additionally, increasing available memory can be impossible
         for laptops. Conversely, these same tasks need the speed and
         reliability offered by ZFS for doing work effectively, as data loss can
         be catastrophic.
 
         Alternatively, for small home servers the extra cost for memory may be
-        unjustifiable for a small system with a low-end CPU and a hadnful of
+        unjustifiable for a small system with a low-end CPU and a handful of
         drives. Features like the ZIL may not be incorporated too, making ZFS
         performance unjustifiable.
 
         All of this is ignoring the fact that ZFS tends to run best on
         dedicated or more specialist operating systems like TrueNAS or Linux
         which may be incompatible with home Windows based machines or less
-        techincally savvy users.
+        technically savvy users.
 
     \section{The problem to address (conclusion)}
         \label{sec:problem}
 
+        % can say it's more likely to remain with nothing (said in intro)
         Neither mechanical nor solid state drives cannot be relied upon. It is
         evident that there exist a plethora of techniques to ensure data
         integrity on a wide range of operating systems despite these
         shortcomings. However, there exists a reliability gap for small
         personal computers, workstations and home servers. Filesystems that are
-        intended for them, like ext4, do not provide sufficent data integrity
+        intended for them, like ext4, do not provide sufficient data integrity
         guarantees. Those that do can, like ZFS, be infeasible due to
         financial, spacial or complexity concerns. Simple solutions, like RAID,
         have significant flaws by default and addressing them presents similar

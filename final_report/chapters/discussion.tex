@@ -4,7 +4,7 @@
         \label{sec:implementation_discussion}
 
         Modern filesystems' complexity is very high and the performance
-        analaysys (\autoref{sec:benchmark} and \autoref{sec:perf}) show that it is
+        analaysis (\autoref{sec:benchmark} and \autoref{sec:perf}) show that it is
         justified. Each seemingly small addition has a large impact on some
         workload. Provided enough such features are included, most workloads
         are efficient. There is no silver bullet feature that magically makes a
@@ -14,19 +14,19 @@
         bring performance most of the way there.
 
         First is the use of B-trees. As we have already seen (\autoref{sec:btree})
-        they are well established and the sequentail read performance of this
+        they are well established and the sequential read performance of this
         filesystem shows it is competitive.
 
         Second is the use of extents, which have been included as far back as
         \cyear{LFS}. This filesystem does not include them under the
         assumption that SSDs can handle lots of random accesses well (discussed
-        in \autoref{sec:block_size}). This, however, introduces an unforseen
+        in \autoref{sec:block_size}). This, however, introduces an unforeseen
         problem. Not collating chunks of storage means each one must be indexed
         independently. The index will not be large per gigabyte (assuming 8
         byte pointers, the \numprint{200000} blocks (\autoref{sec:perf}) require
         about 2 MiB which arranged in a B-tree with 4096 byte nodes will only
         need one extra node to complete the tree) its space overhead is
-        neglegible so it can be ignored. However, managing a tree of this size
+        negligible so it can be ignored. However, managing a tree of this size
         amplifies the number of operations required. An allocation for a
         gigabyte of space becomes \numprint{200000} node insertions into the
         tree for example. This is an exponential increase over an even badly
@@ -36,7 +36,7 @@
 
         As a result, the speed of any one operation is not slower - drive
         utilisation is 100\% and time is not wasted due to the medium. However,
-        the complexity of operations increases in orderds of magnitude. A
+        the complexity of operations increases in orders of magnitude. A
         logarithmic complexity of any underlying data structure (like the
         B-tree) is dwarfed when a linear or a large polynomial of accesses are
         required. Having this much processing required reduces observed
@@ -49,10 +49,10 @@
         Even though those factors have evidently changed with SSDs, the
         solution remains valid and has not sparked a need to reconsider them.
         In the meantime, engineers appear well versed in this fact, however,
-        their knowdledge has a tendency of not being externally documented
+        their knowledge has a tendency of not being externally documented
         (indeed, ext4 only has a single sentence that alludes to that fact) and
         being integrated into the large code base. In any case, the mere
-        existance of multi gigabyte workloads (like videos for home users) make
+        existence of multi gigabyte workloads (like videos for home users) make
         this feature a essential for any filesystem.
 
         The third and most subtle feature is a polished implementation.  to
@@ -71,10 +71,13 @@
         \nameref{sec:UFS} are long gone and modern computer systems are
         inherently complex.
 
+        % you can say it is workable otherwise (i say in summary)
+        % also say it's easy to fix and will not affect other things
+
     \section{Did this solve the problem? (Outcome)}
     % more like the reliability
 
-        % TODO: discuss simplicty vs outcome
+        % TODO: discuss simplicity vs outcome
 
         % omits things like the chaining of checksums
         Despite the performance of this filesystem, its main task - data
@@ -85,13 +88,13 @@
         configuration considerations which are simply overkill in a home
         setting. This is especially true as sensitive data should have
         additional data regardless of redundancy \cite{Backblaze_321}. Getting
-        a robust implementation that gets most of the way is sufficent. This
+        a robust implementation that gets most of the way is sufficient. This
         filesystem does exactly that. Having data integrity guarantees is many
         orders of magnitude better than current filesystems' reliance on the
         questionable track record of SSDs, if for no other reason than peace of
         mind. It also provides the safety of RAID without a lengthy
         cost-benefit analysis of different techniques to mitigate the various
-        problems and the drawbacks that might come with those mitifations
+        problems and the drawbacks that might come with those mitigations
         (\autoref{sec:RAID_problems}).
 
         For laptops this filesystem is of limited use. The trend towards low
@@ -105,7 +108,7 @@
         For home and office desktop computers this filesystem makes a lot of
         sense. These machines are bulky enough to house several drives and
         accommodate any redundancy setup that may be desired. The lower
-        administion overhead can help otherwise sceptical users to the
+        administration overhead can help otherwise sceptical users to the
         complexity of solutions like \nameref{sec:ZFS} make the leap add some
         much needed integrity to their storage. Especially for office use the
         extra integrity can be useful in mission critical environments where
@@ -134,7 +137,7 @@
         the long-term price. The low monthly costs are unlikely to raise
         eyebrows but over longer periods they add up to a similar amounts of
         owning the drives. As a result, it is believed that these solutions are
-        viable alternates but not direct competitiors to the proposed
+        viable alternates but not direct competitors to the proposed
         filesystem with user preference being the biggest factor.
 
     % TODO: you need more discussion. It's 40% of grade and it's like 6 pages
@@ -146,7 +149,7 @@
         this project. The aim for an always working prototype lead to many
         issues being timely discovered and desgin altered before too much
         momentum had been built up. There were two notable examples for this:
-        the everything is a file phylosophy (\autoref{sec:files}) and the linked
+        the everything is a file philosophy (\autoref{sec:files}) and the linked
         list method for storing file data (\autoref{sec:design_btree}).
 
         Storing all metadata as a file presented an interesting circular
@@ -157,12 +160,12 @@
         debug. Identifying this flaw early allowed for design to be modified to
         reduce the problem. Some other timely changes were keeping the free
         list out of the inode table, making its access direct instead of
-        thorugh a level of recursive indirection. Another change was placing
+        thorough a level of recursive indirection. Another change was placing
         the block number on which an inode is stored in the inode itself to
         allow for updating its size to happen directly.
 
-        The linked list method of storing data blocks was particulary
-        troublesome. Despite an inital expectaion for simplicity, reasoning
+        The linked list method of storing data blocks was particularly
+        troublesome. Despite an initial expectation for simplicity, reasoning
         with its block layout and performing calculations was very difficult
         and error prone. Seemingly simple operations like calculating which
         sequential block an arbitrary byte would reside in was a big routine
@@ -183,11 +186,11 @@
         This project has produced a functional Linux filesystem design and
         prototype. The main feature of the filesystem is its strong integrity
         guarantee. This is achieved with full built-in redundancy with robust
-        checksumming usging modern cryptographically secure hashes of every
-        block. It is targetted towards SSD deployments and takes into account
+        checksumming using modern cryptographically secure hashes of every
+        block. It is targeted towards SSD deployments and takes into account
         their unique reliability characteristics. The filesystem itself is
-        enabled by a portable FUSE module for use accross a wide range of Linux
-        distributions. It integrates standard filesystem featues like its use
+        enabled by a portable FUSE module for use across a wide range of Linux
+        distributions. It integrates standard filesystem features like its use
         of B-trees for data indexing.
 
         The design has a flaw that drastically hampers performance. Under an
@@ -203,7 +206,7 @@
         replacement to the common ext4. It is substantially simpler and lacks
         the plethora of options of ZFS so it may be considered in places where
         such a filesystem is desired but not the accompanying complexity.
-        Finally, the targetted deployments for it are cost competitive with
+        Finally, the targeted deployments for it are cost competitive with
         cloud based backup solutions although those target somewhat different
         class of usage. As a result home users gain a useful tool which may
         better fit their needs.
@@ -212,7 +215,7 @@
 
         This project is very minimal and not ready for production use. Many
         features have deliberately not been included and improvements can be
-        made accross the board. There are features that may be suitable for
+        made across the board. There are features that may be suitable for
         inclusion but would need further consideration. It also opens some
         interesting topic for consideration.
 
@@ -223,9 +226,9 @@
         performance too.
 
         As with most project, general code improvements would always be
-        welocme. Notably missing are new generic types to improve data type
+        welcome. Notably missing are new generic types to improve data type
         semantics, some customisations to the B-tree implementation to better
-        suit the particular need of the project, memeory usage optimisations
+        suit the particular need of the project, memory usage optimisations
         and multithreading support will go a long way for production readiness.
 
         Then, less clear-cut features can be considered. Notably,

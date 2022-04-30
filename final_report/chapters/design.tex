@@ -14,13 +14,13 @@
         This means avoiding special purpose data structures and sticking to the
         most basic solution that gives satisfactory results.
 
-        Designing a filesystem is difficult and implemneting it even more so.
+        Designing a filesystem is difficult and implementing it even more so.
         For example, EXT4's documentation \cite{ext4_docs} is roughly
         \numprint{20000} words of mostly major design features, and around
         \numprint{60000} lines of Linux kernel code. It is not possible to
         achieve such complexity in the time allocated to this project.
         Therefore this filesystem aims to be a proof of concept prototype
-        instead. Additionally, designing and implemneting it followed a
+        instead. Additionally, designing and implementing it followed a
         peculiar process to reduce the risk of having an incomplete
         implementation by the submission deadline due to unexpected delays.
 
@@ -40,7 +40,7 @@
         % also add some Agile/Scrum BS from SEP for bonus points
         % maybe say i followed the agile manifesto but not any agile process?
         % instead a kernel process which tends to be similar
-        % This incrmeental approach is very close to that of the Agile
+        % This incremental approach is very close to that of the Agile
         % methodology \cite{agile}.
 
     \section{FUSE module}
@@ -63,7 +63,7 @@
         kernel or the standard library. Where they are not, often times they
         can be safely ignored. For example, memory is managed by the simple
         \syscall{malloc} and \syscall{free} in the standard library while
-        concurrency can be ignored because by defualt the environment is single
+        concurrency can be ignored because by default the environment is single
         threaded. For example, the kernel is very particular about its memory
         management and it is preemptive by default. Further, a userspace
         implementation allows the product to be packaged and distributed for a
@@ -74,20 +74,20 @@
         potentially edited) upon each release. The alternative to this, of
         course, is upstreaming the module as a driver in the Linux kernel
         itself. However, this is vastly out of scope for this project, ignoring
-        the likelyhood of such a major feature being ever accepted. Building
+        the likelihood of such a major feature being ever accepted. Building
         this project in userspace solves this, as all userspace APIs are
         guaranteed stability \cite{never_break_userspace} and standard
         libraries follow this rule.
 
-        The disadadvantage of this approach is a loss of efficiency. There are
+        The disadvantage of this approach is a loss of efficiency. There are
         two factors at play: the kernel-userspace transitions and the lack of
         integration with the kernel. The kernel-userspace transitions are an
         overhead (so much so that there are specific features to minimise their
-        occurances such as vDSO \cite{man_vDSO}) that however small is
+        occurrences such as vDSO \cite{man_vDSO}) that however small is
         measurable and adds up \cite{Linux_context_switch_overhead}). The lack
         of integration is primarily in caching and memory allocation. As a
         consequence, computations will take longer because they will not be
-        explicitly cached, instead realying only on what the kernel's caching
+        explicitly cached, instead relying only on what the kernel's caching
         policy might be for arbitrary data, potentially being suboptimal.
         Additionally, binaries will be larger and allocate more memory at
         runtime because they will share less code with the kernel (although
@@ -99,8 +99,8 @@
         With these in mind, opting for a userspace implementation for this
         project is the best option. This is primarily due to the minimal scale
         and relatively short timescale of the project. This project does not
-        need the production readyness of a full in-kernel implementation and
-        will only get slowed down. Opting for this approach greatly readuces
+        need the production readiness of a full in-kernel implementation and
+        will only get slowed down. Opting for this approach greatly reduces
         risk as well since development is much more straightforward and less
         error prone.
 
@@ -148,10 +148,10 @@
         likely technology for the future (if current trends continue), this
         filesystem targets SSDs instead of classic mechanical hard drives.
 
-        This choice has many consequences (duscussed in \autoref{sec:reliability}),
+        This choice has many consequences (discussed in \autoref{sec:reliability}),
         however one of the more important ones is performance characteristics.
         Unlike hard drives, SSD random access throughput is in line with that
-        of sequentail accesses \cite{servethehome_review}. As a result, major
+        of sequential accesses \cite{servethehome_review}. As a result, major
         locality considerations have a lesser impact on performance. Accessing
         adjacent blocks and accessing them far apart will perform similarly
         (although having them sequentially can lead to "reducing the total
@@ -171,11 +171,11 @@
         minimum is set to 20 blocks for a balance between high preallocation
         but not wasting much space.
 
-        To counteract the drawbacks of lacking extents blocksizes must be
+        To counteract the drawbacks of lacking extents block sizes must be
         maximised to reduce bookkeeping overheads. As a sensible default blocks
         are set to 4KiB in size, a minimum dating as far back as \nameref{sec:FFS}
         . It offers a low amount of wasted space in small files
-        while maximising performance of sequentail accesses and minimising
+        while maximising performance of sequential accesses and minimising
         overhead for things like free lists.
 
     \section{Metadata as files}
@@ -190,7 +190,7 @@
         metadata can benefit from the underlying indexing method. Further, this
         automatically solves the problem of how to allocate space for metadata.
         For example, there is no need make any special consideration for its
-        size, placement or alginment. It can begin empty and grow as necessary,
+        size, placement or alignment. It can begin empty and grow as necessary,
         getting spread throughout the filesystem dynamically depending on
         availability. An added benefit is that this way the inode list can
         efficiently accommodate both of its edge cases. On one hand a
@@ -238,7 +238,7 @@
 
         Both structures serve very different purposes from a user facing
         perspective. However, the workload they need to complete is rather
-        similar. Both store a list of unordered entries. The directoy has to be
+        similar. Both store a list of unordered entries. The directory has to be
         searched to find the i-numbers of names. The inode table has to be
         searched to find a free entry to place a new inode. The only functional
         difference is that the inode table can be indexed to produce a result
@@ -249,13 +249,13 @@
         makes sense to unify the two structures. There exist bespoke
         implementations for both like ext4's Htrees for directories
         (\autoref{sec:htree}). However, adding them introduces a lot of extra
-        complexity which is undesiriable. Such features will not benefit the
+        complexity which is undesirable. Such features will not benefit the
         basic case much as the overwhelming majority of lookup in the inode
-        table are i-number to inode resulutions (which are constant time as the
+        table are i-number to inode resolutions (which are constant time as the
         index is reused in the table). Meanwhile, for home use, which this
         filesystem targets (\autoref{sec:problem}), directories tend to not have a
         large number of files in them \cite{contents_study}. Therefore an
-        imporovement in their speed will not be particularly noticable.
+        improvement in their speed will not be particularly noticeable.
 
         As a result, a simple linear approach is adopted. It has pretty much
         the same benefits and the same drawbacks as those for the free list as
@@ -263,9 +263,9 @@
 
     \section{The inode}
 
-        Once again, to maintain simplicity, the inode contains only essentail
+        Once again, to maintain simplicity, the inode contains only essential
         information. This includes metadata like the owner's user and group
-        IDs, the access permissions and creation/modifiaction timestamps.
+        IDs, the access permissions and creation/modification timestamps.
         Non-metadata fields are the file's size and the head to the tree of
         data nodes, stored as a B-tree (see \autoref{sec:design_btree}).
 
@@ -278,7 +278,6 @@
         filesystem unpleasant to debug, as it can be hard to tell if files with
         the exact same metadata are actually different or there is a bug.
 
-        % TODO: should I include an strace trace of cat?
         The size and data fields are critical to implementing an inode and
         cannot be done away with. The data is obvious, since the file itself
         must be stored somewhere and as the file handle, the inode is the only
@@ -288,7 +287,7 @@
         it in any way. The data tree contains enough information for this value
         to calculated whenever needed. For example, a simple post-order
         traversal of the tree (following the rightmost reference at each node)
-        will find its last asigned block and therefore its size. However, basic
+        will find its last assigned block and therefore its size. However, basic
         programs like \monospace{cat} (which are one of the simplest ways to
         access files \cite{TLDP_proc_access}) request the size of the file
         (with \syscall{stat}) before reading it in full. This presents a
@@ -310,14 +309,14 @@
         The linked list scheme was experimented with, as it is quite a lot
         simpler than a full B-tree implementation. However, it proved very
         difficult to reason with on random accesses and performance was also
-        abysmall (something FAT32 has always struggled with). Because of this
+        abysmal (something FAT32 has always struggled with). Because of this
         it was decided to use a \bplustree from an external implementation. The
         B-tree is much more suited for this task (\autoref{sec:btree}) and supports
         standard operations like insert, delete and lookup natively and
-        performanlty.
+        performantly.
 
         The B-tree implementation is perhaps the most important and most
-        volumous piece of code in the whole project. For this reason using an
+        voluminously piece of code in the whole project. For this reason using an
         off the shelf solution was greatly prioritised instead of a custom
         implementation. A problem was that the available ones turned out to be
         unsuitable as they would require major reworks that would creep up in
@@ -330,13 +329,13 @@
         was to map the disk in memory as a stopgap, however, this presents
         further challenges with making sure \syscall{malloc} and such work in
         that address range and not elsewhere. Another option, SQLite's
-        interface \cite{SQLite_btree}, was unsutable as this assumes a database
+        interface \cite{SQLite_btree}, was unsuitable as this assumes a database
         context. Other implementations, such as \cite{random_btree} were
         discarded for similar reasons.
 
-        In the end, unsurpisingly, an implementation from the Linux kernel (in
+        In the end, unsurprisingly, an implementation from the Linux kernel (in
         \monospace{lib/btree.c} \cite{Linux_source}) was chosen. It is a
-        general purpose \bplustree implemntation that is fairly freestanding,
+        general purpose \bplustree implementation that is fairly freestanding,
         (the bulk of the logic does not depend on the kernel's internals) and
         the few bits that do are abstracted away in a way that is easy to
         change and export (about 30 lines of headers). Further, even though it
@@ -345,12 +344,12 @@
         which exclusively perform any pointer arithmetic. This allowed for the
         whole thing to be stored on disk via those functions without changing
         any internals. Further, despite the code being over a decade old
-        (originally submitted in 2009) it has received several bugfixes over
-        the years, indicating that it is actively used and maintaned. Adding to
+        (originally submitted in 2009) it has received several bug fixes over
+        the years, indicating that it is actively used and maintained. Adding to
         that, because it is kernel code, it is of extraordinary quality, making
         it a pleasure to work with. There is only one issue that is do with the
         kernel's relatively restrictive GPLv2 licence, which this code is
-        licenced under. To resolve this the project adopts the GPLv2 as
+        licensed under. To resolve this the project adopts the GPLv2 as
         discussed in \autoref{app:licence}.
 
     \section{Data integrity}
@@ -370,18 +369,18 @@
         (a provision \nameref{sec:ZFS} has). However, this approach adds
         significant complexity to make sure checks are performed everywhere. If
         done at the block level, then the rest of the filesystem can be
-        ignorant about the existance of checksums and carry on as normal,
+        ignorant about the existence of checksums and carry on as normal,
         reducing the complexity. Since this filesystem does not implement a
         tree of blocks, like \nameref{sec:ZFS} does, this has the drawback
         that checksums are local to the data they protect. However,
-        implemneting this is very trivial as it only needs to extend the block
-        level interface and the entirity of the rest of the design can remain
+        implementing this is very trivial as it only needs to extend the block
+        level interface and the entirety of the rest of the design can remain
         the same. This second approach is chosen primarily for this reason.
 
         For the question of where to store the checksum, there is only one
         solution that is not particularly involved. Storing the checksum within
         the block makes a corruption of the block extremely likely to corrupt
-        the checksum too making it a very bad idea (becasue of collisions) plus
+        the checksum too making it a very bad idea (because of collisions) plus
         it diminishes the kernel's ability to cache large blocks of well
         aligned data (since the checksum will either eat into the block's
         usable size, wasting cache, or misalign blocks). The next best thing is
@@ -431,7 +430,7 @@
         % some shit
 
         There are many ways to detect errors. Ext4 uses CRC \cite{ext4_docs}
-        while ZFS uses sha256 by defualt \cite{ZFS_docs}. Other examples
+        while ZFS uses sha256 by default \cite{ZFS_docs}. Other examples
         include Fletcher or Adler checksums \cite{embedded_checksums} and BCH
         codes \cite{flash_error_manual}. We settle on hash based checksums for
         several reasons. First, we rely on extra drives to provide redundancy
@@ -451,22 +450,22 @@
         to produce different outputs, which is exactly the use case we expect.
 
         This leaves the choice of hash. Older hashes like MD5 and SHA-1
-        \cite{sha1} are probably sufficent but they are starting to show their
+        \cite{sha1} are probably sufficient but they are starting to show their
         age, for example SHA-1 (MD5's successor) is starting to have known
         collisions \cite{SHA_collision}. Besides, we have allocated more space
         than the 160 bits necessary for SHA-1 so we can utilise the extra
         security from more modern ciphers. The major candidates are SHA-2
         \cite{sha2_analysis} (SHA256) and the latest SHA-3 \cite{sha3}
-        (SHA3256). Ideally, we would use the latest and gratest SHA-3, however,
+        (SHA3256). Ideally, we would use the latest and greatest SHA-3, however,
         in the interest of efficiency we select SHA-2.  This is because on
         modern architectures it is around 3 times faster \cite{hash_stats} and
-        the application we use it for is very unlinkely to experience malicious
-        bit manipulation so the security is sufficent.
+        the application we use it for is very unlikely to experience malicious
+        bit manipulation so the security is sufficient.
 
         Then, for the choice of RAID level, there are many options discussed in
         \autoref{sec:RAID}. All have various performance profiles and offer
         protection against various numbers of drive failures. However, for all
-        intents and purposes they are interchangable - no matter the level, the
+        intents and purposes they are interchangeable - no matter the level, the
         result is a contiguous pool of redundant storage. So, to once again
         maintain simplicity, RAID 1 (mirroring) is selected. A basic mirror
         provides just enough redundancy while being simple to implement - all
@@ -480,22 +479,22 @@
         % TODO: this might really benefit from some maths
         Now, even though data and checksum locality is high, this can be
         compensated for by the RIAD arrangement. In the unlikely event that a
-        block and its associated checksum get currupted such that a collision
+        block and its associated checksum get corrupted such that a collision
         occurs and they appear valid, both of these blocks have a carbon copy
         on the other drive. So the filesystem can read the data from one drive
-        and its checksum from the other. With the likelyhoods we are working
+        and its checksum from the other. With the likelihoods we are working
         with, independent colliding corruptions on both drives is practically
         impossible outside of a malicious attack.
 
     \section{Bootstrap}
 
-        Bootrstrapping a filesystem is usually done by a separate command like
+        Bootstrapping a filesystem is usually done by a separate command like
         mkfs \cite{man_mkfs} leaving the filesystem driver to operate in an
         initialised state. For this project the distinction is done away with,
         opting instead for the filesystem to do it itself. This was once again
         done for simplicity, as maintaining a separate binary takes extra
-        makefile rules and a more meticulous source code file heirarchy.
-        Nevertheless, all of the same funcionality is present and the
+        makefile rules and a more meticulous source code file hierarchy.
+        Nevertheless, all of the same functionality is present and the
         initialisation routine is very clearly separate from the rest of the
         filesystem so that it can still be separated without requiring major
         code reworks.
@@ -505,25 +504,25 @@
         This project was developed with the help of git. It was used for the
         purpose of tracking progress and changes of the project as well as
         backup. This was done for both the source code and the final report.
-        Addtionally, a reference manager, Zotero \cite{zotero} was used to
+        Additionally, a reference manager, Zotero \cite{zotero} was used to
         collect citations, although this was not checked into version control
-        directly. Instead references were gradually commited as they were
+        directly. Instead references were gradually committed as they were
         relevant and backups of the library were kept separate. A mirror of
         the source code is available on GitHub at \url{https://github.com/Loosper/thesis}.
 
-        Throughout the project changes were commited at regular intervals.
+        Throughout the project changes were committed at regular intervals.
         Commits tried to be have self contained changes and be semantically
         isolated from one another.
 
         The project's file layout evolved over time but it adopted a
-        concsistent directory structure. The filesystem source and the report
+        consistent directory structure. The filesystem source and the report
         were kept in separate folders. The report was split into per-chapter
         files with graphs and figures separated in their own directories. The
         source code for the filesystem was a bit more involved. First, a single
-        filesystem builds the whole project. It containts rules such that files
+        filesystem builds the whole project. It contains rules such that files
         could be added without modifying it. Source code was separated into
         headers and sources. This is a common practice (Linux
         for example does it) to keep headers which
-        frequently depend on each other close together for easier editting,
+        frequently depend on each other close together for easier editing,
         while source code is separate so that the object files it produces do
         not pollute the namespace too much.

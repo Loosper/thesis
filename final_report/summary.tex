@@ -1,38 +1,44 @@
 Over the years UNIX like operating systems and their filesystems have gone a
-long way. Numerous advances achieve very high degrees of resource utilisation
-with robust and well thought out features. A major consideration throughout has
-been drive unreliability. Any drive is prone to failure and even when function
+long way. A large number of well thought out and robust features achieve very
+high degrees of resource utilisation. Throughout, a major driver for many of them has
+been drive unreliability. Drives routinely fail but even before that they
 may misbehave in an undetectable manner. To ensure data integrity there exist
-many solutions, some better than others. Notably ext4 ensures filesystem
-consistency even if data is unaccounted for while ZFS considers every
-eventuality even if at the cost of substantial complexity. At the same time
-simplistic solutions like arrays of disks (RAID) go a long way to provide
-redundancy.
+many solutions with various approaches. Notably ext4 ensures filesystem
+consistency thorough checksumming metadata. Redundant arrays of disks (RAID)
+replicate the whole filesystem in case a drive fails. A notorious example is
+ZFS which considers every eventuality and implements mitigations for it.
 
-All of these solutions have problems though. Ext4 does not checksum data, RAID
-has a write hole issue and ZFS is incredibly complex. This presents a challenge
-for less technically savvy home users who will not be aware of the pros and
-cons of each or may simple be unable to administer them.
+All of these solutions have problems though. Ext4 does not checksum data and
+relies the drive will report it correctly, RAID has a write hole issue which
+may corrupt data and ZFS's support for all its features comes at the cost of
+great complexity. All the various approaches with their differing drawbacks
+present a challenge for less technically savvy home users. They will not be
+aware of the pros and cons of each or may be unable to administer them
+appropriately to achieve their goals as a result.
 
-To that effect, this project proposes a new filesystem that attempts to collect
-the good things of each of these while mitigating the major issues and making
+To that effect, this project proposes a new filesystem that collects the good
+things of each of these solutions while mitigating the major issues and making
 it easy to use. It integrates modern techniques for ensuring data integrity
-without compromising on performance by design.  It targets the ever so
-ubiquious solid state drives to optimise for what is most likely to be in the
+without compromising on performance by design. It also targets the ever so
+ubiquitous solid state drives to optimise for what is most likely to be in the
 target field of laptops, office desktops and home servers.
 
 The proof of concept implementation achieves very good integrity. All data is
 stored with full redundancy to protect against any pattern of drive
-misbehaviour. Any silent data corruption can be detected with secure hashes of
-all blocks and restored from the redundant copies. The result is cost and
-administratively competitive with a wide variety of other solutions so it is a
-valid choice.
+misbehaviour although greater focus is placed on SSD specific failures. Any
+silent data corruption can be detected with secure hashes of all blocks and
+restored from redundant copies. The result is cost competitive with a wide
+variety of other solutions and is easy to administer. As such, it is a valid
+choice for its target audience.
 
-Its performance is suboptimal due to not including extents and prototype
-implementation. The penalty for the lack of extents was unexpected and further
-analysis is performed to find out the cause.
+The final design deliberately avoids the use of extents which turn out to be
+crucial for modern filesystems. Unsurprisingly, performance is suboptimal and
+is about an order of magnitude lower than desired. As this deficiency is
+unexpected its cause is investigated in depth which reveals a widespread but
+incomplete understanding of the issue.
 
-Nevertheless, the basic desgn is robust enough for the filesystem to become a
-usable module. It is implemented as a FUSE module to ensure portability for
-widespread and easy use. The shortcomings can be addressed without major
-reworks and further iteration can be performed for a full product.
+Nevertheless, the general design is robust and holds up its integrity promises.
+It is implemented as a FUSE module to ensure portability for widespread and
+easy use. The deficiency is isolated and does not require major reworks to
+become production. As a result, this can easily be addressed and with some optimisations
+the prototype can become suitable for general production use.

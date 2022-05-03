@@ -86,7 +86,28 @@
     % required.>
 
     \begin{enumerate}
-        \item B-trees from Linux
+        \item B-trees from Linux (lib/btree.c)
     \end{enumerate}
+
+\chapter{Raw benchmark output}
+    \label{app:benchmark}
+
+    This appendix shows the full output of the fio command for one of the three
+    runs on each tested filesystem.
+
+    \section{Results for ext4}
+        \lstinputlisting[language={},basicstyle=\tiny]{benchmark/benchmark.ext1}
+    \section{Results for ntfs}
+        \lstinputlisting[language={},basicstyle=\tiny]{benchmark/benchmark.ntfs1}
+    \section{Results for the proposed filesystem}
+        \lstinputlisting[language={},basicstyle=\tiny]{benchmark/benchmark.own1}
+
+\chapter{perf outputs}
+    \label{app:perf}
+
+    \section{\monospace{perf} report with overhead of children added to their parents}
+        \lstinputlisting[language={},basicstyle=\tiny]{benchmark/perf.hist.0}
+    \section{\monospace{perf} report only for time speant in a subroutine itself}
+        \lstinputlisting[language={},basicstyle=\tiny]{benchmark/perf.hist.1}
 
 \end{appendices}

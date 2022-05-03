@@ -290,11 +290,25 @@
         will find its last assigned block and therefore its size. However, basic
         programs like \monospace{cat} (which are one of the simplest ways to
         access files \cite{TLDP_proc_access}) request the size of the file
-        (with \syscall{stat}) before reading it in full. This presents a
-        challenge as, although it is possible to find out this size on each
-        such call, it requires a nontrivial amount of code to do so. It was
-        deemed to be less code to store this information than to recalculate it
-        each time. As an added benefit, this removes a slight inefficiency.
+        (with \syscall{stat}) before reading it in full, as can be seen in
+        \autoref{fig:cat_strace}. This presents a challenge as, although it is
+        possible to find out this size on each such call, it requires a
+        nontrivial amount of code to do so. It was deemed to be less code to
+        store this information than to recalculate it each time. As an added
+        benefit, this removes a slight inefficiency.
+
+        \begin{figure}[h]
+            \begin{lstlisting}[gobble=16]
+                openat(AT_FDCWD, "/proc/cpuinfo", O_RDONLY) = 3
+                newfstatat(3, "", {st_mode=S_IFREG|0444, ...}, AT_EMPTY_PATH) = 0
+                fadvise64(3, 0, 0, POSIX_FADV_SEQUENTIAL) = 0
+                mmap(NULL, 139264, ...) = 0x7f646456e000
+                read(3, "processor\t: 0\nvendor_id\t: Authen"..., 131072) = 3054
+            \end{lstlisting}
+            \caption{Excerpt of \monospace{strace cat /proc/cpuinfo}}
+            \label{fig:cat_strace}
+            \vspace{-20pt}
+        \end{figure}
 
     \section{Use of B-trees}
         \label{sec:design_btree}

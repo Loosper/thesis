@@ -8,7 +8,7 @@
 \usepackage{epsfig,graphics}
 \usepackage{graphicx}
 \usepackage{titlesec}
-\usepackage[breaklinks, hidelinks]{hyperref}
+\usepackage{hyperref}
 \usepackage{pgfplots}
 \usepackage{listings}
 \usepackage{numprint}
@@ -16,8 +16,17 @@
 % \usepackage{refcheck}
 \usepackage{chngcntr}
 \usepackage{tikz}
-\usetikzlibrary{shapes}
+\usepackage{wrapfig}
+\usepackage{caption} % this makes clickable references to figure to to its top instead of the caption on the bottom
 
+\usetikzlibrary{shapes}
+\hypersetup{
+    breaklinks, hidelinks,
+    bookmarksnumbered=true,
+    bookmarksopen=true,
+    bookmarksopenlevel=1
+}
+\lstset{basicstyle=\small, frame=L, xleftmargin=10pt}
 % make figures and listings start from 1 instead of with chapter number
 \counterwithout{figure}{chapter}
 \npthousandsep{\,}
@@ -133,6 +142,9 @@
 \newenvironment{metachapter}[1]
  	{\cleardoublepage \null
  		\begin{center}%
-			\textbf{#1}
+            \chapter*{#1}
+			% \textbf{#1}
+            \label{ch:#1}
+            \addcontentsline{toc}{section}{\nameref{ch:#1}}
 		\end{center}}%
 	{\vfill \null }

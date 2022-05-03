@@ -81,11 +81,10 @@
         together in the summary. The raw output for the graph can be found in
         \autoref{app:benchmark}.
 
-        % \begin{wrapfigure}{L}{0.2\textwidth}
-        % \end{wrapfigure}
         \begin{figure}[h]
-            \caption{Benchmark results}
             \input{./figures/benchmark}
+            \vspace{-20pt}
+            \caption{Benchmark results}
             \label{fig:benchmark}
         \end{figure}
 
@@ -160,9 +159,8 @@
         result, even large sequential workloads behave like numerous random
         ones and a lot of performance is left on the table.
 
-        \begin{figure}[h]
-            \caption{Perf smaple}
-            \label{fig:perf_sample}
+        \begin{wrapfigure}[8]{r}{0.45\textwidth}
+            \vspace{-20pt}
             \begin{lstlisting}[gobble=12]
             - 93.78% do_read_write_full
                - 93.55% do_read_write_block
@@ -171,7 +169,9 @@
                   + 6.44% file_add_space
                   + 0.61% __libc_pread
             \end{lstlisting}
-        \end{figure}
+            \caption{Excerpt of \monospace{perf} stats}
+            \label{fig:perf_sample}
+        \end{wrapfigure}
 
         Knowing this, explaining the sequential read anomaly is not hard. With
         this arrangement reading any file will always be faster than writing it
@@ -217,30 +217,9 @@
 
     \section{Failure simulation}
 
-        To simulate failures we use a similar approach to the benchmark. Once
-        again, we use fio. This time a 5 minute stress test is performed. It
-        has two jobs which run concurrently. The first one preforms the same
-        1GB combined read and write load while the second one creates and
-        removes 100 files repeatedly. While this test is running a script
-        (\monospace{insert\_failures.py}) goes over a drive in the array
-        and flips a random number of bits on each block up to a maximum of 100
-        in an infinite loop.
-
-        As expected, the whole test runs without any user visible errors. The
-        filesystem detects and corrects all corrupt blocks and returns correct
-        data stored on the redundant drives. A sample of the debug output can
-        be seen in \autoref{fig:corruption}.
-
-        \begin{figure}[h]
-            \caption{Corruption debug output}
-            \label{fig:corruption}
+        \begin{wrapfigure}[17]{r}{0.55\textwidth}
+            \vspace{-20pt}
             \begin{lstlisting}[gobble=16]
-                lookup refused: 'metadata.0.53', of: 1
-                block 2199 corrupted, retrying from devb
-                create: 'metadata.0.53' (156), at: 1
-                setattr of 156,
-                write 156 at 0 for 4096 bytes
-                lookup refused: 'metadata.0.54', of: 1
                 lookup refused: 'metadata.0.54', of: 1
                 block 2200 corrupted, retrying from devb
                 create: 'metadata.0.54' (157), at: 1
@@ -259,7 +238,23 @@
                 lookup refused: 'metadata.0.56', of: 1
                 create: 'metadata.0.56' (159), at: 1
             \end{lstlisting}
-        \end{figure}
+            \caption{Excerpt of filesystem debug output}
+            \label{fig:corruption}
+        \end{wrapfigure}
+
+        To simulate failures we use a similar approach to the benchmark. Once
+        again, we use fio. This time a 5 minute stress test is performed. It
+        has two jobs which run concurrently. The first one preforms the same
+        1GB combined read and write load while the second one creates and
+        removes 100 files repeatedly. While this test is running a script
+        (\monospace{insert\_failures.py}) goes over a drive in the array
+        and flips a random number of bits on each block up to a maximum of 100
+        in an infinite loop.
+
+        As expected, the whole test runs without any user visible errors. The
+        filesystem detects and corrects all corrupt blocks and returns correct
+        data stored on the redundant drives. A sample of the debug output can
+        be seen in \autoref{fig:corruption}.
 
     \section{Design of the redundancy}
 

@@ -8,29 +8,29 @@
     ext4_origin, ZFS, XFS_scalability} over the decades and some of those are
     still in widespread use even today.
 
-    However, from very early on the hard drives these filesystems were designed
-    to run on - spinning platters with mechanical actuators that would move
-    across to find pieces of data - turned out to be not particularly reliable
+    However, these filesystems were designed to run on hard drives - spinning
+    platters with mechanical actuators that would move across to find pieces of
+    data. As anyone with a car will testify, moving parts wear out, break and
+    occasionally need replacing. Unsurprisingly, so do hard drives and people
+    realised that they were not particularly reliable early on
     \cite{Backblaze_stats, hard_drive_failures, RAID,
-    data_corruption_storage_stack}. As anyone with a car will testify, moving
-    parts break and occasionally and need replacing. So do hard drives. They
-    simply wear out and fail. As a result mitigations against such failures
-    have been implemented partially \cite{FFS, ext4_docs} and as a whole
-    \cite{ZFS} over and over again.
+    data_corruption_storage_stack}. As a result mitigations against such
+    failures have been implemented partially \cite{FFS, ext4_docs} and as a
+    whole \cite{ZFS} over and over again.
 
     % \cite{google_flash, facebook_flash}. add 2d flash ref?
     % error manual citation can be a list of like 15
-    % check that i have all citations, i want to have ALL possibtle ones in here
+    % check that i have all citations, i want to have ALL possible ones in here
 
     More recently, solid state drives (SSDs) have come into the picture
     \cite{SSD_sales}. By now we understand them fairly well
     \cite{flash_error_manual}, although less thoroughly than hard drives, and
     we know they are not a much different story. They also fail due to wearing
-    out, although this time not from friction but from the silicon oxides
+    out, although this time not from friction but from silicon oxides
     breaking down. Nevertheless, the result is the same. What is worse is that
-    they do not work until they stop. They produce errors \cite{bit_error_mlc,
+    they do not work until they stop but rather produce errors \cite{bit_error_mlc,
     bit_error_qlc, flash_large_scale}. Those errors are oftentimes detected and
-    corrected before anyone has the chance to care \cite{flash_error_manual}.
+    corrected before anyone has a chance to care \cite{flash_error_manual}.
     Every once in a while though, an error will slip through and remain
     undetected \cite{flash_reliability}.
 
@@ -43,21 +43,24 @@
     corrupt previously committed data on a system crash \cite{LWN_md_journal}.
     Ext4 only checksums metadata and relies on the drive for the rest
     \cite{ext4_docs}. ZFS is unimaginably complex \cite{ZFS_spec} and requires
-    specialist operating systems and hardware \cite{TrueNAS_hardware_guide}.
+    specialist operating systems and hardware to achieve its full potential
+    \cite{TrueNAS_hardware_guide}.
 
     These problems in turn have their own mitigations but a pattern emerges -
     to account for the most common circumstances and achieve good reliability
-    are required many layers of user facing complexity regardless of the
+    many layers of user facing complexity are required regardless of the
     general approach. However, two issues arise. First, these complex solutions
-    have high hardware demands which simply do not made financial or spacial
+    have high hardware demands which simply do not make financial or spacial
     sense in small home systems (like laptops or home servers). Second, this is
     a workable solution for enterprises and well versed technicians, but it is
-    a challenge for normal users. As a results those systems and users
-    oftentimes remain with no data integrity guarantees.
+    a challenge for normal users. As a results those systems are frequently
+    misused \cite{LTT_data_loss} and users oftentimes remain with no data
+    integrity guarantees while assuming otherwise.
 
     This project proposes a filesystem design specifically for this awkwardly
-    positioned segment. It provides a prototype that integrate all essential
-    features for high data integrity while being easy to use and deploy.
+    positioned use case. It sets out to integrate the major design decisions
+    that make each of these solutions performant in the face of such reliability risks
+    while maintaining simplicity and be easy to use.
 
 \chapter{Background}
     \section{The UNIX filesystem}

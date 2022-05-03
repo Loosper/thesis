@@ -39,23 +39,26 @@
 % Sign this with a pen for all of the hard copies before you hand
 % them over to the SSO. If for any reason the submission of final reports
 % is online-only, replace the '\rule{}{}' command with your name.
-\flushright(Signature of Student) \fullname
+% \flushright(Signature of Student) \fullname
+\begin{flushright}
+    (Signature of Student) \fullname
+\end{flushright}
 % \rule{50mm}{1pt}
-\flushleft
 
 \vfill
 
 \textcopyright~\session~The University of Leeds and~\fullname
+
+\setlength{\parindent}{11pt}
+
 % Summary
-
-\begin{dissertationsummary}
+\begin{metachapter}{Summary}
 \input{summary.tex}
-\end{dissertationsummary}
+\end{metachapter}
 
-\clearpage
-\centering\textbf{Acknowledgements}
-\flushleft
-\input{acknowledge.tex}
+\begin{metachapter}{Acknowledgements}
+    \input{acknowledge.tex}
+\end{metachapter}
 
 % The contents
 \tableofcontents
@@ -67,4 +70,3 @@
 
 \clearpage
 \pagenumbering{arabic}
-\setlength{\parindent}{11pt}

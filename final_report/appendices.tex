@@ -1,92 +1,173 @@
 \begin{appendices}
 
-%
-% The first appendix must be "Self-appraisal".
-%
 \chapter{Self-appraisal}
-
-    % <This appendix should contain everything covered by the 'self-appraisal'
-    % criterion in the mark scheme. Although there is no length limit for this
-    % section, 2---4 pages will normally be sufficient. The format of this
-    % section is not prescribed, but you may like to organise your discussion
-    % into the following sections and subsections.>
 
     \section{Critical self-evaluation}
 
+        % a bit ambitious
+        The topic of this project is such that its scope can be very large. As
+        mentioned in the main text (\autoref{sec:methodology}), proper
+        implementations are thousands of lines of code written over many years
+        by lots of people. As such, this project is very ambitious and choosing
+        it was risky. The quantity of new things that had to be gone over was
+        immense and could have easily led to a failed implementation.
+        Nevertheless, I am glad to have taken the challenge as it has produced
+        a much more interesting dissertation. Having a simpler topic would have
+        probably meant that a higher grade would have been easier to achieve,
+        although that would have been unlikely to happen as the motivation for
+        a less interesting project would have probably lacked.
+
+        % heavy on research
+        To that effect, this project is a bit heavy on research. Even though I
+        knew a lot about filesystems, in order to get a good grasp of things
+        the research started way back with UFS. It is the first relevant
+        filesystem but it is also over 50 years old and a lot has happened
+        since then. The idea was to go over the major developments over the
+        years and then focus on what is modern. This led to many more topics
+        that I had not considered before and as a result the project considers
+        things it would not have otherwise. I do not believe that skipping a
+        lot of this old research would have made a better project though. There
+        was limited time not everything could be covered unfortunately. If more
+        time was available though, I would only look at the most recent
+        research to make it more rigorous.
+
+        % feature selection
+
+        Fully going through such an ambitious project was definitely not an
+        option, however. That meant that narrowing the scope down was a big
+        part of the journey. The breadth of possible features meant most things
+        that make up a filesystem could not make it to the final product and
+        deciding what to cut and what to keep was not easy. In most cases,
+        decisions were a compromise between many factors and what was settled
+        on was the right choice for this project. The only exception is the
+        choice to drop extents. From a complexity standpoint, dropping it was
+        the right choice to complete the project on time. However, it turned
+        out to be a poor choice for performance. This was discovered very late
+        and changing it was not an option. As a result, the filesystem is not
+        usable for real world tasks in this state, but I do believe that even
+        with this major flaw, this is a valuable experiment and can open the
+        way for further research.
+
+        % thank fuck for the process
+        To properly do these decisions, the adopted process was a blessing
+        considering how much could not be included. The ambitious topic meant
+        that there was a lot to consider. Not having a fixed arbitrary goal
+        (say "a performant filesystem") meant the project could change a lot.
+        In fact it changed direction quite a bit during research and its
+        implementation took several turns. Is still not complete but I do
+        believe it is the best it could be.
+
+        % infinite time, stubborn
+        In the end, implementing the project and writing the report went well
+        overall. Progress on the implementation went at a steady pace and was
+        interleaved with lots of research to make sure it is correct. When the
+        report was started it integrated a lot of the syntax necessary to save
+        work later. However, in both cases a sense of infinite time was a big
+        problems. This being a final project meant that the desire for it to be
+        as good as possible overshadowed any consideration for how long this
+        would reasonably take. When the scope settled in, motivation quickly
+        dried up which became a problem. Time turned out to be very much
+        limited and things had to be cut short or reconsidered. This was most
+        painfully apparent when it came time to editing the report. Since I had
+        experience with big MS Word documents before I was confident the \LaTeX{}
+        version would be quicker as it provides many features almost out of the
+        box provided some guidelines are obeyed. However, \LaTeX{} sets the bar
+        much higher than Word and as a result graphics suffer. If less
+        stubborn confidence was put on \LaTeX{} the report might have looked even
+        better.
+
     \section{Personal reflection and lessons learned}
+
+        My biggest lesson to be learnt is the importance of progress tracking.
+        Having a record of what has happened when is very motivating as it
+        shows the finish line getting closer. Even a simple piece of paper with
+        bullet points goes a long way. Not having this meant that getting stuck
+        debugging a problem felt like wasted time. Even though after it was
+        done the project was in much better shape and much closer to being
+        "good", doing it felt pointless and ending days abruptly was a
+        problem.
+
+        Another thing is to not stick with decisions when there is enough
+        evidence they might need to be reconsidered. In particular, the linked
+        list for data blocks (\autoref{sec:design_btree}) felt "almost done"
+        for several weeks. A lot of time was sunk into trying to make it better
+        when it was ultimately meant to be scrapped and replaced with a B-tree.
+        Moving up that work would have been the reasonable thing to do
+        especially since the chosen methodology (\autoref{sec:methodology})
+        meant this was easy to do.
+
+        Finally, the constant aim for progress means things I am familiar
+        things should not be underestimated and deprioritised. Particularly,
+        since I felt more confident with \LaTeX{}, I thought less time would be
+        necessary to make it work. This was true in that to achieve simple
+        things was quicker, but the bar was much higher now, so at the end of
+        the day it took just as much time just to do fancier things that I
+        never though would be included.
 
     \section{Legal, social, ethical and professional issues}
 
-    % <Refer to each of these issues in turn. If one or more is not relevant to
-    % your project, you should still explain {\em why} you think it was not
-    % relevant.>
-
-        % TODO ask should i keep copyright?
         \subsection{Legal issues}
             \label{app:licence}
 
             This project has one legal issue. It borrows code from the Linux
-            kernel which is licensed undre the GNU General Public License
+            kernel which is licensed under the GNU General Public License
             version 2 (GPL v2). This license is restrictive to the extent that
             it mandates any modification of borrowed code to be released under
-            the terms of the same license. To comply with this requrement, the
+            the terms of the same license. To comply with this requirement, the
             borrowed B-tree code maintains all license and copyright notices.
-            Further, the whole project adopts the GPL v2.
-
+            Further, the whole project adopts the GPLv2. This eliminates the
+            chance for any licence conflict and makes sure the new code stays
+            public.
 
         \subsection{Social issues}
 
-            The project does not address nor does it further any social issues.
-            As a piece of infrastructure it does not relate or benefit other
-            disciplines such as education. It also does not further issues of
-            crime, bullying, privacy or (in)equality. The project is open
-            source and available to all regardless of skill, social or cultural
-            background. It cannot be used to facilitate criminal activity
-            insofar as any data storage system can.
+            As a piece of infrastructure this project does not relate or
+            benefit other disciplines such as education. It also does not
+            further issues of crime, bullying, privacy or (in)equality. It
+            cannot be used to facilitate criminal activity insofar as any data
+            storage system can. The project is open source and available to all
+            regardless of skill, social or cultural background. As such it is a
+            benefit to society free of charge and with no usage limitation as
+            the GPLv2 guarantees that. Finally, it aims to make data integrity
+            easier to deploy allowing to easy some of society's everyday
+            problems.
 
         \subsection{Ethical issues}
 
-            This project is not affected by ethical issues. That is becuase it
+            This project is not affected by ethical issues. That is becauase it
             does not deal with human subjects directly and where it is
             indirectly involved with humans, it provides no new tools where an
             ethical issue might arise. Particularly, this project does not deal
-            with the particularly sensistive field of artificial intelligence
+            with the particularly sensitive field of artificial intelligence
             and its use of cryptography is limited to hashing. Any possible use
-            of the project is already covered by exisiting filesystems such as
-            EXT4 in regards to efficiency or ZFS for reliability. Where
+            of the project is already covered by existing filesystems such as
+            ext4 in regards to efficiency or ZFS for reliability. Where
             features that ZFS provides can be used for criminal and morally
-            dubous activity, like data integrity, are meant to be a weaker in
-            this project from the project definition (\autoref{sec:problem}). Where
-            features that EXT4 provides can be used for similar purposes, like
-            large scale deployments, this filesystem purposefully scales back
-            on to provide redundancy.
+            dubious activity, like data integrity, are meant to be a weaker in
+            this project from the project definition (\autoref{sec:problem}).
+            Where features that ext4 provides can be used for similar purposes,
+            like large scale deployments, this filesystem purposefully scales
+            back to provide redundancy. As such this is an established
+            technology with known good ethical implication.
 
         \subsection{Professional issues}
 
             This project has been developed in accordance with the principles
             of the British Computer Society's (BSC) code of conduct. In
-            particular, it aims to be further the public interest in that it
-            provides a useful tool for home use...
-            % TODO:
+            particular, it aims to further the public interest in that it
+            provides a useful tool for home use. It uses a licence of good
+            standing so its source can be freely available and inspected for
+            security and standards compliance.
 
+            The project uses standard practices, widely used frameworks and
+            does not rely on proprietary bits to hide parts of itself. It is
+            transparent and upfront about its purpose and capabilities.
 
-%
-% Any other appendices you wish to use should come after "Self-appraisal". You can have as many appendices as you like.
-%
 \chapter{External Material}
-
-    % <This appendix should provide a brief record of materials used in the
-    % solution that are not the student's own work. Such materials might be
-    % pieces of codes made available from a research group/company or from the
-    % internet, datasets prepared by external users or any preliminary
-    % materials/drafts/notes provided by a supervisor. It should be clear what
-    % was used as ready-made components and what was developed as part of the
-    % project. This appendix should be included even if no external materials
-    % were used, in which case a statement to that effect is all that is
-    % required.>
 
     \begin{enumerate}
         \item B-trees from Linux (lib/btree.c)
+        \item Linux's FUSE framework
     \end{enumerate}
 
 \chapter{Raw benchmark output}

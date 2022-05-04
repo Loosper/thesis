@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: GPL-2.0
+# Copyright (C) Boyan Karatotev
 FUSE_FLAGS := $(shell pkg-config fuse3 --cflags --libs) -DFUSE_USE_VERSION=35
 override CFLAGS += $(FUSE_FLAGS) -Iinclude -g
 # override CFLAGS += -Wall -Wextra -pedantic

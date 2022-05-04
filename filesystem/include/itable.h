@@ -1,3 +1,5 @@
+/* SPDX-License-Identifier: GPL-2.0 */
+/* Copyright (C) Boyan Karatotev */
 #ifndef _ITABLE_H
 #define _ITABLE_H
 #include <stdbool.h>

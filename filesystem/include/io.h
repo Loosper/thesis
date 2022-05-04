@@ -1,3 +1,5 @@
+/* SPDX-License-Identifier: GPL-2.0 */
+/* Copyright (C) Boyan Karatotev */
 #ifndef _IO_H_
 #define _IO_H_
 

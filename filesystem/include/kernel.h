@@ -1,3 +1,5 @@
+/* SPDX-License-Identifier: GPL-2.0 */
+/* Copyright (C) Boyan Karatotev */
 #ifndef __KERNEL_H_
 #define __KERNEL_H_
 

@@ -1,3 +1,5 @@
+/* SPDX-License-Identifier: GPL-2.0 */
+/* Copyright (C) Boyan Karatotev */
 #include <assert.h>
 #include <errno.h>
 #include <stddef.h>
